@@ -65,7 +65,23 @@ repo. Typical setup:
    App Store Connect; Xcode Cloud handles signing from there.
 
 ### Version & build numbers
-`MARKETING_VERSION` (`0.1.0`) and `CURRENT_PROJECT_VERSION` (`1`) come from
-`project.yml`. TestFlight requires the **build number** to increase on each
-upload — let Xcode Cloud auto-increment it, or bump `CURRENT_PROJECT_VERSION`
-in `project.yml` per release.
+`MARKETING_VERSION` (the X.Y.Z version users see) and `CURRENT_PROJECT_VERSION`
+(the build number) both live in `project.yml`, starting at `0.1.0` / `1`.
+
+Bump them for a release with the helper script — it edits `project.yml` in
+place. The level defaults to **patch**; pass `minor` or `major` to bump those:
+
+```sh
+scripts/bump-version.sh           # 0.1.0 -> 0.1.1  (patch, default)
+scripts/bump-version.sh minor     # 0.1.1 -> 0.2.0
+scripts/bump-version.sh major     # 0.2.0 -> 1.0.0
+```
+
+It also increments `CURRENT_PROJECT_VERSION` by one each time, because
+TestFlight rejects a re-used build number. After bumping, cut the release:
+
+```sh
+scripts/bump-version.sh
+git commit -am "Release v$(grep -m1 MARKETING_VERSION project.yml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+git tag vX.Y.Z && git push --follow-tags   # the tag can drive the Xcode Cloud workflow
+```
