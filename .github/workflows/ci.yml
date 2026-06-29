@@ -59,10 +59,12 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build (iPhone simulator)
+      - name: Build (iOS simulator)
         env:
           SCHEME: ${{ vars.APP_SCHEME || 'ZenWordOfDoom' }}
-          DESTINATION: "platform=iOS Simulator,name=iPhone 15,OS=latest"
+          # Generic simulator destination — no specific device needed for a
+          # compile check, and robust to whatever devices the runner has.
+          DESTINATION: "generic/platform=iOS Simulator"
         run: |
           set -o pipefail
           xcodebuild \
