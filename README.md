@@ -40,7 +40,7 @@ contains the full design and technical specification.
 | [`docs/SPEC.md`](docs/SPEC.md) | Game design + functional specification |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Technical architecture, modules, data flow |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones and delivery plan |
-| [`docs/CI.md`](docs/CI.md) | Build & publish GitHub Actions workflows |
+| [`docs/CI.md`](docs/CI.md) | CI (GitHub Actions) and publishing (Xcode Cloud) |
 
 ## Tech Stack (proposed)
 

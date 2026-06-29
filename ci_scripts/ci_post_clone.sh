@@ -7,6 +7,12 @@
 # starts. This script runs automatically after Xcode Cloud clones the repo.
 set -e
 
+# Make sure Homebrew is on PATH (Apple Silicon Xcode Cloud images install it
+# at /opt/homebrew but don't always export it into this script's shell).
+if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
 echo "Installing XcodeGen…"
 brew install xcodegen
 
@@ -14,4 +20,4 @@ echo "Generating Xcode project from project.yml…"
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 xcodegen generate
 
-echo "Generated $(ls -d *.xcodeproj)"
+echo "Generated $(ls -d *.xcodeproj) with $(xcodebuild -version | tr '\n' ' ')"
