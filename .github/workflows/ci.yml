@@ -1,9 +1,9 @@
 name: CI
 
 # Build and test on every push and pull request.
-# Tolerant of the current spec-phase repo: the SPM package job runs only if a
-# Package.swift exists, and the app build/test job runs only once an Xcode
-# project/workspace is present. Until then, this still lints the repo layout.
+#  - swift-packages: tests the pure-Swift cores (GameCore, WordEngine).
+#  - ios-app: generates the Xcode project with XcodeGen and builds the app
+#    for the iOS simulator (compiles + links against the local package).
 
 on:
   push:
@@ -17,89 +17,58 @@ concurrency:
 
 env:
   # Override via repo Variables if the project pins a different toolchain.
-  XCODE_VERSION: "16.0"
+  XCODE_VERSION: "16.1"
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Pure-Swift packages (GameCore, WordEngine, ...) — fast, no simulator needed.
-  # ---------------------------------------------------------------------------
   swift-packages:
     name: Swift packages (test)
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode ${{ env.XCODE_VERSION }}
-        run: sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
-
-      - name: Detect Package.swift
-        id: detect
+      - name: Select Xcode
         run: |
-          if ls Package.swift Packages/*/Package.swift >/dev/null 2>&1; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
+          if [ -d "/Applications/Xcode_${XCODE_VERSION}.app" ]; then
+            sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
           else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No Package.swift yet (spec phase) — skipping swift test."
+            echo "::notice::Xcode ${XCODE_VERSION} not on runner; using default $(xcode-select -p)."
           fi
+          xcodebuild -version
 
       - name: swift build & test
-        if: steps.detect.outputs.present == 'true'
-        run: |
-          for pkg in . Packages/*; do
-            if [ -f "$pkg/Package.swift" ]; then
-              echo "== Testing package: $pkg =="
-              swift test --package-path "$pkg" --parallel
-            fi
-          done
+        run: swift test --parallel
 
-  # ---------------------------------------------------------------------------
-  # App target — build & test on an iOS simulator once an Xcode project exists.
-  # ---------------------------------------------------------------------------
   ios-app:
-    name: iOS app (build & test)
+    name: iOS app (build)
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode ${{ env.XCODE_VERSION }}
-        run: sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
-
-      - name: Locate Xcode project/workspace
-        id: proj
+      - name: Select Xcode
         run: |
-          WORKSPACE="$(ls -d *.xcworkspace 2>/dev/null | head -n1 || true)"
-          PROJECT="$(ls -d *.xcodeproj 2>/dev/null | head -n1 || true)"
-          if [ -n "$WORKSPACE" ]; then
-            echo "flag=-workspace" >> "$GITHUB_OUTPUT"
-            echo "container=$WORKSPACE" >> "$GITHUB_OUTPUT"
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          elif [ -n "$PROJECT" ]; then
-            echo "flag=-project" >> "$GITHUB_OUTPUT"
-            echo "container=$PROJECT" >> "$GITHUB_OUTPUT"
-            echo "present=true" >> "$GITHUB_OUTPUT"
+          if [ -d "/Applications/Xcode_${XCODE_VERSION}.app" ]; then
+            sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
           else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No .xcodeproj/.xcworkspace yet (spec phase) — skipping app build."
+            echo "::notice::Xcode ${XCODE_VERSION} not on runner; using default $(xcode-select -p)."
           fi
+          xcodebuild -version
 
-      - name: Build & test (iPhone simulator)
-        if: steps.proj.outputs.present == 'true'
+      - name: Install tools (XcodeGen, xcbeautify)
+        run: brew install xcodegen xcbeautify
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (iPhone simulator)
         env:
           SCHEME: ${{ vars.APP_SCHEME || 'ZenWordOfDoom' }}
           DESTINATION: "platform=iOS Simulator,name=iPhone 15,OS=latest"
         run: |
           set -o pipefail
           xcodebuild \
-            ${{ steps.proj.outputs.flag }} "${{ steps.proj.outputs.container }}" \
+            -project ZenWordOfDoom.xcodeproj \
             -scheme "$SCHEME" \
             -destination "$DESTINATION" \
-            -enableCodeCoverage YES \
-            clean test \
+            clean build \
             CODE_SIGNING_ALLOWED=NO \
-          | xcbeautify || xcodebuild \
-            ${{ steps.proj.outputs.flag }} "${{ steps.proj.outputs.container }}" \
-            -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
-            -enableCodeCoverage YES \
-            clean test \
-            CODE_SIGNING_ALLOWED=NO
+          | xcbeautify

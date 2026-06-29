@@ -2,40 +2,72 @@
 
 Two GitHub Actions workflows live in [`.github/workflows`](../.github/workflows).
 
+The Xcode project is **not committed** — it is generated from
+[`project.yml`](../project.yml) by [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+in CI (and locally). This keeps a readable, mergeable project definition and
+avoids `.pbxproj` conflicts.
+
+```sh
+# Local setup
+brew install xcodegen
+xcodegen generate            # creates ZenWordOfDoom.xcodeproj
+open ZenWordOfDoom.xcodeproj
+# or run the logic tests with no Xcode project at all:
+swift test
+```
+
 ## `ci.yml` — Build & test
-Runs on every push and pull request (and manually).
+Runs on every push and pull request.
 
-- **swift-packages** — `swift test` for every `Package.swift` (the pure-Swift
-  cores: `GameCore`, `WordEngine`, …).
-- **ios-app** — `xcodebuild clean test` on an iPhone simulator.
-
-Both jobs are **spec-phase tolerant**: if no `Package.swift` /
-`.xcodeproj` / `.xcworkspace` exists yet, the job logs a notice and succeeds
-instead of failing. They activate automatically once those files land.
+- **swift-packages** — `swift test` over the pure-Swift cores
+  (`GameCore`, `WordEngine`). Fast, no simulator.
+- **ios-app** — `xcodegen generate` then `xcodebuild build` for the app on an
+  iPhone simulator (compiles + links the SwiftUI shell against the package).
+  Code signing is disabled for this build.
 
 ## `release.yml` — Build & publish
 Triggered by pushing a version tag `vX.Y.Z`, or manually (choose `testflight`
-or `appstore`). It archives the app, exports a signed `.ipa`, and uploads it to
-App Store Connect / TestFlight. Dormant (no-op) until an Xcode project exists.
+or `appstore`). It generates the project, archives, exports a signed `.ipa`,
+and uploads to App Store Connect / TestFlight.
 
-### Required secrets & variables
-Configure under **Settings → Secrets and variables → Actions**:
+It **self-skips** (with a warning, exit 0) if the signing/App Store Connect
+secrets below are absent — so tagging is safe before credentials are set up.
 
-| Type | Name | Purpose |
+## Required credentials
+
+Configure under **Settings → Secrets and variables → Actions**.
+
+### Secrets (sensitive)
+
+| Name | What it is | Where to get it |
 | --- | --- | --- |
-| Secret | `APP_STORE_CONNECT_KEY_ID` | App Store Connect API key id |
-| Secret | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect issuer id |
-| Secret | `APP_STORE_CONNECT_KEY_P8` | Contents of the `.p8` private key |
-| Secret | `BUILD_CERTIFICATE_BASE64` | base64 of the distribution `.p12` |
-| Secret | `P12_PASSWORD` | password for the `.p12` |
-| Secret | `PROVISIONING_PROFILE_BASE64` | base64 of the `.mobileprovision` |
-| Secret | `KEYCHAIN_PASSWORD` | any ephemeral keychain password |
-| Variable | `APP_SCHEME` | Xcode scheme (default `ZenWordOfDoom`) |
-| Variable | `APP_BUNDLE_ID` | e.g. `com.example.zenwordofdoom` |
-| Variable | `XCODE_VERSION` (optional) | toolchain override |
+| `APP_STORE_CONNECT_KEY_ID` | API key ID (e.g. `2X9R4HXF34`) | App Store Connect → Users and Access → Integrations → App Store Connect API → generate a key |
+| `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID (UUID) | Same page, shown above the keys table |
+| `APP_STORE_CONNECT_KEY_P8` | Full contents of the downloaded `AuthKey_XXXX.p8` | Downloaded once when you create the key (paste the whole text, `-----BEGIN…` to `…END-----`) |
+| `BUILD_CERTIFICATE_BASE64` | base64 of your **Apple Distribution** certificate `.p12` | Export the cert+key from Keychain Access as `.p12`, then `base64 -i dist.p12 \| pbcopy` |
+| `P12_PASSWORD` | Password you set when exporting the `.p12` | You choose it at export time |
+| `PROVISIONING_PROFILE_BASE64` | base64 of the App Store `.mobileprovision` | Apple Developer → Profiles → create an App Store profile for the bundle id, then `base64 -i profile.mobileprovision \| pbcopy` |
+| `APPLE_TEAM_ID` | 10-char Team ID (e.g. `AB12CD34EF`) | Apple Developer → Membership |
+| `KEYCHAIN_PASSWORD` | Any throwaway string | Invent one; only used to unlock the ephemeral CI keychain |
 
-> To produce the base64 inputs locally:
-> `base64 -i dist.p12 | pbcopy` and `base64 -i profile.mobileprovision | pbcopy`.
+### Variables (non-sensitive)
 
-The toolchain version is pinned via `XCODE_VERSION` in each workflow; bump it as
-new Xcode releases land on the `macos-14` runner image.
+| Name | Default | Purpose |
+| --- | --- | --- |
+| `APP_BUNDLE_ID` | — | e.g. `com.yourcompany.zenwordofdoom` (must match `project.yml` + the profile) |
+| `PROVISIONING_PROFILE_NAME` | — | The profile's **name** as shown in the Developer portal |
+| `APP_SCHEME` | `ZenWordOfDoom` | Xcode scheme |
+| `XCODE_VERSION` | pinned in workflow | Toolchain override |
+
+### One-time Apple setup checklist
+1. Enroll in the Apple Developer Program ($99/yr) — required to upload builds.
+2. Register the **bundle id** (`APP_BUNDLE_ID`) in the Developer portal and
+   create the app record in App Store Connect.
+3. Create an **Apple Distribution** certificate; export it as `.p12`.
+4. Create an **App Store** provisioning profile for that bundle id.
+5. Create an **App Store Connect API key** (Admin or App Manager role).
+6. Update `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` to your bundle id.
+7. Add the secrets/variables above. Push a tag `v0.1.0` to publish.
+
+> Until step 7 is done, `release.yml` no-ops safely and `ci.yml` still builds
+> and tests every push.

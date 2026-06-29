@@ -1,0 +1,45 @@
+# XcodeGen spec — the .xcodeproj is generated from this file (CI runs
+# `xcodegen generate`), so we never commit a fragile hand-written pbxproj.
+# Locally: `brew install xcodegen && xcodegen generate && open ZenWordOfDoom.xcodeproj`
+name: ZenWordOfDoom
+
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+packages:
+  ZenWordOfDoomKit:
+    path: .
+
+targets:
+  ZenWordOfDoom:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/ZenWordOfDoom
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.zenwordofdoom
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/ZenWordOfDoom/Info.plist
+        TARGETED_DEVICE_FAMILY: "1" # iPhone
+        SWIFT_VERSION: "5.9"
+    dependencies:
+      - package: ZenWordOfDoomKit
+        product: GameCore
+      - package: ZenWordOfDoomKit
+        product: WordEngine
+
+schemes:
+  ZenWordOfDoom:
+    build:
+      targets:
+        ZenWordOfDoom: all
+    run:
+      config: Debug
+    archive:
+      config: Release
