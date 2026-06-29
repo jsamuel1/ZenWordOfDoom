@@ -42,7 +42,9 @@ Enter level
       → Invalid           → gentle shake, no penalty
   → Repeat until all grid slots filled
   → Level complete: creature fully revealed for a beat, then scene calms
-  → Score / serenity tally → next level
+  → Score / serenity tally
+  → Inter-level cut scene ("breath"): moving Zen scene + twisted poem,
+    a Doom monster/item pops out after a few seconds, then calm → next level
 ```
 
 A level is **won** when every slot in the crossword grid is filled. There is no
@@ -176,6 +178,37 @@ A per-level **"stir" meter (0–1)** drives how much the Doom layer surfaces:
 - The horror is *atmospheric and discoverable*. A first-time player can enjoy a
   pure word game and only gradually notice the watchers.
 - Age rating target: **12+** (mild horror themes), pending art direction.
+
+### 6.5 Inter-level cut scenes ("breaths")
+Between levels the game plays a short, **skippable** cut scene — a moment to
+relax and reset before the next puzzle. Each "breath" is a self-contained beat,
+not a loading screen.
+
+- **Moving Zen scene.** A gently animated vignette (drifting mist, rippling
+  water, swaying bamboo, falling petals, slow parallax). Calm by design and
+  visually distinct from the level it bridges.
+- **The pop-out.** After a few seconds of calm (**~3–5s**, tunable), a **Doom
+  monster or cursed item** emerges from the scene — peeking from the reeds,
+  surfacing in the pond, unfurling from a shadow — holds for a beat, then
+  recedes and the scene returns to calm. It is a *wink*, not a scare: timed and
+  telegraphed, never a loud sting. Honors the **Reduced Doom** setting (softer,
+  slower, or omitted pop-out) and **reduced-motion** (no lunge; a still reveal).
+- **Twisted Zen poetry.** Each cut scene shows a short poem — haiku-like in form
+  and serene in cadence, but quietly *wrong* underneath (calm surface, ominous
+  undertow). It is there to read and relax by while the scene breathes. Example
+  register (final lines authored in content, not hardcoded):
+
+  > *Still pond at dawn —*
+  > *the koi count the swimmers*
+  > *who did not surface.*
+
+- **Pacing & control.** Auto-advances after the poem has had time to land
+  (readable at a calm pace), or on tap. Always skippable; a setting can disable
+  cut scenes entirely. Respects Dynamic Type and VoiceOver (the poem is read
+  aloud when VoiceOver is on).
+- **Content.** Poems and pop-out creature/item are **data** (per [`LevelKit`](ARCHITECTURE.md)),
+  themed to the pack and ideally foreshadowing the next level's hidden creature,
+  so the breaths form a loose through-line rather than random interludes.
 
 ---
 
