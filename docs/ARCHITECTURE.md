@@ -11,7 +11,7 @@ validation, input resolution, the reveal engine).
 | Concern | Choice | Why |
 | --- | --- | --- |
 | Language | **Swift 5.9+** | Native, performant, first-class on iOS |
-| Min OS | **iOS 17+** | Modern SwiftUI/Observation, on-device speech maturity |
+| Min OS | **iOS 26.5** (app) | Builds against the newest SDK on the `macos-26` CI runner; the pure-Swift cores stay portable to iOS 17+ |
 | App chrome / menus / HUD | **SwiftUI** | Declarative, fast iteration, accessibility built-in |
 | Game scene (wheel, grid, trace, FX) | **SpriteKit** | 2D node graph, physics-lite, shaders, great for the wheel + reveal animations; embedded via `SpriteView` |
 | Reveal / scene FX | **SpriteKit + `SKShader` / Core Image** | Mask-based creature reveal driven by a single `stir` uniform |

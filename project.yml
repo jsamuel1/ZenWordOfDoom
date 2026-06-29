@@ -4,9 +4,13 @@
 name: ZenWordOfDoom
 
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: wtf.sauhsoj
+  # iOS 26.5 is the newest SDK available on GitHub's macos-26 runner
+  # (Xcode 26.5/26.6 both top out at the iOS 26.5 SDK), so it is the
+  # highest deployment target CI can build. Keep this in lockstep with
+  # XCODE_VERSION in .github/workflows.
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "26.5"
   createIntermediateGroups: true
 
 packages:
@@ -21,11 +25,15 @@ targets:
       - path: App/ZenWordOfDoom
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.zenwordofdoom
+        PRODUCT_BUNDLE_IDENTIFIER: wtf.sauhsoj.zenwordofdoom
+        DEVELOPMENT_TEAM: SL6CE3V9L5
+        CODE_SIGN_IDENTITY: "iPhone Developer"
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/ZenWordOfDoom/Info.plist
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.word-games"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1" # iPhone
         SWIFT_VERSION: "5.9"
     dependencies:

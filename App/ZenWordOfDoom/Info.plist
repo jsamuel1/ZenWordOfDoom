@@ -28,6 +28,8 @@
 	<string>Speech recognition turns the words you speak into your guesses. Recognition runs on your device.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UILaunchStoryboardName</key>
+	<string></string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

@@ -31,20 +31,27 @@ struct LevelSelectView: View {
     private func levelRow(levelID: String) -> some View {
         let progress = store.state.progress[levelID]
         let cleared = progress?.cleared ?? false
+        let unlocked = store.isUnlocked(levelID)
         let level = LevelLibrary.level(id: levelID)
 
         Button {
+            // Locked levels can't be entered until the prior one is cleared.
+            guard unlocked else { return }
             router.push(.game(levelID: levelID))
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: cleared ? "checkmark.seal.fill" : "circle")
+                Image(systemName: statusIcon(cleared: cleared, unlocked: unlocked))
                     .foregroundStyle(cleared ? Color.green : Color.secondary)
                     .imageScale(.large)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(displayName(for: levelID))
                         .font(.body.weight(.medium))
-                    if let level {
+                    if !unlocked {
+                        Text("Locked — clear the previous level")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let level {
                         Text(subtitle(for: level, progress: progress))
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -53,13 +60,23 @@ struct LevelSelectView: View {
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.tertiary)
+                if unlocked {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
             }
             .contentShape(Rectangle())
+            .opacity(unlocked ? 1 : 0.5)
         }
         .buttonStyle(.plain)
+        .disabled(!unlocked)
+        .accessibilityHint(unlocked ? "" : "Locked")
+    }
+
+    private func statusIcon(cleared: Bool, unlocked: Bool) -> String {
+        if cleared { return "checkmark.seal.fill" }
+        return unlocked ? "circle" : "lock.fill"
     }
 
     private func displayName(for levelID: String) -> String {

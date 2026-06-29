@@ -17,12 +17,12 @@ concurrency:
 
 env:
   # Override via repo Variables if the project pins a different toolchain.
-  XCODE_VERSION: "16.1"
+  XCODE_VERSION: "26.5"
 
 jobs:
   swift-packages:
     name: Swift packages (test)
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +40,7 @@ jobs:
 
   ios-app:
     name: iOS app (build)
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 

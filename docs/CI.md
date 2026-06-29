@@ -33,6 +33,20 @@ and uploads to App Store Connect / TestFlight.
 It **self-skips** (with a warning, exit 0) if the signing/App Store Connect
 secrets below are absent — so tagging is safe before credentials are set up.
 
+## Xcode Cloud
+Xcode Cloud is wired to the repo via the GitHub app and can build/publish as an
+alternative to `release.yml`. Because the `.xcodeproj` is **not committed**,
+[`ci_scripts/ci_post_clone.sh`](../ci_scripts/ci_post_clone.sh) runs right after
+Xcode Cloud clones the repo — it installs XcodeGen and runs `xcodegen generate`
+so the project exists before the build starts. Configure the workflow (triggers,
+TestFlight/App Store distribution, signing) in App Store Connect → Xcode Cloud.
+
+## Runner / toolchain
+Both workflows run on the **`macos-26`** runner pinned to **Xcode 26.5**
+(`XCODE_VERSION`), whose iOS 26.5 SDK is the newest available on GitHub-hosted
+runners. The app's deployment target (`project.yml`) is kept at **iOS 26.5** to
+match — bumping one means bumping the other.
+
 ## Required credentials
 
 Configure under **Settings → Secrets and variables → Actions**.

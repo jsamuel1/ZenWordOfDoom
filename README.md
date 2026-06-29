@@ -44,7 +44,7 @@ contains the full design and technical specification.
 
 ## Tech Stack (proposed)
 
-- **Swift 5.9+ / iOS 17+**
+- **Swift 5.9+ / iOS 26.5** (app target; the pure-Swift cores build for iOS 17+)
 - **SwiftUI** for chrome, menus, and HUD
 - **SpriteKit** for the wheel, word-trace overlay, grid, and animated scenes
 - **Speech** framework for on-device voice input

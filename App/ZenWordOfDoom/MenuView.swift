@@ -38,12 +38,27 @@ struct MenuView: View {
 
                 VStack(spacing: 16) {
                     Button {
-                        router.push(.levelSelect)
+                        // Drop straight into the next level to play; if every
+                        // level is cleared there's nothing new, so show the list.
+                        if let next = store.nextUnclearedLevelID {
+                            router.push(.game(levelID: next))
+                        } else {
+                            router.push(.levelSelect)
+                        }
                     } label: {
                         Label("Play", systemImage: "leaf.fill")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+
+                    Button {
+                        router.push(.levelSelect)
+                    } label: {
+                        Label("Select Level", systemImage: "square.grid.2x2.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
                     .controlSize(.large)
 
                     Button {

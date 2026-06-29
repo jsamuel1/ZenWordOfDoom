@@ -1,6 +1,6 @@
 # Zen Word of Doom — Game Design & Functional Specification
 
-- **Platform:** iPhone (iOS 17+), Swift, portrait-first
+- **Platform:** iPhone (iOS 26.5), Swift, portrait-first
 - **Genre:** Word puzzle (anagram + crossword hybrid) with atmospheric reveal
 - **Session length:** 2–10 minutes per level; designed for both short and long play
 - **Status:** Specification (no code yet)
@@ -227,6 +227,11 @@ not a loading screen.
 - **Level packs** themed by Zen scene (Garden, Pond, Grove, Peak…), each with a
   signature creature.
 - Difficulty ramps wheel size within and across packs (5 → 9).
+- **Linear unlock** — levels play in pack order; a level unlocks only once the
+  preceding level is cleared. The home screen's **Play** drops the player
+  straight into their next uncleared level, while **Select Level** opens the
+  full list where cleared and unlocked levels are selectable and locked levels
+  are shown but disabled.
 - **Serenity** (soft currency) earned from words, bonus words, and clears;
   spent on hints and cosmetic scene unlocks.
 - **Daily puzzle** — one fixed-seed level per day.

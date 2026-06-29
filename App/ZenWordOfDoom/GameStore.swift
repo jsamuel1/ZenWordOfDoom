@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import GameCore
+import LevelKit
 
 /// Owns the persisted `SaveState` and the rules for mutating it. Backed by a
 /// JSON file in Application Support; every mutation persists immediately.
@@ -82,5 +83,28 @@ final class GameStore: ObservableObject {
         state.serenity -= amount
         save()
         return true
+    }
+
+    // MARK: - Progression
+
+    /// Whether `levelID` has ever been cleared.
+    func isCleared(_ levelID: String) -> Bool {
+        state.progress[levelID]?.cleared ?? false
+    }
+
+    /// Whether the player may enter `levelID`. Levels unlock linearly: the first
+    /// level in play order is always open; every later level opens once the
+    /// level immediately before it has been cleared.
+    func isUnlocked(_ levelID: String) -> Bool {
+        let order = LevelLibrary.orderedLevelIDs()
+        guard let idx = order.firstIndex(of: levelID) else { return false }
+        return idx == 0 || isCleared(order[idx - 1])
+    }
+
+    /// The level the player should drop into when they just tap "Play": the
+    /// first level in play order they have not yet cleared. `nil` once every
+    /// level is cleared.
+    var nextUnclearedLevelID: String? {
+        LevelLibrary.orderedLevelIDs().first { !isCleared($0) }
     }
 }
