@@ -10,6 +10,26 @@ public struct LetterTile: Identifiable, Equatable, Hashable, Codable, Sendable {
         self.id = id
         self.letter = Character(String(letter).uppercased())
     }
+
+    // `Character` is not Codable, so encode the letter as a String.
+    private enum CodingKeys: String, CodingKey { case id, letter }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(Int.self, forKey: .id)
+        let s = try c.decode(String.self, forKey: .letter)
+        guard let ch = s.uppercased().first else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .letter, in: c, debugDescription: "empty letter")
+        }
+        self.letter = ch
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(String(letter), forKey: .letter)
+    }
 }
 
 /// The wheel of 5...9 letters. `size` is the maximum word length, N.
