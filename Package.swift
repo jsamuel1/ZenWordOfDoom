@@ -10,14 +10,22 @@ let package = Package(
     products: [
         .library(name: "GameCore", targets: ["GameCore"]),
         .library(name: "WordEngine", targets: ["WordEngine"]),
+        .library(name: "LevelKit", targets: ["LevelKit"]),
     ],
     targets: [
         // Pure rules/models — no Apple-UI dependencies, runs anywhere.
         .target(name: "GameCore"),
         // Dictionary / word validation. Depends on GameCore protocols.
         .target(name: "WordEngine", dependencies: ["GameCore"]),
+        // Level/cut-scene/pack data + loader + validator. Bundles JSON content.
+        .target(
+            name: "LevelKit",
+            dependencies: ["GameCore"],
+            resources: [.process("Resources")]
+        ),
 
         .testTarget(name: "GameCoreTests", dependencies: ["GameCore"]),
         .testTarget(name: "WordEngineTests", dependencies: ["WordEngine", "GameCore"]),
+        .testTarget(name: "LevelKitTests", dependencies: ["LevelKit", "GameCore", "WordEngine"]),
     ]
 )

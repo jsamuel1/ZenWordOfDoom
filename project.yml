@@ -33,6 +33,8 @@ targets:
         product: GameCore
       - package: ZenWordOfDoomKit
         product: WordEngine
+      - package: ZenWordOfDoomKit
+        product: LevelKit
 
 schemes:
   ZenWordOfDoom:

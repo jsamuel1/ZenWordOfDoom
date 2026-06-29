@@ -1,0 +1,86 @@
+import Foundation
+import Combine
+import GameCore
+
+/// Owns the persisted `SaveState` and the rules for mutating it. Backed by a
+/// JSON file in Application Support; every mutation persists immediately.
+@MainActor
+final class GameStore: ObservableObject {
+    @Published private(set) var state: SaveState
+
+    private let fileURL: URL
+
+    init() {
+        let fm = FileManager.default
+        let base = (try? fm.url(for: .applicationSupportDirectory,
+                                in: .userDomainMask,
+                                appropriateFor: nil,
+                                create: true))
+            ?? fm.temporaryDirectory
+        self.fileURL = base.appendingPathComponent("ZenWordOfDoom.save.json")
+
+        if let data = try? Data(contentsOf: fileURL),
+           let decoded = try? JSONDecoder().decode(SaveState.self, from: data) {
+            self.state = decoded
+        } else {
+            self.state = SaveState()
+        }
+    }
+
+    /// Persist the current state to disk. Failures are swallowed — a missing
+    /// save is recoverable (empty profile) and never worth crashing for.
+    func save() {
+        guard let data = try? JSONEncoder().encode(state) else { return }
+        try? data.write(to: fileURL, options: [.atomic])
+    }
+
+    /// Record a cleared level: updates per-level progress, lifetime stats, the
+    /// bestiary, and awards serenity. Idempotent-ish — best score / best bonus
+    /// only ever improve.
+    func recordClear(level: Level,
+                     score: Int,
+                     bonusWords: Int,
+                     usedHint: Bool,
+                     creatureRevealed: Bool) {
+        let wasCleared = state.progress[level.id]?.cleared ?? false
+
+        var progress = state.progress[level.id] ?? LevelProgress(levelID: level.id)
+        progress.cleared = true
+        progress.bestScore = max(progress.bestScore, score)
+        progress.bonusWordsFound = max(progress.bonusWordsFound, bonusWords)
+        // noHint stays true only if it was a clean clear at least once.
+        progress.noHint = progress.noHint || !usedHint
+        state.progress[level.id] = progress
+
+        state.stats.recordClear()
+
+        if creatureRevealed, state.bestiary[level.creatureID] == nil {
+            state.bestiary[level.creatureID] = BestiaryEntry(
+                creatureID: level.creatureID,
+                firstRevealedLevelID: level.id
+            )
+            state.stats.creaturesRevealed = state.bestiary.count
+        }
+
+        // Serenity reward: base for a clear, more for a first-time clear.
+        addSerenity(wasCleared ? 5 : 10)
+
+        save()
+    }
+
+    func addSerenity(_ amount: Int) {
+        guard amount != 0 else { return }
+        state.serenity = max(0, state.serenity + amount)
+        save()
+    }
+
+    /// Spend serenity if affordable. Returns `false` (and changes nothing) when
+    /// the player can't afford it.
+    @discardableResult
+    func spendSerenity(_ amount: Int) -> Bool {
+        guard amount >= 0, state.serenity >= amount else { return false }
+        state.serenity -= amount
+        save()
+        return true
+    }
+}
