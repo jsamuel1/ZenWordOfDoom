@@ -30,44 +30,49 @@ Triggered by pushing a version tag `vX.Y.Z`, or manually (choose `testflight`
 or `appstore`). It generates the project, archives, exports a signed `.ipa`,
 and uploads to App Store Connect / TestFlight.
 
-It **self-skips** (with a warning, exit 0) if the signing/App Store Connect
-secrets below are absent — so tagging is safe before credentials are set up.
+It **self-skips** (with a warning, exit 0) if the signing secret below is
+absent — so tagging is safe before credentials are set up.
 
 ## Required credentials
 
+The workflow uses **automatic (cloud) code signing** via an App Store Connect
+API key. Xcode fetches/generates the distribution certificate and provisioning
+profile on the fly, so there is **no `.p12`, `.mobileprovision`, or keychain**
+to manage — just one secret plus a few non-sensitive identifiers.
+
 Configure under **Settings → Secrets and variables → Actions**.
 
-### Secrets (sensitive)
+### Secret (sensitive — the only one)
 
 | Name | What it is | Where to get it |
 | --- | --- | --- |
-| `APP_STORE_CONNECT_KEY_ID` | API key ID (e.g. `2X9R4HXF34`) | App Store Connect → Users and Access → Integrations → App Store Connect API → generate a key |
-| `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID (UUID) | Same page, shown above the keys table |
-| `APP_STORE_CONNECT_KEY_P8` | Full contents of the downloaded `AuthKey_XXXX.p8` | Downloaded once when you create the key (paste the whole text, `-----BEGIN…` to `…END-----`) |
-| `BUILD_CERTIFICATE_BASE64` | base64 of your **Apple Distribution** certificate `.p12` | Export the cert+key from Keychain Access as `.p12`, then `base64 -i dist.p12 \| pbcopy` |
-| `P12_PASSWORD` | Password you set when exporting the `.p12` | You choose it at export time |
-| `PROVISIONING_PROFILE_BASE64` | base64 of the App Store `.mobileprovision` | Apple Developer → Profiles → create an App Store profile for the bundle id, then `base64 -i profile.mobileprovision \| pbcopy` |
-| `APPLE_TEAM_ID` | 10-char Team ID (e.g. `AB12CD34EF`) | Apple Developer → Membership |
-| `KEYCHAIN_PASSWORD` | Any throwaway string | Invent one; only used to unlock the ephemeral CI keychain |
+| `APP_STORE_CONNECT_KEY_P8` | Full contents of the downloaded `AuthKey_XXXX.p8` | Downloaded **once** when you create the key (paste the whole text, `-----BEGIN…` to `…END-----`). If lost, generate a new key. |
 
-### Variables (non-sensitive)
+> The private key (`.p8`) is the sensitive part — only ever paste it into this
+> secret, never into a file, commit, issue, or chat. The two ids below are not
+> secret, but keep them as **Variables** rather than committing them to a
+> public repo.
 
-| Name | Default | Purpose |
+### Variables (non-sensitive identifiers)
+
+| Name | Example | Where to get it |
 | --- | --- | --- |
-| `APP_BUNDLE_ID` | — | e.g. `com.yourcompany.zenwordofdoom` (must match `project.yml` + the profile) |
-| `PROVISIONING_PROFILE_NAME` | — | The profile's **name** as shown in the Developer portal |
-| `APP_SCHEME` | `ZenWordOfDoom` | Xcode scheme |
-| `XCODE_VERSION` | pinned in workflow | Toolchain override |
+| `APP_STORE_CONNECT_KEY_ID` | `YH4RWCPJB6` | App Store Connect → Users and Access → Integrations → App Store Connect API (the key's row) |
+| `APP_STORE_CONNECT_ISSUER_ID` | `69a6de96-…` (UUID) | Same page, shown above the keys table |
+| `APPLE_TEAM_ID` | `AB12CD34EF` | Apple Developer → Membership |
+| `APP_BUNDLE_ID` | `com.yourco.zenwordofdoom` | Must match the app record + `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` |
+| `APP_SCHEME` | `ZenWordOfDoom` (default) | Xcode scheme (optional) |
+| `XCODE_VERSION` | pinned in workflow | Toolchain override (optional) |
 
 ### One-time Apple setup checklist
 1. Enroll in the Apple Developer Program ($99/yr) — required to upload builds.
 2. Register the **bundle id** (`APP_BUNDLE_ID`) in the Developer portal and
    create the app record in App Store Connect.
-3. Create an **Apple Distribution** certificate; export it as `.p12`.
-4. Create an **App Store** provisioning profile for that bundle id.
-5. Create an **App Store Connect API key** (Admin or App Manager role).
-6. Update `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` to your bundle id.
-7. Add the secrets/variables above. Push a tag `v0.1.0` to publish.
+3. Create an **App Store Connect API key** with the **App Manager** role
+   (Users and Access → Integrations). Save the `.p8`.
+4. Update `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` to your bundle id.
+5. Add the secret + variables above. Push a tag `v0.1.0` to publish.
 
-> Until step 7 is done, `release.yml` no-ops safely and `ci.yml` still builds
-> and tests every push.
+> The API key role must be **App Manager** (or Admin) so it can manage signing
+> assets for `-allowProvisioningUpdates`. Until step 5 is done, `release.yml`
+> no-ops safely and `ci.yml` still builds and tests every push.

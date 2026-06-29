@@ -28,6 +28,9 @@ targets:
         INFOPLIST_FILE: App/ZenWordOfDoom/Info.plist
         TARGETED_DEVICE_FAMILY: "1" # iPhone
         SWIFT_VERSION: "5.9"
+        # Automatic (cloud) signing — release.yml drives it with an App Store
+        # Connect API key; locally, set your team in Xcode's Signing tab.
+        CODE_SIGN_STYLE: Automatic
     dependencies:
       - package: ZenWordOfDoomKit
         product: GameCore
