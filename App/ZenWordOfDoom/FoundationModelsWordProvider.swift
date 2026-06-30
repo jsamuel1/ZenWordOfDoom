@@ -41,8 +41,21 @@ struct FoundationModelsWordProvider: ThemedWordProvider {
         spelled using ONLY those letters (each letter used no more times than it appears). \
         Prefer \(flavor) words. Only real words. No proper nouns, no names, no made-up words.
         """
-        let session = LanguageModelSession()
-        let response = try await session.respond(to: prompt, generating: WordList.self)
-        return response.content.words
+        // Race generation against a deadline so a stuck on-device model can never
+        // hang the level loader. Any timeout/throw funnels through the caller's
+        // `try?` to the deterministic floor.
+        return try await withThrowingTaskGroup(of: [String].self) { group in
+            group.addTask {
+                let session = LanguageModelSession()
+                let response = try await session.respond(to: prompt, generating: WordList.self)
+                return response.content.words
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(20))
+                throw CancellationError()
+            }
+            defer { group.cancelAll() }
+            return try await group.next() ?? []
+        }
     }
 }
