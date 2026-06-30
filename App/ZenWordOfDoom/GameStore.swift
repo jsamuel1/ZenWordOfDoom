@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 import GameCore
-import LevelKit
+import LevelGen
 
 /// Owns the persisted `SaveState` and the rules for mutating it. Backed by a
 /// JSON file in Application Support; every mutation persists immediately.
@@ -10,6 +10,7 @@ final class GameStore: ObservableObject {
     @Published private(set) var state: SaveState
 
     private let fileURL: URL
+    private let library = ProceduralLevelLibrary.standard
 
     init() {
         let fm = FileManager.default
@@ -92,19 +93,21 @@ final class GameStore: ObservableObject {
         state.progress[levelID]?.cleared ?? false
     }
 
-    /// Whether the player may enter `levelID`. Levels unlock linearly: the first
-    /// level in play order is always open; every later level opens once the
-    /// level immediately before it has been cleared.
+    /// Levels unlock linearly: order 0 is always open; every later level opens
+    /// once the level immediately before it (by play order) has been cleared.
     func isUnlocked(_ levelID: String) -> Bool {
-        let order = LevelLibrary.orderedLevelIDs()
-        guard let idx = order.firstIndex(of: levelID) else { return false }
-        return idx == 0 || isCleared(order[idx - 1])
+        guard let order = library.order(forID: levelID) else { return false }
+        return order == 0 || isCleared(library.id(atOrder: order - 1))
     }
 
-    /// The level the player should drop into when they just tap "Play": the
-    /// first level in play order they have not yet cleared. `nil` once every
-    /// level is cleared.
+    /// The first level in play order the player has not yet cleared.
     var nextUnclearedLevelID: String? {
-        LevelLibrary.orderedLevelIDs().first { !isCleared($0) }
+        var order = 0
+        while order < 100_000 {            // safety bound; player can't clear ∞
+            let id = library.id(atOrder: order)
+            if !isCleared(id) { return id }
+            order += 1
+        }
+        return nil
     }
 }
