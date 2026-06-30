@@ -35,9 +35,21 @@ struct BestiaryView: View {
         let revealed = entry != nil
 
         HStack(spacing: 12) {
-            Image(systemName: revealed ? "pawprint.fill" : "questionmark.circle")
-                .imageScale(.large)
-                .foregroundStyle(revealed ? Color.red.opacity(0.8) : Color.secondary)
+            Group {
+                if revealed {
+                    GeneratedImageView(request: VisualRequest(id: creatureID, theme: .doom, kind: .creature),
+                                       maxPixel: 96) {
+                        ProceduralPortrait(creatureID: creatureID)
+                    }
+                } else {
+                    Image(systemName: "questionmark.circle")
+                        .imageScale(.large)
+                        .foregroundStyle(Color.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(width: 44, height: 44)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(revealed ? displayName(for: creatureID) : "Not yet revealed")
