@@ -3,7 +3,7 @@ import GameCore
 @testable import LevelGen
 
 final class SolvabilitySweepTests: XCTestCase {
-    func test_first50LevelsAreValid() {
+    func test_first50LevelsAreValid() async throws {
         let pools = ThemePools(
             scenes: [.zen: ["garden", "pond"], .doom: ["crypt", "abyss"]],
             creatures: [.zen: ["koi", "crane"], .doom: ["shoggoth", "vampire"]]
@@ -11,7 +11,7 @@ final class SolvabilitySweepTests: XCTestCase {
         let lib = ProceduralLevelLibrary(packSize: 10)
         let gen = ProceduralGenerator(wordProvider: DeterministicWordProvider(), pools: pools)
         for order in 0..<50 {
-            let level = gen.level(for: lib.seed(atOrder: order))
+            let level = try await gen.level(for: lib.seed(atOrder: order))
             XCTAssertGreaterThanOrEqual(level.slots.count, 1, "order \(order): empty grid")
             let multiset = level.wheel.multiset
             for slot in level.slots {

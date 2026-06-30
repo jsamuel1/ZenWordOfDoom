@@ -17,11 +17,12 @@ public struct ProceduralGenerator: Sendable {
         self.pools = pools
     }
 
-    public func level(for seed: LevelSeed) -> Level {
+    public func level(for seed: LevelSeed) async throws -> Level {
         let wheel = WheelPicker.wheel(theme: seed.theme, band: seed.band, index: seed.index)
-        let pool = wordProvider.words(forWheel: wheel, theme: seed.theme, limit: Self.maxSlots * 3)
+        let pool = try await wordProvider.words(forWheel: wheel, theme: seed.theme, limit: Self.maxSlots * 3)
         let layoutSeed = WheelPicker.seed(theme: seed.theme, band: seed.band, index: seed.index) ^ 0x5EED
         let slots = layout.layout(words: pool, maxSlots: Self.maxSlots, seed: layoutSeed)
+        precondition(!slots.isEmpty, "ProceduralGenerator produced an empty grid for seed \(seed.id); word pool size \(pool.count)")
         let visual = SceneCreaturePicker(pools: pools).pick(theme: seed.theme, index: seed.index)
         return Level(
             id: seed.id,

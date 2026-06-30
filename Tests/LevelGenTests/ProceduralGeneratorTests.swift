@@ -12,17 +12,17 @@ final class ProceduralGeneratorTests: XCTestCase {
         ProceduralGenerator(wordProvider: DeterministicWordProvider(), pools: pools)
     }
 
-    func test_levelIsDeterministicForSameSeed() {
+    func test_levelIsDeterministicForSameSeed() async throws {
         let seed = LevelSeed(theme: .zen, band: .medium, index: 2)
-        let a = makeGen().level(for: seed)
-        let b = makeGen().level(for: seed)
+        let a = try await makeGen().level(for: seed)
+        let b = try await makeGen().level(for: seed)
         XCTAssertEqual(a.id, b.id)
         XCTAssertEqual(a.wheel.tiles.map(\.letter), b.wheel.tiles.map(\.letter))
         XCTAssertEqual(a.slots.map(\.answer), b.slots.map(\.answer))
     }
 
-    func test_everySlotWordIsBuildableFromWheel_andGridNonEmpty() {
-        let level = makeGen().level(for: LevelSeed(theme: .doom, band: .hard, index: 0))
+    func test_everySlotWordIsBuildableFromWheel_andGridNonEmpty() async throws {
+        let level = try await makeGen().level(for: LevelSeed(theme: .doom, band: .hard, index: 0))
         XCTAssertFalse(level.slots.isEmpty)
         let multiset = level.wheel.multiset
         for slot in level.slots {
@@ -30,8 +30,8 @@ final class ProceduralGeneratorTests: XCTestCase {
         }
     }
 
-    func test_idEncodesSeed() {
-        let level = makeGen().level(for: LevelSeed(theme: .doom, band: .hard, index: 5))
+    func test_idEncodesSeed() async throws {
+        let level = try await makeGen().level(for: LevelSeed(theme: .doom, band: .hard, index: 5))
         XCTAssertEqual(level.id, "doom-hard-5")
     }
 }

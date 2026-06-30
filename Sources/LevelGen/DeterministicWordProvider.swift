@@ -7,7 +7,7 @@ public struct DeterministicWordProvider: ThemedWordProvider {
     private let minLength: Int
     public init(minLength: Int = 3) { self.minLength = minLength }
 
-    public func words(forWheel wheel: Wheel, theme: Theme, limit: Int) -> [String] {
+    public func words(forWheel wheel: Wheel, theme: Theme, limit: Int) async throws -> [String] {
         let lexicon = ThemeLexicon.shared
         let buildable = GeneralWordList.shared.buildableWords(from: wheel.multiset, minLength: minLength)
         return buildable.sorted { a, b in
