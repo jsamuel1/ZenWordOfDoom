@@ -10,6 +10,26 @@ public struct ThemePools: Sendable {
     }
 }
 
+public extension ThemePools {
+    /// Default curated themed asset ids. Slugs are evocative and IP-free so a
+    /// later image-generation source can map them to prompts within content
+    /// guardrails (mood over monsters).
+    static let zenDoom = ThemePools(
+        scenes: [
+            .zen: ["still-pond", "moss-garden", "bamboo-grove", "misty-peak",
+                   "lantern-path", "sand-ripples", "willow-bank"],
+            .doom: ["sunken-crypt", "black-abyss", "thorn-hollow", "ruined-shrine",
+                    "ashen-moor", "drowned-temple", "ember-catacomb"],
+        ],
+        creatures: [
+            .zen: ["koi-spirit", "stone-guardian", "crane-shade", "lotus-wisp",
+                   "moss-golem", "paper-fox"],
+            .doom: ["deep-tentacle", "gloom-eye", "bone-wraith", "mask-fiend",
+                    "thorn-revenant", "ash-maw"],
+        ]
+    )
+}
+
 public struct SceneCreaturePicker: Sendable {
     private let pools: ThemePools
     public init(pools: ThemePools) { self.pools = pools }
