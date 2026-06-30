@@ -195,3 +195,28 @@ no changes to generation or gameplay.
   existing tests and `LevelLibrary`; the plan must update these.
 - **Theme cadence** (alternating packs vs per-level) is a tunable default, not a
   hard requirement.
+
+## 13. Design revision (2026-06-30): general corpus + theme scoring
+
+Supersedes the "curated themed family lists" approach in §4–§6 and §10. The
+deterministic word source is now:
+
+- **`GeneralWordList`** — bundles the public-domain **ENABLE** word list,
+  filtered to 3–9 letter words (`Sources/LevelGen/Resources/words.txt`, ~105k
+  words). Provides every real word **buildable** from a wheel, guaranteeing
+  rich grids without hand-authored families. (dwyl/english-words was evaluated
+  and rejected: it both omits common words and is full of obscure junk.)
+- **`ThemeLexicon`** — small curated Zen/Doom anchor lists
+  (`seed-zen.txt`/`seed-doom.txt`, atmospheric real words spanning lengths 5–9,
+  verified present in the corpus). Used for (a) base-word selection by
+  `WheelPicker` and (b) theme **scoring**.
+- **`DeterministicWordProvider`** (replaces `SeedListWordProvider`) — returns
+  words from `GeneralWordList` buildable from the wheel, ranked by a theme score
+  (lexicon membership / thematic affinity) then length, so atmospheric words are
+  preferred as grid answers and the rest remain valid bonus words.
+
+`ThemedSeedList` is replaced by `GeneralWordList` + `ThemeLexicon`. "All real
+words" is now guaranteed by the bundled corpus itself (no separate dictionary
+test needed for the seed list). Everything else (seeded wheel, layout engine,
+scene/creature, generator, library, stability/caching, FM as the cached primary
+provider with this deterministic path as fallback + top-up) is unchanged.

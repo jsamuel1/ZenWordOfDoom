@@ -272,9 +272,10 @@ not a loading screen.
 
 ## 11. Content & data
 
-- **Dictionary:** a curated, bundled word list (e.g. an open ENABLE/TWL-style
-  list, license-checked) for validation, stored as a compact prefix structure
-  (trie / DAWG) for fast membership + "is this buildable" checks.
+- **Dictionary:** runtime word validation uses **iOS's built-in dictionary**
+  (`UITextChecker`), so no word list needs to be bundled or licensed for
+  validation. A small curated list is kept only for authoring/validating level
+  content and tests.
 - **Profanity / safe-word filtering:** offensive words are accepted for
   validation if real, but never required as grid answers; a configurable
   filter can hide them from bonus tallies.
@@ -295,7 +296,9 @@ not a loading screen.
 
 ## 13. Open questions
 
-1. Word list license — confirm a permissively licensed dictionary.
+1. ~~Word list license — confirm a permissively licensed dictionary.~~
+   Resolved: runtime validation uses the iOS built-in dictionary
+   (`UITextChecker`); a bundled list is only needed for authored content.
 2. Art pipeline — are creatures hand-painted per scene or composited from a
    shared shader/mask system? (Affects how the reveal is implemented.)
 3. Voice matching strictness — accept homophones? Best-candidate vs. exact?

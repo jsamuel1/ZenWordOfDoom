@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "GameCore", targets: ["GameCore"]),
         .library(name: "WordEngine", targets: ["WordEngine"]),
         .library(name: "LevelKit", targets: ["LevelKit"]),
+        .library(name: "LevelGen", targets: ["LevelGen"]),
     ],
     targets: [
         // Pure rules/models — no Apple-UI dependencies, runs anywhere.
@@ -23,9 +24,16 @@ let package = Package(
             dependencies: ["GameCore"],
             resources: [.process("Resources")]
         ),
+        // Procedural level generation.
+        .target(
+            name: "LevelGen",
+            dependencies: ["GameCore"],
+            resources: [.process("Resources")]
+        ),
 
         .testTarget(name: "GameCoreTests", dependencies: ["GameCore"]),
         .testTarget(name: "WordEngineTests", dependencies: ["WordEngine", "GameCore"]),
         .testTarget(name: "LevelKitTests", dependencies: ["LevelKit", "GameCore", "WordEngine"]),
+        .testTarget(name: "LevelGenTests", dependencies: ["LevelGen", "GameCore"]),
     ]
 )
