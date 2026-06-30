@@ -80,23 +80,30 @@ public final class GameEngine {
         if foundWords.contains(word) {
             return .invalid(.alreadyFound)
         }
-        guard validator.isValidWord(word) else {
-            return .invalid(.notInDictionary)
-        }
 
-        foundWords.insert(word)
-
-        let pangram = isPangram(word)
-        if pangram { pangramCount += 1 }
-
-        // Fill any unsolved grid slots whose answer matches.
+        // A word matching an unsolved grid answer is authoritative: the level
+        // generator already guaranteed it is a real, buildable word, so it fills
+        // the slot WITHOUT consulting the runtime dictionary — whose word list
+        // (iOS's UITextChecker) can differ from the corpus the level was built
+        // from, which would otherwise make some answers impossible to enter. The
+        // dictionary only gates bonus words (anything not in the grid).
         let matches = level.slots.filter { $0.answer == word && !solvedSlotIDs.contains($0.id) }
+
         if matches.isEmpty {
+            guard validator.isValidWord(word) else {
+                return .invalid(.notInDictionary)
+            }
+            foundWords.insert(word)
+            if isPangram(word) { pangramCount += 1 }
             bonusWords.append(word)
             score += Scoring.bonusScore(length: word.count)
             bumpStir(by: 0.02)
             return .bonusWord(word)
         }
+
+        foundWords.insert(word)
+        let pangram = isPangram(word)
+        if pangram { pangramCount += 1 }
 
         for slot in matches {
             solvedSlotIDs.insert(slot.id)

@@ -34,6 +34,32 @@ final class GameEngineTests: XCTestCase {
         XCTAssertEqual(engine().submit("TOED"), .invalid(.notInDictionary))
     }
 
+    func testGridAnswerAcceptedEvenWhenValidatorRejectsIt() {
+        // The level generator (ENABLE corpus) can place a word the runtime
+        // dictionary (UITextChecker) doesn't know; matching a grid answer must
+        // still fill it, or the level would be impossible to complete.
+        let wheel = Wheel(letters: "STILL")
+        let slot = GridSlot(id: 0, answer: "LITS",
+                            origin: GridCoord(row: 0, col: 0), direction: .across)
+        let level = Level(id: "t", wheel: wheel, slots: [slot],
+                          sceneID: "s", creatureID: "c")
+        let e = GameEngine(level: level, validator: StubValidator(valid: []))
+        XCTAssertEqual(e.submit("LITS"), .filledSlots([0]))
+        XCTAssertTrue(e.isComplete)
+    }
+
+    func testBonusWordStillRequiresDictionary() {
+        // A buildable word that is NOT a grid answer must still pass the
+        // dictionary to count as a bonus.
+        let wheel = Wheel(letters: "STILL")
+        let slot = GridSlot(id: 0, answer: "STILL",
+                            origin: GridCoord(row: 0, col: 0), direction: .across)
+        let level = Level(id: "t", wheel: wheel, slots: [slot],
+                          sceneID: "s", creatureID: "c")
+        let e = GameEngine(level: level, validator: StubValidator(valid: []))
+        XCTAssertEqual(e.submit("LIST"), .invalid(.notInDictionary))
+    }
+
     func testFillsMatchingSlot() {
         let e = engine()
         XCTAssertEqual(e.submit("STONE"), .filledSlots([0]))
