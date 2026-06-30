@@ -43,16 +43,28 @@ actor ImagePlaygroundVisualProvider: SceneVisualProvider {
             ? VisualPrompts.prompt(forSceneID: request.id, theme: request.theme)
             : VisualPrompts.prompt(forCreatureID: request.id, theme: request.theme)
 
-        do {
-            for try await created in creator.images(for: [.text(prompt)], style: style, limit: 1) {
-                let scaled = created.cgImage.downscaled(maxPixel: maxPixel) ?? created.cgImage
-                VisualCache.shared.store(scaled, forKey: cacheKey)
-                return scaled
+        // Bound generation so a stuck model can't leave a long-running task
+        // behind the (already-shown) procedural fallback.
+        return await withTaskGroup(of: CGImage?.self) { group in
+            group.addTask {
+                do {
+                    for try await created in creator.images(for: [.text(prompt)], style: style, limit: 1) {
+                        let scaled = created.cgImage.downscaled(maxPixel: maxPixel) ?? created.cgImage
+                        VisualCache.shared.store(scaled, forKey: cacheKey)
+                        return scaled
+                    }
+                } catch {
+                    return nil
+                }
+                return nil
             }
-        } catch {
-            return nil
+            group.addTask {
+                try? await Task.sleep(for: .seconds(30))
+                return nil
+            }
+            defer { group.cancelAll() }
+            return await group.next() ?? nil
         }
-        return nil
     }
 }
 
