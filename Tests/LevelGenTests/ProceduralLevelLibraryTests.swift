@@ -23,4 +23,36 @@ final class ProceduralLevelLibraryTests: XCTestCase {
         XCTAssertEqual(lib.seed(forID: seed.id)?.id, seed.id)
         XCTAssertNil(lib.seed(forID: "nonsense-id-x"))
     }
+
+    func testOrderIDRoundTrip() {
+        let lib = ProceduralLevelLibrary()
+        for order in [0, 1, 9, 10, 25, 100] {
+            let id = lib.id(atOrder: order)
+            XCTAssertEqual(lib.order(forID: id), order)
+        }
+    }
+    func testNextIDAdvancesByOne() {
+        let lib = ProceduralLevelLibrary()
+        let id5 = lib.id(atOrder: 5)
+        XCTAssertEqual(lib.nextID(after: id5), lib.id(atOrder: 6))
+    }
+    func testNextIDNilForUnknownID() {
+        XCTAssertNil(ProceduralLevelLibrary().nextID(after: "not-a-real-id"))
+    }
+    func testIDsThroughIsContiguous() {
+        let lib = ProceduralLevelLibrary()
+        let ids = lib.ids(through: 12)
+        XCTAssertEqual(ids.count, 13)
+        XCTAssertEqual(ids.first, lib.id(atOrder: 0))
+        XCTAssertEqual(ids.last, lib.id(atOrder: 12))
+    }
+    func testWheelSizeForIDMatchesBand() {
+        let lib = ProceduralLevelLibrary()
+        let id = lib.id(atOrder: 0)
+        XCTAssertEqual(lib.wheelSize(forID: id), WheelPicker.wheelLength(for: .easy))
+    }
+    func testStandardIsUsable() {
+        XCTAssertEqual(ProceduralLevelLibrary.standard.id(atOrder: 0),
+                       ProceduralLevelLibrary().id(atOrder: 0))
+    }
 }
