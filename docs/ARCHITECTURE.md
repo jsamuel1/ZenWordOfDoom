@@ -16,7 +16,7 @@ validation, input resolution, the reveal engine).
 | Game scene (wheel, grid, trace, FX) | **SpriteKit** | 2D node graph, physics-lite, shaders, great for the wheel + reveal animations; embedded via `SpriteView` |
 | Reveal / scene FX | **SpriteKit + `SKShader` / Core Image** | Mask-based creature reveal driven by a single `stir` uniform |
 | Voice | **Speech (`SFSpeechRecognizer`)** + **AVFoundation** | On-device recognition, mic capture |
-| Dictionary | **Bundled DAWG/trie** | O(word length) membership + buildability checks, small footprint |
+| Dictionary | **iOS built-in (`UITextChecker`)** | System dictionary for runtime word validation — no bundled list or license needed |
 | Persistence | **SwiftData** (or Codable + files) | Progress, settings, stats; CloudKit-syncable |
 | Packaging | **Swift Package Manager** | Modular targets, no CocoaPods needed |
 | Audio | **AVAudioEngine** | Layered ambient + reactive Doom stinger bus |
@@ -115,23 +115,29 @@ pipeline.
 
 ## 4. WordEngine
 
-- **Storage:** a **DAWG** (directed acyclic word graph) or compressed trie built
-  offline from the curated word list and bundled as a binary asset. Gives:
-  - `contains(word) -> Bool` in O(len).
-  - Prefix walks for the (optional) level generator and anagram search.
+- **Runtime validation ("is this a real word"):** uses **iOS's built-in
+  dictionary** via `UITextChecker` (the system spell-checker). No bundled word
+  list or license is needed for validation. Because `UITextChecker` is a UIKit
+  API, the `WordValidating` conformance (`SystemDictionary`) lives in the **app
+  target**, keeping the pure-Swift cores platform-agnostic. (Gotcha: lowercase
+  the word first — `UITextChecker` skips all-uppercase tokens as acronyms.)
+- **Curated word list:** `WordEngine` still ships a small word list
+  (`SampleWords`) used for **level authoring / content validation and tests** —
+  not for runtime validation.
 - **Buildability:** `canBuild(word, from: multiset) -> Bool` via letter-count
-  subtraction; cheap and independent of the DAWG.
+  subtraction; cheap and independent of any dictionary.
 - **Anagram/sub-anagram search** (for generation & "all bonus words" stats):
-  DFS over the DAWG constrained by the available letter multiset.
+  constrained by the available letter multiset over the curated list.
 
 ```swift
-protocol Dictionary {
-    func contains(_ word: String) -> Bool
-    func words(buildableFrom multiset: LetterMultiset, minLength: Int) -> [String]
+protocol WordValidating {            // GameCore
+    func isValidWord(_ word: String) -> Bool
 }
 ```
 
-Word list selection (license) is an open question — see SPEC §13.
+Runtime validation is satisfied by the system dictionary, so the bundled-word-list
+license question (SPEC §13) no longer blocks validation — it only affects authored
+content.
 
 ---
 

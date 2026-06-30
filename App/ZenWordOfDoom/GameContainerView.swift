@@ -1,6 +1,5 @@
 import SwiftUI
 import GameCore
-import WordEngine
 import LevelKit
 
 /// The full play screen for one level. Resolves the level from its id, builds the
@@ -23,7 +22,7 @@ struct GameContainerView: View {
         let level = LevelLibrary.level(id: levelID) ?? SampleLevel.make()
         _model = StateObject(wrappedValue: GameViewModel(
             level: level,
-            validator: SampleWords.dictionary,
+            validator: SystemDictionary(),
             settings: settings,
             store: store
         ))
