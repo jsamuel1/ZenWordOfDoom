@@ -6,12 +6,25 @@ struct MenuView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var store: GameStore
 
+    /// Hero illustrations depicting the game's "Zen meets Doom" premise. One is
+    /// picked per launch (stable for the session) as the title screen backdrop.
+    static let titleArt = [
+        "monk-in-ruins", "doom-marine-shrine", "garden-in-the-ruins",
+        "monk-on-skulls", "mandala-and-void", "elder-and-volcano",
+    ]
+    private let backdrop = MenuView.titleArt.randomElement() ?? "monk-in-ruins"
+
     var body: some View {
         ZStack {
+            Image(backdrop)
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
             LinearGradient(
                 colors: [
-                    Color(hue: 0.33, saturation: 0.22, brightness: 0.92),
-                    Color(hue: 0.55, saturation: 0.30, brightness: 0.60),
+                    Color(hue: 0.33, saturation: 0.22, brightness: 0.92).opacity(0.35),
+                    Color(hue: 0.55, saturation: 0.30, brightness: 0.45).opacity(0.75),
                 ],
                 startPoint: .top, endPoint: .bottom
             )
