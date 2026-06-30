@@ -20,7 +20,7 @@ struct BestiaryView: View {
                     row(for: creatureID)
                 }
             } header: {
-                let revealed = store.state.bestiary.count
+                let revealed = store.state.bestiary.keys.filter { allCreatureIDs.contains($0) }.count
                 Text("\(revealed) of \(allCreatureIDs.count) revealed")
             }
         }

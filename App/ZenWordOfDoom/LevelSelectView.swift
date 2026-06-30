@@ -21,9 +21,9 @@ struct LevelSelectView: View {
     }
 
     /// `visibleIDs` chunked into packs of 10, titled by the chunk's theme · band.
-    private var sections: [(title: String, ids: [String])] {
+    private var sections: [(key: String, title: String, ids: [String])] {
         let ids = visibleIDs
-        var result: [(String, [String])] = []
+        var result: [(key: String, title: String, ids: [String])] = []
         var i = 0
         while i < ids.count {
             let chunk = Array(ids[i..<min(i + 10, ids.count)])
@@ -31,7 +31,9 @@ struct LevelSelectView: View {
                 let theme = levelService.theme(forID: first).rawValue.capitalized
                 let band = DifficultyBand(wheelSize: levelService.wheelSize(forID: first))
                     .rawValue.capitalized
-                result.append(("\(theme) · \(band)", chunk))
+                // Key by the chunk's first id so distinct packs that share a
+                // title (e.g. repeated "Zen · Master") don't collide in ForEach.
+                result.append((key: first, title: "\(theme) · \(band)", ids: chunk))
             }
             i += 10
         }
@@ -40,7 +42,7 @@ struct LevelSelectView: View {
 
     var body: some View {
         List {
-            ForEach(sections, id: \.title) { section in
+            ForEach(sections, id: \.key) { section in
                 Section {
                     ForEach(section.ids, id: \.self) { levelID in
                         levelRow(levelID: levelID)

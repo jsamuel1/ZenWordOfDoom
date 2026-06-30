@@ -56,7 +56,10 @@ final class GameStore: ObservableObject {
 
         state.stats.recordClear()
 
-        if creatureRevealed, state.bestiary[level.creatureID] == nil {
+        // Only Doom levels contribute to the bestiary (the collection of Doom
+        // creatures); Zen levels reveal a calm guardian that isn't catalogued.
+        let isDoom = library.seed(forID: level.id)?.theme == .doom
+        if creatureRevealed, isDoom, state.bestiary[level.creatureID] == nil {
             state.bestiary[level.creatureID] = BestiaryEntry(
                 creatureID: level.creatureID,
                 firstRevealedLevelID: level.id
