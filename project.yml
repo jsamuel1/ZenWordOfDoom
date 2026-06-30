@@ -46,6 +46,8 @@ targets:
         product: WordEngine
       - package: ZenWordOfDoomKit
         product: LevelKit
+      - package: ZenWordOfDoomKit
+        product: LevelGen
 
 schemes:
   ZenWordOfDoom:
