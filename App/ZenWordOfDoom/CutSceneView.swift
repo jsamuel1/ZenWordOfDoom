@@ -1,5 +1,6 @@
 import SwiftUI
 import LevelKit
+import LevelGen
 
 /// A between-levels "breath". A gently moving, asset-free procedural zen scene
 /// carries a twisted haiku displayed calmly and readably. After
@@ -12,6 +13,7 @@ import LevelKit
 /// single readable element.
 struct CutSceneView: View {
     let cutScene: CutSceneData
+    let theme: Theme
     let reducedDoom: Bool
     let reducedMotion: Bool
     let onContinue: () -> Void
@@ -26,11 +28,13 @@ struct CutSceneView: View {
 
     init(
         cutScene: CutSceneData,
+        theme: Theme,
         reducedDoom: Bool,
         reducedMotion: Bool,
         onContinue: @escaping () -> Void
     ) {
         self.cutScene = cutScene
+        self.theme = theme
         self.reducedDoom = reducedDoom
         self.reducedMotion = reducedMotion
         self.onContinue = onContinue
@@ -43,6 +47,13 @@ struct CutSceneView: View {
 
     var body: some View {
         ZStack {
+            GeneratedImageView(request: VisualRequest(id: cutScene.scene, theme: theme, kind: .scene),
+                               maxPixel: 768) {
+                Color.clear
+            }
+            .opacity(0.5)
+            .ignoresSafeArea()
+
             scene
                 .ignoresSafeArea()
 
