@@ -18,6 +18,7 @@ struct CutSceneContainerView: View {
             if let cutScene {
                 CutSceneView(
                     cutScene: cutScene,
+                    theme: levelService.theme(forID: afterLevelID),
                     reducedDoom: settings.reducedDoom,
                     reducedMotion: reduceMotion,
                     onContinue: advance
