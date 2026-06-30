@@ -34,4 +34,28 @@ final class ProceduralGeneratorTests: XCTestCase {
         let level = try await makeGen().level(for: LevelSeed(theme: .doom, band: .hard, index: 5))
         XCTAssertEqual(level.id, "doom-hard-5")
     }
+
+    func test_gridAnswersAreOverwhelminglyInteresting() async throws {
+        // Required answers should be on-theme or common words, not obscure corpus
+        // entries — obscure words only slip in on rare word-poor wheels via the
+        // fallback layout.
+        let lexicon = ThemeLexicon.shared
+        let common = CommonWords.shared
+        let lib = ProceduralLevelLibrary(packSize: 10)
+        let gen = makeGen()
+        var total = 0
+        var interesting = 0
+        for order in 0..<30 {
+            let seed = lib.seed(atOrder: order)
+            let level = try await gen.level(for: seed)
+            for slot in level.slots {
+                total += 1
+                if lexicon.contains(slot.answer, theme: seed.theme) || common.contains(slot.answer) {
+                    interesting += 1
+                }
+            }
+        }
+        XCTAssertGreaterThan(Double(interesting) / Double(total), 0.85,
+            "only \(interesting)/\(total) grid answers were themed or common")
+    }
 }
