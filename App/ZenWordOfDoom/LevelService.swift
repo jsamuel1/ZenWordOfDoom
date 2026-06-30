@@ -3,14 +3,15 @@ import GameCore
 import LevelGen
 
 /// Resolves level ids to playable `Level`s and exposes the procedural play
-/// order. Generation is async (a Foundation Models word provider slots in
-/// later); today it is deterministic and effectively instant.
+/// order. Generation is async: the default word provider uses on-device
+/// Foundation Models when available, falling back to the deterministic corpus
+/// (and to that floor on every device without Apple Intelligence).
 @MainActor
 final class LevelService: ObservableObject {
     private let library = ProceduralLevelLibrary.standard
     private let generator: ProceduralGenerator
 
-    init(wordProvider: any ThemedWordProvider = DeterministicWordProvider()) {
+    init(wordProvider: any ThemedWordProvider = FoundationModelsWordProvider()) {
         self.generator = ProceduralGenerator(wordProvider: wordProvider,
                                              pools: .zenDoom)
     }
