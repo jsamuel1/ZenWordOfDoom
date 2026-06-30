@@ -1,6 +1,6 @@
 import SwiftUI
 import GameCore
-import LevelKit
+import LevelGen
 
 /// The collection of Doom creatures. Every creature that appears across the
 /// level library is listed; those the player has revealed show their details,
@@ -8,17 +8,9 @@ import LevelKit
 struct BestiaryView: View {
     @EnvironmentObject private var store: GameStore
 
-    /// All distinct creature IDs in play order, deduplicated.
+    /// The doom creatures the player can encounter, in stable order.
     private var allCreatureIDs: [String] {
-        var seen = Set<String>()
-        var result: [String] = []
-        for levelID in LevelLibrary.orderedLevelIDs() {
-            guard let level = LevelLibrary.level(id: levelID) else { continue }
-            if seen.insert(level.creatureID).inserted {
-                result.append(level.creatureID)
-            }
-        }
-        return result
+        (ThemePools.zenDoom.creatures[.doom] ?? []).sorted()
     }
 
     var body: some View {
@@ -28,7 +20,7 @@ struct BestiaryView: View {
                     row(for: creatureID)
                 }
             } header: {
-                let revealed = store.state.bestiary.count
+                let revealed = store.state.bestiary.keys.filter { allCreatureIDs.contains($0) }.count
                 Text("\(revealed) of \(allCreatureIDs.count) revealed")
             }
         }

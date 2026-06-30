@@ -1,5 +1,4 @@
 import SwiftUI
-import LevelKit
 
 /// The app root: a single `NavigationStack` driven by `AppRouter.path`, rooted
 /// at `MenuView`. Each `Screen` maps to its destination view here.
@@ -23,7 +22,7 @@ struct ContentView: View {
         case .levelSelect:
             LevelSelectView()
         case .game(let levelID):
-            GameContainerView(levelID: levelID, settings: settings, store: store)
+            GameContainerView(levelID: levelID)
         case .cutScene(let afterLevelID):
             CutSceneContainerView(afterLevelID: afterLevelID)
         case .bestiary:

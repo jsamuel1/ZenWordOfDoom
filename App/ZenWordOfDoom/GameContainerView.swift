@@ -1,25 +1,50 @@
 import SwiftUI
 import GameCore
-import LevelKit
+import LevelGen
 
-/// The full play screen for one level. Resolves the level from its id, builds the
-/// `GameViewModel`, composes the procedural background, grid, word ribbon, wheel,
-/// and HUD, wires voice input, and on completion pushes the cut scene route.
+/// Loads the `Level` for a given id asynchronously via `LevelService`, showing a
+/// themed loader until it resolves, then renders the play UI in `GamePlayView`.
 struct GameContainerView: View {
     let levelID: String
+
+    @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var store: GameStore
+    @EnvironmentObject private var levelService: LevelService
+
+    @State private var loaded: Level?
+
+    var body: some View {
+        Group {
+            if let level = loaded {
+                GamePlayView(level: level, settings: settings, store: store)
+            } else {
+                LoadingView(theme: levelService.theme(forID: levelID))
+            }
+        }
+        .task {
+            loaded = await levelService.level(id: levelID)
+        }
+    }
+}
+
+/// The full play screen for one loaded level. Builds the `GameViewModel`, composes
+/// the procedural background, grid, word ribbon, wheel, and HUD, wires voice input,
+/// and on completion pushes the cut scene route.
+struct GamePlayView: View {
+    let level: Level
 
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: GameStore
+    @EnvironmentObject private var levelService: LevelService
 
     @StateObject private var model: GameViewModel
     @StateObject private var voice = VoiceInput()
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(levelID: String, settings: AppSettings, store: GameStore) {
-        self.levelID = levelID
-        let level = LevelLibrary.level(id: levelID) ?? SampleLevel.make()
+    init(level: Level, settings: AppSettings, store: GameStore) {
+        self.level = level
         _model = StateObject(wrappedValue: GameViewModel(
             level: level,
             validator: SystemDictionary(),
@@ -102,12 +127,14 @@ struct GameContainerView: View {
             guard complete else { return }
             Haptics.success()
             voice.stop()
-            router.push(.cutScene(afterLevelID: levelID))
+            router.push(.cutScene(afterLevelID: level.id))
         }
     }
 
     private var packTitle: String {
-        LevelLibrary.packs().first { $0.levelIDs.contains(levelID) }?.title ?? "Zen Word of Doom"
+        let theme = levelService.theme(forID: level.id).rawValue.capitalized
+        let band = level.band.rawValue.capitalized
+        return "\(theme) · \(band)"
     }
 
     private var controls: some View {
@@ -143,6 +170,17 @@ struct GameContainerView: View {
             voice.start(onResult: { transcript in
                 model.submitSpoken(transcript)
             })
+        }
+    }
+}
+
+private struct LoadingView: View {
+    let theme: Theme
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text(theme == .zen ? "Composing the garden…" : "Stirring the doom…")
+                .font(.subheadline).foregroundStyle(.secondary)
         }
     }
 }
