@@ -1,24 +1,51 @@
 import SwiftUI
 import GameCore
-import LevelKit
+import LevelGen
 
 /// Lists every pack from `LevelLibrary` and the levels within, surfacing the
 /// cleared state from the player's save. Tapping a level pushes into the game.
 struct LevelSelectView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var store: GameStore
+    @EnvironmentObject private var levelService: LevelService
 
-    private var packs: [PackData] { LevelLibrary.packs() }
+    /// Levels to show: every unlocked level (order 0 is always unlocked), plus a
+    /// few locked previews. Starts at order 0.
+    private var visibleIDs: [String] {
+        var furthest = 0
+        while furthest < 100_000, store.isUnlocked(levelService.id(atOrder: furthest)) {
+            furthest += 1
+        }
+        return levelService.ids(through: furthest + 3)
+    }
+
+    /// `visibleIDs` chunked into packs of 10, titled by the chunk's theme · band.
+    private var sections: [(title: String, ids: [String])] {
+        let ids = visibleIDs
+        var result: [(String, [String])] = []
+        var i = 0
+        while i < ids.count {
+            let chunk = Array(ids[i..<min(i + 10, ids.count)])
+            if let first = chunk.first {
+                let theme = levelService.theme(forID: first).rawValue.capitalized
+                let band = DifficultyBand(wheelSize: levelService.wheelSize(forID: first))
+                    .rawValue.capitalized
+                result.append(("\(theme) · \(band)", chunk))
+            }
+            i += 10
+        }
+        return result
+    }
 
     var body: some View {
         List {
-            ForEach(packs, id: \.id) { pack in
+            ForEach(sections, id: \.title) { section in
                 Section {
-                    ForEach(pack.levelIDs, id: \.self) { levelID in
+                    ForEach(section.ids, id: \.self) { levelID in
                         levelRow(levelID: levelID)
                     }
                 } header: {
-                    Text(pack.title)
+                    Text(section.title)
                 }
             }
         }
@@ -32,7 +59,6 @@ struct LevelSelectView: View {
         let progress = store.state.progress[levelID]
         let cleared = progress?.cleared ?? false
         let unlocked = store.isUnlocked(levelID)
-        let level = LevelLibrary.level(id: levelID)
 
         Button {
             // Locked levels can't be entered until the prior one is cleared.
@@ -51,8 +77,8 @@ struct LevelSelectView: View {
                         Text("Locked — clear the previous level")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    } else if let level {
-                        Text(subtitle(for: level, progress: progress))
+                    } else {
+                        Text(subtitle(for: levelID, progress: progress))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -86,8 +112,10 @@ struct LevelSelectView: View {
             .capitalized
     }
 
-    private func subtitle(for level: Level, progress: LevelProgress?) -> String {
-        var parts = ["\(level.band.rawValue.capitalized) · \(level.wheel.size) letters"]
+    private func subtitle(for levelID: String, progress: LevelProgress?) -> String {
+        let n = levelService.wheelSize(forID: levelID)
+        let band = DifficultyBand(wheelSize: n).rawValue.capitalized
+        var parts = ["\(band) · \(n) letters"]
         if let progress, progress.cleared {
             parts.append("Best \(progress.bestScore)")
         }
