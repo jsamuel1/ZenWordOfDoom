@@ -3,7 +3,7 @@ import GameCore
 
 /// Greedy, seeded crossword layout. Produces a connected, conflict-free set of
 /// interlocking slots. Words that cannot be placed are skipped.
-public struct CrosswordLayoutEngine {
+public struct CrosswordLayoutEngine: Sendable {
     public init() {}
 
     private struct Placement {
