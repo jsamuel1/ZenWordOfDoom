@@ -1,5 +1,4 @@
 import SwiftUI
-import LevelKit
 
 /// The app root: a single `NavigationStack` driven by `AppRouter.path`, rooted
 /// at `MenuView`. Each `Screen` maps to its destination view here.

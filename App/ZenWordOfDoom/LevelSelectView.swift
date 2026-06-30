@@ -2,8 +2,9 @@ import SwiftUI
 import GameCore
 import LevelGen
 
-/// Lists every pack from `LevelLibrary` and the levels within, surfacing the
-/// cleared state from the player's save. Tapping a level pushes into the game.
+/// Lists the procedural level sequence from `LevelService` in themed packs,
+/// surfacing cleared/locked state from the player's save. Tapping a level
+/// pushes into the game.
 struct LevelSelectView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var store: GameStore

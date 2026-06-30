@@ -18,12 +18,8 @@ let package = Package(
         .target(name: "GameCore"),
         // Dictionary / word validation. Depends on GameCore protocols.
         .target(name: "WordEngine", dependencies: ["GameCore"]),
-        // Level/cut-scene/pack data + loader + validator. Bundles JSON content.
-        .target(
-            name: "LevelKit",
-            dependencies: ["GameCore"],
-            resources: [.process("Resources")]
-        ),
+        // Between-levels cut-scene data shared by the app.
+        .target(name: "LevelKit", dependencies: ["GameCore"]),
         // Procedural level generation.
         .target(
             name: "LevelGen",
@@ -33,7 +29,7 @@ let package = Package(
 
         .testTarget(name: "GameCoreTests", dependencies: ["GameCore"]),
         .testTarget(name: "WordEngineTests", dependencies: ["WordEngine", "GameCore"]),
-        .testTarget(name: "LevelKitTests", dependencies: ["LevelKit", "GameCore", "WordEngine"]),
+        .testTarget(name: "LevelKitTests", dependencies: ["LevelKit"]),
         .testTarget(name: "LevelGenTests", dependencies: ["LevelGen", "GameCore"]),
     ]
 )
