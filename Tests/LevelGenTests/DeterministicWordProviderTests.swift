@@ -20,6 +20,20 @@ final class DeterministicWordProviderTests: XCTestCase {
                       "top word \(words.first!) is not a zen anchor")
     }
 
+    func test_commonWordsRankBeforeObscureOnes() async throws {
+        // Neither LIST nor SILT is a zen anchor, but LIST is a common word and
+        // SILT is not, so LIST must rank ahead.
+        let wheel = Wheel(letters: "STILL")
+        let words = try await DeterministicWordProvider().words(forWheel: wheel, theme: .zen, limit: 200)
+        let iList = words.firstIndex(of: "LIST")
+        let iSilt = words.firstIndex(of: "SILT")
+        XCTAssertNotNil(iList, "LIST should be buildable & present")
+        XCTAssertNotNil(iSilt, "SILT should be buildable & present")
+        if let a = iList, let b = iSilt {
+            XCTAssertLessThan(a, b, "common LIST should rank before obscure SILT")
+        }
+    }
+
     func test_isDeterministicAndRespectsLimit() async throws {
         let wheel = Wheel(letters: "SHADOW")
         let p = DeterministicWordProvider()
