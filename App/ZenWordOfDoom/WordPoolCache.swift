@@ -6,7 +6,9 @@ import LevelGen
 /// level's Foundation-Models pool is generated once and reused. Disposable.
 struct WordPoolCache {
     static let shared = WordPoolCache()
-    static let version = 1
+    // Bump to invalidate cached pools when generation/ranking semantics change.
+    // v2: common-word + theme ranking bias.
+    static let version = 2
     private let dir: URL
 
     init() {
