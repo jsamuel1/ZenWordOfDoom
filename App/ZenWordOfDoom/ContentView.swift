@@ -22,9 +22,14 @@ struct ContentView: View {
         case .levelSelect:
             LevelSelectView()
         case .game(let levelID):
+            // `.id` ties the view's identity to the level, so navigating from one
+            // level to another (e.g. after a cut scene) builds a FRESH view and
+            // GameViewModel instead of reusing the finished level's solved board.
             GameContainerView(levelID: levelID)
+                .id(levelID)
         case .cutScene(let afterLevelID):
             CutSceneContainerView(afterLevelID: afterLevelID)
+                .id(afterLevelID)
         case .bestiary:
             BestiaryView()
         case .settings:
