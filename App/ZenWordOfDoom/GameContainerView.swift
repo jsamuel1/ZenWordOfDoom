@@ -91,7 +91,7 @@ struct GamePlayView: View {
                     filledCells: model.filledCells,
                     solvedSlotIDs: model.solvedSlotIDs
                 )
-                .frame(maxHeight: 280)
+                .frame(maxHeight: 380)
 
                 Spacer(minLength: 0)
 
