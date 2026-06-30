@@ -14,8 +14,11 @@ struct VisualCache {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
 
-    func key(for request: VisualRequest, style: String) -> String {
-        "\(request.id)-\(request.kind.rawValue)-\(style)-v\(VisualPrompts.promptVersion)"
+    /// Stable across sessions/devices: keyed by id, kind, and prompt version
+    /// only — not the runtime style — so a previously generated image always
+    /// round-trips. Bump `VisualPrompts.promptVersion` to invalidate.
+    func key(for request: VisualRequest) -> String {
+        "\(request.id)-\(request.kind.rawValue)-v\(VisualPrompts.promptVersion)"
     }
     private func url(_ key: String) -> URL { dir.appendingPathComponent(key + ".png") }
 

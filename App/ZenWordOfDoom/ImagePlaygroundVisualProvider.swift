@@ -31,11 +31,13 @@ actor ImagePlaygroundVisualProvider: SceneVisualProvider {
     }
 
     func image(for request: VisualRequest, maxPixel: Int) async -> CGImage? {
+        // Cache first, before touching the (possibly unavailable) creator, so a
+        // previously generated image is served on every device.
+        let cacheKey = VisualCache.shared.key(for: request)
+        if let cached = VisualCache.shared.image(forKey: cacheKey) { return cached }
+
         guard let creator = await makeCreator() else { return nil }
         guard let style = style(for: creator) else { return nil }
-
-        let cacheKey = VisualCache.shared.key(for: request, style: "\(style.id)")
-        if let cached = VisualCache.shared.image(forKey: cacheKey) { return cached }
 
         let prompt = request.kind == .scene
             ? VisualPrompts.prompt(forSceneID: request.id, theme: request.theme)
