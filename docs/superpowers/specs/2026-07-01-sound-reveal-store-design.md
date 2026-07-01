@@ -40,8 +40,7 @@ shuffleable wheel.
   "named milestones" decision) rather than shipping a fixed level set.
 - Server-side receipt validation — StoreKit 2 on-device signed transactions are
   the secure default; no backend.
-- Ad-network mediation (single network only); no cross-app tracking beyond what
-  AdMob's personalized ads (default, user-opt-outable, ATT-gated) entail.
+- Ad-network mediation (single network only).
 
 ## 4. Workstreams
 
