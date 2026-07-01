@@ -177,9 +177,30 @@ A per-level **"stir" meter (0–1)** drives how much the Doom layer surfaces:
 - No gore, no jump scares with loud stingers by default.
 - The horror is *atmospheric and discoverable*. A first-time player can enjoy a
   pure word game and only gradually notice the watchers.
-- Age rating target: **12+** (mild horror themes), pending art direction.
+- Age rating target: **12+** (mild horror themes).
 
-### 6.5 Inter-level cut scenes ("breaths")
+### 6.5 Icon & title art direction
+The app icon and title/menu backdrop are a separate visual register from the
+in-game procedural scenes (§6.1): bold, painterly-photoreal **"Zen with Doom"
+/ "Doom with Zen"** hero illustrations — a serene figure or motif set directly
+against overt Doom-style imagery (ruins, fire, armored figures, the void),
+rather than a creature hidden in negative space. This is the first-impression
+surface (App Store icon, title screen, marketing) and is allowed to be more
+literal and striking than the discoverable, atmospheric in-game reveal.
+
+- Bundled as static illustrations (`Assets.xcassets/TitleArt`, `AppIcon`),
+  distinct from the on-device generated/procedural scene and creature art
+  (§6.2, `VisualPrompts`), which keeps its IP-safe, non-figurative guardrails.
+- Curated hero art may allude more strongly to the "Doom" half of the theme
+  than the generated in-game content does; this is an accepted, deliberate
+  trade-off for the icon/title surfaces specifically, not a relaxation of the
+  IP guardrails elsewhere (§6.2's generated creatures/scenes stay abstract and
+  avoid named IP).
+- App icon: single 1024×1024 illustration, no text, readable at small sizes
+  (home screen, Settings, notifications) — favor a strong central silhouette
+  over fine detail that disappears when scaled down.
+
+### 6.6 Inter-level cut scenes ("breaths")
 Between levels the game plays a short, **skippable** cut scene — a moment to
 relax and reset before the next puzzle. Each "breath" is a self-contained beat,
 not a loading screen.
