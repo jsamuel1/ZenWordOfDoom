@@ -18,7 +18,10 @@ enum BundledVisuals {
         return knownAssets.contains(name) ? name : nil
     }
 
-    private static let knownAssets: Set<String> = [
+    /// The exact set of bundled asset-catalog names. Internal (not private) so
+    /// the app test target can assert the generator's slug pools are fully
+    /// covered by bundled art.
+    static let knownAssets: Set<String> = [
         // Zen scenes
         "scene-still-pond", "scene-moss-garden", "scene-bamboo-grove",
         "scene-misty-peak", "scene-lantern-path", "scene-sand-ripples",

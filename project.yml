@@ -49,12 +49,36 @@ targets:
       - package: ZenWordOfDoomKit
         product: LevelGen
 
+  # Unit tests for App-layer logic (the pure cores are tested via `swift test`).
+  # Hosted by the app target so `@testable import ZenWordOfDoom` can reach
+  # internal types like BundledVisuals.
+  ZenWordOfDoomTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: App/ZenWordOfDoomTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: wtf.sauhsoj.zenwordofdoom.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.9"
+    dependencies:
+      - target: ZenWordOfDoom
+      - package: ZenWordOfDoomKit
+        product: LevelGen
+
 schemes:
   ZenWordOfDoom:
     build:
       targets:
         ZenWordOfDoom: all
+        ZenWordOfDoomTests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - ZenWordOfDoomTests
     archive:
       config: Release
