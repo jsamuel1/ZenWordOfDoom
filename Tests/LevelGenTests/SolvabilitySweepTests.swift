@@ -12,8 +12,19 @@ final class SolvabilitySweepTests: XCTestCase {
         let gen = ProceduralGenerator(wordProvider: DeterministicWordProvider(), pools: pools)
         for order in 0..<50 {
             let level = try await gen.level(for: lib.seed(atOrder: order))
-            XCTAssertGreaterThanOrEqual(level.slots.count, 1, "order \(order): empty grid")
             let multiset = level.wheel.multiset
+
+            // Pack capstones are grid-less Pangram-Hunt bosses; assert the boss
+            // invariant (a pangram exists) instead of grid validity.
+            if case .pangramHunt = level.format {
+                XCTAssertTrue(level.slots.isEmpty, "order \(order): boss should have no grid")
+                let wheelWord = String(level.wheel.tiles.map(\.letter))
+                XCTAssertTrue(multiset.canBuild(wheelWord),
+                              "order \(order): boss wheel admits no pangram")
+                continue
+            }
+
+            XCTAssertGreaterThanOrEqual(level.slots.count, 1, "order \(order): empty grid")
             for slot in level.slots {
                 XCTAssertTrue(multiset.canBuild(slot.answer), "order \(order): \(slot.answer) unbuildable")
             }
