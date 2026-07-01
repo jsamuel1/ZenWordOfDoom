@@ -8,7 +8,13 @@ import LevelGen
 /// unknown/future slug cleanly falls through to the procedural fallback.
 enum BundledVisuals {
     static func assetName(for request: VisualRequest) -> String? {
-        let name = "\(request.kind.rawValue)-\(request.id)"
+        assetName(kind: request.kind, id: request.id)
+    }
+
+    /// Bundled asset name for a `kind`/`id` slug, or nil if none is bundled.
+    /// Theme-independent (asset names are `"<kind>-<slug>"`).
+    static func assetName(kind: VisualKind, id: String) -> String? {
+        let name = "\(kind.rawValue)-\(id)"
         return knownAssets.contains(name) ? name : nil
     }
 

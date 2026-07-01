@@ -14,11 +14,16 @@ import GameCore
 /// spells the word. Dragging the finger back along that trail onto the previous
 /// tile reverses the last selection (handled by the owning view model).
 ///
-/// This is a dumb, stateless view: it renders from `tiles`/`selection` and
-/// reports gestures through the callbacks. The owning view model decides what a
-/// tap or swipe means.
+/// `displayOrder` is a permutation of the tile ids that decides where each tile
+/// sits around the circle; the Shuffle button re-rolls it. Tiles keep their ids,
+/// so a shuffle mid-word doesn't change letters (the owning model cancels any
+/// in-progress selection when shuffling).
+///
+/// This is a dumb, stateless view: it renders from `tiles`/`displayOrder`/
+/// `selection` and reports gestures through the callbacks.
 struct WheelView: View {
     let tiles: [LetterTile]
+    let displayOrder: [Int]
     let selection: [Int]
     let onTap: (Int) -> Void
     let onSwipeBegin: (Int) -> Void
@@ -34,9 +39,18 @@ struct WheelView: View {
     /// The finger's current location while dragging — the trail's loose end.
     @State private var dragLocation: CGPoint?
 
+    /// Tiles in on-screen order. Falls back to the natural order if `displayOrder`
+    /// doesn't cover the tile set (defensive; keeps the wheel intact).
+    private var orderedTiles: [LetterTile] {
+        let byID = Dictionary(tiles.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let ordered = displayOrder.compactMap { byID[$0] }
+        return ordered.count == tiles.count ? ordered : tiles
+    }
+
     var body: some View {
-        GeometryReader { geo in
-            let layout = self.layout(in: geo.size)
+        let ordered = orderedTiles
+        return GeometryReader { geo in
+            let layout = self.layout(in: geo.size, count: ordered.count)
             ZStack {
                 Circle()
                     .stroke(.white.opacity(0.25), lineWidth: 1)
@@ -44,15 +58,15 @@ struct WheelView: View {
                     .position(layout.center)
 
                 // The selection trail, drawn under the tiles so it threads
-                // through them. Replaces the old per-tile order badges.
-                trailPath(layout: layout)
+                // through them.
+                trailPath(ordered: ordered, layout: layout)
                     .stroke(
                         Color.accentColor.opacity(0.85),
                         style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round)
                     )
                     .allowsHitTesting(false)
 
-                ForEach(Array(tiles.enumerated()), id: \.element.id) { index, tile in
+                ForEach(Array(ordered.enumerated()), id: \.element.id) { index, tile in
                     TileView(
                         letter: tile.letter,
                         order: selectionOrder(of: tile.id),
@@ -64,7 +78,7 @@ struct WheelView: View {
                 }
             }
             .contentShape(Rectangle())
-            .gesture(swipeGesture(layout: layout))
+            .gesture(swipeGesture(ordered: ordered, layout: layout))
         }
         .frame(height: 240)
         .accessibilityElement(children: .contain)
@@ -88,10 +102,10 @@ struct WheelView: View {
         }
     }
 
-    private func layout(in size: CGSize) -> WheelLayout {
+    private func layout(in size: CGSize, count: Int) -> WheelLayout {
         let radius = min(size.width, size.height) / 2 - 36
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        return WheelLayout(center: center, radius: max(radius, 0), count: tiles.count)
+        return WheelLayout(center: center, radius: max(radius, 0), count: count)
     }
 
     private func selectionOrder(of id: Int) -> Int? {
@@ -102,9 +116,9 @@ struct WheelView: View {
 
     /// A polyline through the centers of the selected tiles, in selection order,
     /// continuing to the finger while a drag is in progress.
-    private func trailPath(layout: WheelLayout) -> Path {
+    private func trailPath(ordered: [LetterTile], layout: WheelLayout) -> Path {
         Path { path in
-            let points = selection.compactMap { position(ofTileID: $0, layout: layout) }
+            let points = selection.compactMap { position(ofTileID: $0, ordered: ordered, layout: layout) }
             guard let first = points.first else { return }
             path.move(to: first)
             for point in points.dropFirst() { path.addLine(to: point) }
@@ -112,8 +126,8 @@ struct WheelView: View {
         }
     }
 
-    private func position(ofTileID id: Int, layout: WheelLayout) -> CGPoint? {
-        guard let index = tiles.firstIndex(where: { $0.id == id }) else { return nil }
+    private func position(ofTileID id: Int, ordered: [LetterTile], layout: WheelLayout) -> CGPoint? {
+        guard let index = ordered.firstIndex(where: { $0.id == id }) else { return nil }
         return layout.position(for: index)
     }
 
@@ -122,10 +136,9 @@ struct WheelView: View {
     /// A zero-distance drag so the very first touch already hit-tests a tile.
     /// We only treat it as a swipe (firing begin/extend/end) once the finger
     /// actually moves; a touch that never moves falls through to `onTapGesture`.
-    private func swipeGesture(layout: WheelLayout) -> some Gesture {
+    private func swipeGesture(ordered: [LetterTile], layout: WheelLayout) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
-                // Distinguish a swipe from a stationary tap.
                 if !isSwiping {
                     let dx = value.location.x - value.startLocation.x
                     let dy = value.location.y - value.startLocation.y
@@ -133,10 +146,9 @@ struct WheelView: View {
                     isSwiping = true
                 }
 
-                // Track the finger so the trail's loose end follows it.
                 dragLocation = value.location
 
-                guard let tile = tile(at: value.location, layout: layout) else { return }
+                guard let tile = tile(at: value.location, ordered: ordered, layout: layout) else { return }
                 if tile != activeSwipeTile {
                     if activeSwipeTile == nil {
                         onSwipeBegin(tile)
@@ -158,9 +170,9 @@ struct WheelView: View {
     }
 
     /// Returns the id of the tile whose circular hit area contains `point`.
-    private func tile(at point: CGPoint, layout: WheelLayout) -> Int? {
+    private func tile(at point: CGPoint, ordered: [LetterTile], layout: WheelLayout) -> Int? {
         let hitRadius = tileSize / 2
-        for (index, tile) in tiles.enumerated() {
+        for (index, tile) in ordered.enumerated() {
             let pos = layout.position(for: index)
             let dx = point.x - pos.x
             let dy = point.y - pos.y
@@ -188,15 +200,15 @@ private struct TileView: View {
             .foregroundStyle(isSelected ? .white : .primary)
             .shadow(radius: 2)
             .accessibilityLabel(String(letter))
-            // The visible sequence is the trail line; expose the order here so
-            // VoiceOver users still hear where each letter falls in the word.
             .accessibilityValue(order.map { "Selected, position \($0)" } ?? "")
     }
 }
 
 #Preview {
-    WheelView(
-        tiles: SampleLevel.make().wheel.tiles,
+    let wheel = SampleLevel.make().wheel
+    return WheelView(
+        tiles: wheel.tiles,
+        displayOrder: wheel.displayOrder(seed: 1),
         selection: [],
         onTap: { _ in },
         onSwipeBegin: { _ in },
