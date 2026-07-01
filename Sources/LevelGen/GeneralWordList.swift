@@ -7,13 +7,22 @@ public struct GeneralWordList: Sendable {
     public static let shared = GeneralWordList()
 
     private let words: [String]
-    public init() { self.words = Self.load() }
+    private let wordSet: Set<String>
+    public init() {
+        self.words = Self.load()
+        self.wordSet = Set(words)
+    }
 
     public var count: Int { words.count }
 
     /// All corpus words buildable from `multiset` with length >= `minLength`.
     public func buildableWords(from multiset: LetterMultiset, minLength: Int = 3) -> [String] {
         words.filter { $0.count >= minLength && multiset.canBuild($0) }
+    }
+
+    /// True if `word` (case-insensitive) is present in the corpus.
+    public func contains(_ word: String) -> Bool {
+        wordSet.contains(word.uppercased())
     }
 
     private static func load() -> [String] {

@@ -20,4 +20,11 @@ final class GeneralWordListTests: XCTestCase {
         let multiset = LetterMultiset("MOONLIGHT")
         XCTAssertTrue(GeneralWordList.shared.buildableWords(from: multiset).contains("MOONLIGHT"))
     }
+
+    func test_containsKnownWordsCaseInsensitively() {
+        XCTAssertTrue(GeneralWordList.shared.contains("GARDEN"))
+        XCTAssertTrue(GeneralWordList.shared.contains("garden"))
+        XCTAssertFalse(GeneralWordList.shared.contains("thiswordisnotreal"))
+        XCTAssertFalse(GeneralWordList.shared.contains(""))
+    }
 }
