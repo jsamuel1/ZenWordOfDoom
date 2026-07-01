@@ -73,6 +73,13 @@ final class GameStore: ObservableObject {
         save()
     }
 
+    /// Record a single found word into lifetime stats (longest word, pangrams,
+    /// totals). Called per submission; `recordClear` handles the clear tally.
+    func recordWord(_ word: String, isBonus: Bool, isPangram: Bool) {
+        state.stats.recordWord(word, isBonus: isBonus, isPangram: isPangram)
+        save()
+    }
+
     func addSerenity(_ amount: Int) {
         guard amount != 0 else { return }
         state.serenity = max(0, state.serenity + amount)

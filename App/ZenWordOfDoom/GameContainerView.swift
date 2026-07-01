@@ -128,6 +128,13 @@ struct GamePlayView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .overlay {
+            if let summary = model.clearSummary {
+                LevelClearView(summary: summary, reducedMotion: reduceMotion)
+                    .padding(.horizontal, 40)
+                    .transition(.opacity)
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(packTitle)
         .onAppear {
@@ -145,7 +152,8 @@ struct GamePlayView: View {
             // Hold on the fully revealed creature (stir is now 1) so the reveal
             // payoff is actually seen, then move to the cut scene. Shorter when
             // motion is reduced (a brief still reveal instead of a held beat).
-            let hold = reduceMotion ? 0.6 : 1.5
+            // Hold on the reveal + clear celebration before the cut scene.
+            let hold = reduceMotion ? 0.8 : 2.2
             DispatchQueue.main.asyncAfter(deadline: .now() + hold) {
                 router.push(.cutScene(afterLevelID: level.id))
             }

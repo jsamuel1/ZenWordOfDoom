@@ -26,6 +26,8 @@ final class GameViewModel: ObservableObject {
     /// Present only in doom mode; counts down to zero.
     @Published private(set) var timeRemaining: TimeInterval?
     @Published private(set) var creatureRevealed: Bool = false
+    /// Set once on completion to drive the level-clear celebration overlay.
+    @Published private(set) var clearSummary: ClearSummary?
 
     /// True once the player has used at least one hint reveal this level.
     private var usedHint = false
@@ -195,9 +197,11 @@ final class GameViewModel: ObservableObject {
     private func resolveSubmission(of word: String) {
         switch engine.submit(word) {
         case .filledSlots:
+            store.recordWord(word, isBonus: false, isPangram: engine.isPangram(word))
             lastMessage = "Found \(word)"
         case .bonusWord:
             bonusWordCount += 1
+            store.recordWord(word, isBonus: true, isPangram: engine.isPangram(word))
             lastMessage = "Bonus: \(word)"
         case .invalid(let reason):
             lastMessage = message(for: reason, word: word)
@@ -293,6 +297,7 @@ final class GameViewModel: ObservableObject {
         stopTimer()
         creatureRevealed = true
         let alreadyRevealed = store.state.bestiary[engine.level.creatureID] != nil
+        let serenityBefore = store.state.serenity
         store.recordClear(
             level: engine.level,
             score: engine.score,
@@ -302,6 +307,15 @@ final class GameViewModel: ObservableObject {
         )
         // Reward serenity for clearing; a no-hint clear earns a little extra.
         store.addSerenity(usedHint ? 10 : 15)
+        // A creature is "new" only if it wasn't already in the bestiary and the
+        // clear actually catalogued it (Doom levels only — the store enforces this).
+        let newCreature = (!alreadyRevealed && store.state.bestiary[engine.level.creatureID] != nil)
+            ? engine.level.creatureID : nil
+        clearSummary = ClearSummary(
+            score: engine.score,
+            serenityEarned: store.state.serenity - serenityBefore,
+            newCreatureID: newCreature
+        )
         isComplete = true
         lastMessage = "The garden settles\u{2026}"
     }
