@@ -12,6 +12,9 @@ final class GameViewModel: ObservableObject {
     private let builder = WordBuilder()
     private let settings: AppSettings
     private let store: GameStore
+    private let soundEngine: any SoundEngine
+    /// Musical mood for this level (its theme), fed to the sound engine with stir.
+    private let mood: MusicMood
 
     @Published private(set) var selection: [Int] = []
     /// Tile-id order for placing tiles around the wheel. Re-rolled by `shuffle()`.
@@ -45,9 +48,13 @@ final class GameViewModel: ObservableObject {
     init(level: Level,
          validator: WordValidating,
          settings: AppSettings,
-         store: GameStore) {
+         store: GameStore,
+         soundEngine: any SoundEngine = NullSoundEngine(),
+         mood: MusicMood = .zen) {
         self.settings = settings
         self.store = store
+        self.soundEngine = soundEngine
+        self.mood = mood
         let mode: GameMode = settings.doomMode
             ? .doom(timeLimit: settings.reducedDoom ? 240 : 150)
             : .zen
@@ -197,13 +204,16 @@ final class GameViewModel: ObservableObject {
     private func resolveSubmission(of word: String) {
         switch engine.submit(word) {
         case .filledSlots:
+            soundEngine.play(.wordLand)
             store.recordWord(word, isBonus: false, isPangram: engine.isPangram(word))
             lastMessage = "Found \(word)"
         case .bonusWord:
+            soundEngine.play(.bonus)
             bonusWordCount += 1
             store.recordWord(word, isBonus: true, isPangram: engine.isPangram(word))
             lastMessage = "Bonus: \(word)"
         case .invalid(let reason):
+            soundEngine.play(.invalid)
             lastMessage = message(for: reason, word: word)
         }
         sync()
@@ -243,6 +253,7 @@ final class GameViewModel: ObservableObject {
         }
         usedHint = true
         revealCount += 1
+        soundEngine.play(.hintReveal)
         lastMessage = "Revealed \(letter)"
         sync()
     }
@@ -295,6 +306,7 @@ final class GameViewModel: ObservableObject {
 
     private func completeLevel() {
         stopTimer()
+        soundEngine.play(.levelClear)
         creatureRevealed = true
         let alreadyRevealed = store.state.bestiary[engine.level.creatureID] != nil
         let serenityBefore = store.state.serenity
@@ -328,5 +340,7 @@ final class GameViewModel: ObservableObject {
         bonusWords = engine.bonusWords
         stir = engine.stir
         score = engine.score
+        // Drive the generative bed from the current stir (reactive doom bus).
+        soundEngine.setMood(mood, stir: engine.stir)
     }
 }
