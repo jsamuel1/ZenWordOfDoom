@@ -7,6 +7,7 @@ enum Screen: Hashable {
     case game(levelID: String)
     case cutScene(afterLevelID: String)
     case bestiary
+    case stats
     case settings
 }
 

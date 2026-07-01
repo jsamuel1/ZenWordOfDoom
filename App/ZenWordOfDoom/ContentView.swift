@@ -32,6 +32,8 @@ struct ContentView: View {
                 .id(afterLevelID)
         case .bestiary:
             BestiaryView()
+        case .stats:
+            StatsView()
         case .settings:
             SettingsView()
         }

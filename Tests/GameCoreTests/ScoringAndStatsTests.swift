@@ -161,12 +161,25 @@ final class ScoringAndStatsTests: XCTestCase {
         XCTAssertEqual(s.longestWord, "STONED")
     }
 
-    func testRecordClearAdvancesStreak() {
+    func testRecordClearCountsLevels() {
         var s = GameStats()
         s.recordClear()
         s.recordClear()
         XCTAssertEqual(s.levelsCleared, 2)
+        // Clears no longer drive the streak (that's daily now).
+        XCTAssertEqual(s.currentStreak, 0)
+    }
+
+    func testDailyStreakAdvancesResetsAndIsIdempotent() {
+        var s = GameStats()
+        s.recordPlay(dayNumber: 100)
+        XCTAssertEqual(s.currentStreak, 1)
+        s.recordPlay(dayNumber: 100)          // same day: no change
+        XCTAssertEqual(s.currentStreak, 1)
+        s.recordPlay(dayNumber: 101)          // consecutive: +1
         XCTAssertEqual(s.currentStreak, 2)
+        s.recordPlay(dayNumber: 105)          // gap: reset to 1
+        XCTAssertEqual(s.currentStreak, 1)
         XCTAssertEqual(s.bestStreak, 2)
     }
 

@@ -55,6 +55,9 @@ final class GameStore: ObservableObject {
         state.progress[level.id] = progress
 
         state.stats.recordClear()
+        // Advance the daily streak using the local-calendar day ordinal.
+        let today = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
+        state.stats.recordPlay(dayNumber: today)
 
         // Only Doom levels contribute to the bestiary (the collection of Doom
         // creatures); Zen levels reveal a calm guardian that isn't catalogued.
