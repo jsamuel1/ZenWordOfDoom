@@ -35,4 +35,16 @@ final class LevelService: ObservableObject {
     func theme(forID id: String) -> Theme {
         library.seed(forID: id)?.theme ?? .zen
     }
+
+    /// The pack a level belongs to (name/flavor/signature), or nil if unknown.
+    func pack(forID id: String) -> Pack? {
+        guard let order = library.order(forID: id) else { return nil }
+        return PackCatalog.standard.pack(forOrder: order, packSize: library.packSize)
+    }
+
+    /// True when this level is the first of its pack (show the pack banner).
+    func isPackStart(_ id: String) -> Bool {
+        guard let order = library.order(forID: id) else { return false }
+        return order % library.packSize == 0
+    }
 }

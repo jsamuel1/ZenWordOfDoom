@@ -173,6 +173,17 @@ public final class GameEngine {
         return (coord, letter)
     }
 
+    /// Casual "first-letter" assist (SPEC §7): show the first cell of every slot
+    /// without solving it. Idempotent; does nothing on grid-less boss levels.
+    /// Revealed cells display the letter but the slot stays unsolved, so the
+    /// player still has to build the word.
+    public func revealFirstLetters() {
+        for slot in level.slots {
+            guard let firstCell = slot.cells.first, filledCells[firstCell] == nil else { continue }
+            filledCells[firstCell] = Array(slot.answer).first ?? " "
+        }
+    }
+
     private func bumpStir(by amount: Double) {
         stir = min(1, stir + amount)
     }
