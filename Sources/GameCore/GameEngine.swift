@@ -67,7 +67,13 @@ public final class GameEngine {
     }
 
     public var progress: Double {
-        level.slots.isEmpty ? 1 : Double(solvedSlotIDs.count) / Double(level.slots.count)
+        switch level.format {
+        case .crossword:
+            return level.slots.isEmpty ? 1 : Double(solvedSlotIDs.count) / Double(level.slots.count)
+        case .pangramHunt(let target):
+            guard target > 0 else { return 1 }
+            return min(1, Double(foundWords.count) / Double(target))
+        }
     }
 
     /// A word is a pangram when it spans the whole wheel and is buildable from it.
@@ -104,10 +110,22 @@ public final class GameEngine {
                 return .invalid(.notInDictionary)
             }
             foundWords.insert(word)
-            if isPangram(word) { pangramCount += 1 }
+            let pangram = isPangram(word)
+            if pangram { pangramCount += 1 }
             bonusWords.append(word)
-            score += Scoring.bonusScore(length: word.count)
+            switch level.format {
+            case .crossword:
+                // Bonus words stay smaller than grid words so the grid is the
+                // main path.
+                score += Scoring.bonusScore(length: word.count)
+            case .pangramHunt:
+                // In a boss every collected word is the main path; the pangram
+                // earns its full bonus.
+                score += Scoring.wordScore(length: word.count, isPangram: pangram)
+            }
             bumpStir(by: 0.02)
+            // Boss levels complete here (no slots), so snap to the full reveal.
+            if isComplete { stir = 1 }
             return .bonusWord(word)
         }
 

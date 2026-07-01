@@ -27,4 +27,16 @@ final class SceneLexiconTests: XCTestCase {
     func testUnknownSceneReturnsEmpty() {
         XCTAssertTrue(SceneLexicon.shared.words(for: "no-such-scene").isEmpty)
     }
+
+    /// Every scene must offer a word of each wheel length 5...9 so scene-coupled
+    /// anchors (and boss key words) work at every band, including expert/master.
+    func testEverySceneCoversLengthsFiveToNine() {
+        let lex = SceneLexicon.shared
+        for slug in ThemePools.zenDoom.scenes.values.flatMap({ $0 }) {
+            let lengths = Set(lex.words(for: slug).map(\.count))
+            for n in 5...9 {
+                XCTAssertTrue(lengths.contains(n), "scene \(slug) missing a length-\(n) word")
+            }
+        }
+    }
 }

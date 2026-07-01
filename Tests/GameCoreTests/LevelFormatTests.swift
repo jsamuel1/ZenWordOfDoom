@@ -50,4 +50,26 @@ final class LevelFormatTests: XCTestCase {
         _ = e.submit("STONED")  // pangram
         XCTAssertTrue(e.isComplete)
     }
+
+    func testPangramHuntSnapsStirToFullOnCompletion() {
+        let e = bossEngine(target: 1)
+        _ = e.submit("STONED")  // pangram => complete
+        XCTAssertTrue(e.isComplete)
+        XCTAssertEqual(e.stir, 1, accuracy: 0.0001, "completion must force the full reveal")
+    }
+
+    func testPangramHuntCreditsPangramBonus() {
+        let e = bossEngine(target: 1)
+        _ = e.submit("STONED")  // 6-letter pangram
+        XCTAssertEqual(e.score, Scoring.wordScore(length: 6, isPangram: true),
+                       "boss pangram must earn the pangram bonus, not the bonus-word score")
+    }
+
+    func testPangramHuntProgressReflectsWordsFound() {
+        let e = bossEngine(target: 4)
+        XCTAssertEqual(e.progress, 0, accuracy: 0.0001)
+        _ = e.submit("NODE")
+        XCTAssertEqual(e.progress, 0.25, accuracy: 0.0001)
+        XCTAssertLessThan(e.stir, 1)
+    }
 }
