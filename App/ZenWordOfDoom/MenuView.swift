@@ -8,15 +8,17 @@ struct MenuView: View {
 
     /// Hero illustrations depicting the game's "Zen meets Doom" premise. One is
     /// picked per launch (stable for the session) as the title screen backdrop.
+    /// `static` so the choice survives MenuView being re-created on every
+    /// return to the menu, instead of re-rolling per appearance.
     static let titleArt = [
         "monk-in-ruins", "doom-marine-shrine", "garden-in-the-ruins",
         "monk-on-skulls", "mandala-and-void", "elder-and-volcano",
     ]
-    private let backdrop = MenuView.titleArt.randomElement() ?? "monk-in-ruins"
+    private static let backdrop = titleArt.randomElement() ?? "monk-in-ruins"
 
     var body: some View {
         ZStack {
-            Image(backdrop)
+            Image(Self.backdrop)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
