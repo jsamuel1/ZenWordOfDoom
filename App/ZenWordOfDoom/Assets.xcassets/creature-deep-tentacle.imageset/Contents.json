@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "deep-tentacle.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
