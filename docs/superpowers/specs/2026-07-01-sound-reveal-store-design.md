@@ -40,8 +40,8 @@ shuffleable wheel.
   "named milestones" decision) rather than shipping a fixed level set.
 - Server-side receipt validation — StoreKit 2 on-device signed transactions are
   the secure default; no backend.
-- Personalized ad targeting / cross-app tracking beyond what a non-personalized
-  ad unit requires.
+- Ad-network mediation (single network only); no cross-app tracking beyond what
+  AdMob's personalized ads (default, user-opt-outable, ATT-gated) entail.
 
 ## 4. Workstreams
 
@@ -181,30 +181,36 @@ pure and unit-tested.
 New `StoreService` protocol with a real (`StoreKitStoreService`) and a mock
 (`MockStoreService`) implementation.
 
-- **Premium unlock (non-consumable):** the game is free through the **end of
-  pack 1 (level 10)**. Entering level 11+ without premium shows a **paywall**.
-  Entitlement is derived from StoreKit's current entitlements and mirrored into
-  `SaveState` for offline reads. **Restore Purchases** in Settings.
-- **Serenity packs (consumable):** three tiers (e.g. Small/Medium/Large).
-  Purchases credit serenity via the existing `GameStore.addSerenity`. Serenity
-  remains fully earnable; it only buys hints + cosmetics (**no pay-to-win**).
-- **Serenity sink — cosmetics:** unlock alternate **scene palettes** and/or
-  **cut-scene poem sets** with earned *or* bought serenity, giving the currency
-  a reason to accumulate. Owned cosmetics persist in `SaveState`.
+- **Premium unlock (non-consumable), $4.99:** the game is free through the
+  **end of pack 1 (level 10)**. Entering level 11+ without premium shows a
+  **paywall**. Entitlement is derived from StoreKit's current entitlements and
+  mirrored into `SaveState` for offline reads. **Restore Purchases** in Settings.
+- **Serenity packs (consumables), three tiers:** `$0.99 → 10`, `$1.99 → 25`,
+  `$3.99 → 50` serenity (small-number values consistent with the existing
+  economy: hints cost 5, clears earn ~10–15). Purchases credit serenity via the
+  existing `GameStore.addSerenity`. Serenity remains fully earnable; it only buys
+  hints + cosmetics (**no pay-to-win**).
+- **Serenity sink — cosmetics (palettes + poem sets):** unlock alternate **scene
+  palettes** *and* **cut-scene poem sets** with earned *or* bought serenity,
+  giving the currency a reason to accumulate. Priced ~25–75 serenity each to sit
+  within the small-number economy. Owned cosmetics persist in `SaveState`
+  (`ownedCosmetics`).
 - **Cut-scene ads (free tier only):**
   - On the cut scene, free-tier players get an interstitial; the **Continue
     button stays hidden until the ad completes** (or, if no ad fills within a
     short timeout, a fallback timed delay elapses — the player is never
     trapped). Premium players skip ads entirely and see Continue immediately
     (current behavior).
-  - **Provider (decided):** **AdMob with a non-personalized ad unit** — the
-    least-invasive option consistent with the calm/no-dark-pattern brand.
+  - **Provider (decided):** **AdMob, single network** (no mediation).
+    **Personalized ads by default with a user opt-out** — a "Personalized ads"
+    toggle in Settings; when off, the app requests non-personalized ads.
   - **Privacy/rating impact (must land with this workstream):** an ad SDK is a
-    third-party dependency that collects data. This requires updating the
-    **App Privacy nutrition labels** (data used to track / linked to identity as
-    applicable), an **App Tracking Transparency** prompt only if personalized
-    (non-personalized avoids ATT), and a review of the **age rating**. The v1
-    "no third-party tracking SDKs" pledge in [`SPEC.md`](../../SPEC.md) §10 is
+    third-party dependency that collects data. Because personalization is on by
+    default, an **App Tracking Transparency** prompt **is required**; if the user
+    denies ATT (or toggles personalization off), the app serves non-personalized
+    ads. This also requires updating the **App Privacy nutrition labels** (data
+    used to track / linked to identity) and a review of the **age rating**. The
+    v1 "no third-party tracking SDKs" pledge in [`SPEC.md`](../../SPEC.md) §10 is
     explicitly revised here for the free tier.
 
 **Testing:** `MockStoreService` drives paywall gating, entitlement mirroring,
@@ -216,7 +222,7 @@ AdMob live paths are manual/QA, not CI.
 ### E. Cross-cutting
 
 - **Settings additions:** Music/SFX toggles, Restore Purchases, cosmetics
-  picker.
+  picker, and (free tier) a **Personalized ads** opt-out toggle.
 - **Privacy & rating:** update `Info.plist`, App Privacy labels, and age rating
   for the ad SDK (see D).
 - **Injection:** `SoundEngine`, `StoreService`, and cosmetics state injected via
@@ -237,7 +243,12 @@ AdMob live paths are manual/QA, not CI.
 2. **Gather scene-related target words** from a new **`SceneLexicon`** — data
    mapping each `sceneID` to associated real words (e.g. `still-pond` → POND,
    KOI, REED, CALM, LILY, MIST, CARP…; `ember-catacomb` → EMBER, ASH, TOMB,
-   BONE, CRYPT…). Words are filtered to the band's max length.
+   BONE, CRYPT…). Words are filtered to the band's max length. **Authoring: the
+   per-scene lists are generated once, offline, and bundled** as a resource
+   (e.g. a build-time script prompting Foundation Models / a word source per
+   scene slug, then hand-reviewed for quality and safety) — not generated at
+   runtime. A generation script + a checked-in `scene-lexicon.json` (or embedded
+   Swift) is the deliverable; tests assert per-scene minimum coverage.
 3. **Choose a key word** sized to the band's wheel length (5–9) — preferring a
    scene-related word of exactly that length; if none exists, fall back to a
    themed/common word of that length. The **wheel letters are that key word's
@@ -330,16 +341,23 @@ bonus; determinism preserved.
 5. **C** (packs, celebration, tray, stats, first-letter hints).
 6. **D** (StoreKit unlock + serenity packs + cosmetics + AdMob ads + privacy).
 
-## 7. Open questions
+## 7. Resolved decisions
 
-1. **SceneLexicon authoring** — hand-curate per-scene word lists, or generate
-   them once (Foundation Models / offline) and bundle? (Lean: hand-curate a
-   small high-quality core per scene; it is content, not code.)
-2. **Serenity pack price points & sizes** — set during D.
-3. **Cosmetic scope for v0.2** — palettes only, or palettes + poem sets? (Lean:
-   palettes first.)
-4. **AdMob mediation** — single network vs. mediation; personalized opt-in
-   later? (Default: single, non-personalized.)
+1. **SceneLexicon authoring** — generated **once, offline, per bundle** into a
+   checked-in resource (with a generation script + hand review), not at runtime.
+2. **Premium price** — **$4.99** (non-consumable, unlocks level 11+ and removes
+   ads).
+3. **Serenity packs** — three consumables: `$0.99 → 10`, `$1.99 → 25`,
+   `$3.99 → 50`; cosmetics priced ~25–75 serenity.
+4. **Cosmetic scope** — **both** scene palettes **and** cut-scene poem sets.
+5. **Ad provider** — **AdMob, single network**, personalized by default with a
+   Settings opt-out; ATT prompt required, non-personalized fallback on denial.
+
+### Remaining to finalize during implementation
+
+- Exact per-band Pangram Hunt `target` values (workstream G) — tune from
+  playtests; the spec's 4→8 is a starting point.
+- Exact cosmetic catalog (how many palettes / poem sets ship in v0.2).
 
 ## 8. Testing philosophy (unchanged)
 
