@@ -65,13 +65,22 @@ jobs:
         run: |
           set -o pipefail
           # Running the App-target unit tests needs a concrete simulator (a
-          # generic destination can only build). Pick the first available
-          # iPhone by UDID so we don't hardcode a device name that shifts
+          # generic destination can only build). Pick an eligible iPhone by
+          # UDID from `-showdestinations` — it only lists destinations valid
+          # for this scheme's deployment target, so we skip simulators on
+          # older runtimes and don't hardcode a device name that shifts
           # between Xcode versions.
-          UDID=$(xcrun simctl list devices available \
-            | awk -F'[()]' '/iPhone/{gsub(/ /,"",$2); print $2; exit}')
+          UDID=$(xcodebuild \
+            -project ZenWordOfDoom.xcodeproj \
+            -scheme "$SCHEME" \
+            -showdestinations 2>/dev/null \
+            | grep 'platform:iOS Simulator' \
+            | grep 'name:iPhone' \
+            | grep -v placeholder \
+            | grep -oE 'id:[0-9A-Fa-f-]+' \
+            | head -1 | cut -d: -f2)
           if [ -z "$UDID" ]; then
-            echo "::error::No available iPhone simulator on the runner."
+            echo "::error::No eligible iPhone simulator for the ZenWordOfDoom scheme."
             exit 1
           fi
           echo "Using simulator UDID: $UDID"
