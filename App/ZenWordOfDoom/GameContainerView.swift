@@ -128,7 +128,13 @@ struct GamePlayView: View {
             guard complete else { return }
             Haptics.success()
             voice.stop()
-            router.push(.cutScene(afterLevelID: level.id))
+            // Hold on the fully revealed creature (stir is now 1) so the reveal
+            // payoff is actually seen, then move to the cut scene. Shorter when
+            // motion is reduced (a brief still reveal instead of a held beat).
+            let hold = reduceMotion ? 0.6 : 1.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + hold) {
+                router.push(.cutScene(afterLevelID: level.id))
+            }
         }
     }
 
