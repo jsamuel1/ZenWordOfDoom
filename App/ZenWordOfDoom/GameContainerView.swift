@@ -10,13 +10,16 @@ struct GameContainerView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: GameStore
     @EnvironmentObject private var levelService: LevelService
+    @EnvironmentObject private var soundBox: SoundEngineBox
 
     @State private var loaded: Level?
 
     var body: some View {
         Group {
             if let level = loaded {
-                GamePlayView(level: level, settings: settings, store: store)
+                GamePlayView(level: level, settings: settings, store: store,
+                             soundEngine: soundBox.engine,
+                             mood: levelService.theme(forID: level.id) == .doom ? .doom : .zen)
             } else {
                 LoadingView(theme: levelService.theme(forID: levelID))
             }
@@ -46,13 +49,20 @@ struct GamePlayView: View {
     /// Pack banner shown briefly when entering a pack's first level.
     @State private var packBanner: Pack?
 
-    init(level: Level, settings: AppSettings, store: GameStore) {
+    /// Shared audio engine, retained for start/stop/enable over the level's life.
+    private let soundEngine: any SoundEngine
+
+    init(level: Level, settings: AppSettings, store: GameStore,
+         soundEngine: any SoundEngine, mood: MusicMood) {
         self.level = level
+        self.soundEngine = soundEngine
         _model = StateObject(wrappedValue: GameViewModel(
             level: level,
             validator: SystemDictionary(),
             settings: settings,
-            store: store
+            store: store,
+            soundEngine: soundEngine,
+            mood: mood
         ))
     }
 
@@ -141,10 +151,16 @@ struct GamePlayView: View {
             model.startTimerIfDoom()
             showPackBannerIfNeeded()
             store.recordDailyPlay()   // playing today keeps the streak alive
+            soundEngine.setEnabled(settings.soundEnabled)
+            soundEngine.start()
         }
         .onDisappear {
             model.invalidate()
             voice.stop()
+            soundEngine.stop()
+        }
+        .onChange(of: settings.soundEnabled) { _, on in
+            soundEngine.setEnabled(on)
         }
         .onChange(of: model.isComplete) { _, complete in
             guard complete else { return }

@@ -7,6 +7,7 @@ struct ZenWordOfDoomApp: App {
     @StateObject private var router = AppRouter()
     @StateObject private var levelService = LevelService()
     @StateObject private var visuals = VisualProviderBox(provider: ImagePlaygroundVisualProvider())
+    @StateObject private var sound = SoundEngineBox(engine: AVAudioSoundEngine())
 
     var body: some Scene {
         WindowGroup {
@@ -16,6 +17,7 @@ struct ZenWordOfDoomApp: App {
                 .environmentObject(router)
                 .environmentObject(levelService)
                 .environmentObject(visuals)
+                .environmentObject(sound)
         }
     }
 }
