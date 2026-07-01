@@ -22,7 +22,32 @@ public struct ProceduralGenerator: Sendable {
     }
 
     public func level(for seed: LevelSeed) async throws -> Level {
-        let wheel = WheelPicker.wheel(theme: seed.theme, band: seed.band, index: seed.index)
+        // `seed.index` is the global play order (see ProceduralLevelLibrary), so
+        // it drives pack/capstone identity.
+        let order = seed.index
+
+        // Scene first, then a scene-coupled wheel, so the words the player spells
+        // relate to the scene being revealed (spec workstream F).
+        let visual = SceneCreaturePicker(pools: pools).pick(theme: seed.theme, index: seed.index)
+        let wheel = WheelPicker.wheel(sceneID: visual.sceneID, theme: seed.theme,
+                                      band: seed.band, index: seed.index)
+
+        // Pack capstone => Pangram-Hunt boss (spec workstream G). The scene-coupled
+        // wheel is a real N-letter word, so a pangram (that word) always exists.
+        let packSize = ProceduralLevelLibrary.standard.packSize
+        if PackCatalog.standard.isCapstone(order: order, packSize: packSize) {
+            let signature = PackCatalog.standard.signatureCreatureID(
+                forOrder: order, packSize: packSize, theme: seed.theme, pools: pools)
+            return Level(
+                id: seed.id,
+                wheel: wheel,
+                slots: [],
+                sceneID: visual.sceneID,
+                creatureID: signature.isEmpty ? visual.creatureID : signature,
+                format: .pangramHunt(target: PackCatalog.pangramTarget(for: seed.band))
+            )
+        }
+
         let pool = try await wordProvider.words(forWheel: wheel, theme: seed.theme, limit: Self.maxSlots * 3)
         let layoutSeed = WheelPicker.seed(theme: seed.theme, band: seed.band, index: seed.index) ^ 0x5EED
 
@@ -40,7 +65,6 @@ public struct ProceduralGenerator: Sendable {
             slots = layout.layout(words: pool, maxSlots: Self.maxSlots, seed: layoutSeed)
         }
         precondition(!slots.isEmpty, "ProceduralGenerator produced an empty grid for seed \(seed.id); word pool size \(pool.count)")
-        let visual = SceneCreaturePicker(pools: pools).pick(theme: seed.theme, index: seed.index)
         return Level(
             id: seed.id,
             wheel: wheel,

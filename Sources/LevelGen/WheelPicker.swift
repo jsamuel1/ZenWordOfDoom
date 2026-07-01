@@ -26,6 +26,20 @@ public enum WheelPicker {
         return Wheel(letters: pick)
     }
 
+    /// Scene-coupled wheel: prefer a word from the scene's lexicon of the band's
+    /// length so the letters (and thus the words) relate to the revealed scene.
+    /// Falls back to the theme anchor when the scene has no word of that length,
+    /// guaranteeing a non-empty, buildable wheel for every seed.
+    public static func wheel(sceneID: String, theme: Theme, band: DifficultyBand, index: Int) -> Wheel {
+        let n = wheelLength(for: band)
+        let candidates = SceneLexicon.shared.words(for: sceneID)
+            .filter { $0.count == n }
+            .sorted()
+        guard !candidates.isEmpty else { return wheel(theme: theme, band: band, index: index) }
+        var rng = SeededRandom(seed: seed(theme: theme, band: band, index: index))
+        return Wheel(letters: candidates[Int(rng.next() % UInt64(candidates.count))])
+    }
+
     /// Stable FNV-1a seed for a (theme, band, index) triple.
     static func seed(theme: Theme, band: DifficultyBand, index: Int) -> UInt64 {
         var h: UInt64 = 1469598103934665603
