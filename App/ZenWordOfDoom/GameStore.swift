@@ -55,9 +55,6 @@ final class GameStore: ObservableObject {
         state.progress[level.id] = progress
 
         state.stats.recordClear()
-        // Advance the daily streak using the local-calendar day ordinal.
-        let today = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
-        state.stats.recordPlay(dayNumber: today)
 
         // Only Doom levels contribute to the bestiary (the collection of Doom
         // creatures); Zen levels reveal a calm guardian that isn't catalogued.
@@ -81,6 +78,19 @@ final class GameStore: ObservableObject {
     func recordWord(_ word: String, isBonus: Bool, isPangram: Bool) {
         state.stats.recordWord(word, isBonus: isBonus, isPangram: isPangram)
         save()
+    }
+
+    /// Record that the player engaged with the game today, advancing the daily
+    /// streak. Uses a UTC day count (stable across timezone/DST changes, never
+    /// nil) rather than a local-calendar ordinal, so travel can't desync a streak.
+    func recordDailyPlay() {
+        state.stats.recordPlay(dayNumber: Self.utcDayNumber())
+        save()
+    }
+
+    /// Whole days since the Unix epoch in UTC. Monotonic and always positive.
+    private static func utcDayNumber(now: Date = Date()) -> Int {
+        Int(now.timeIntervalSince1970 / 86_400)
     }
 
     func addSerenity(_ amount: Int) {
