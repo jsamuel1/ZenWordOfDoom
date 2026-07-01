@@ -49,4 +49,17 @@ final class WordPoolBuilderTests: XCTestCase {
             wheel: wheel, validator: StubValidator(valid: []), limit: 10)
         XCTAssertEqual(out, ["NOTE", "TONE"])
     }
+    func testModelWordRejectedWhenNotInMainCorpusEvenIfValidAndBuildable() {
+        // A validator (or a permissive system dictionary) can claim a made-up
+        // word is "valid", but the crossword must only use real words from our
+        // bundled main corpus (GeneralWordList) -- the model is never solely
+        // trusted for what counts as a real word.
+        let out = WordPoolBuilder.merge(
+            primary: ["FLIBBER"], // buildable from the wheel below; validator says valid; NOT a real corpus word
+            fallback: ["NOTE"],
+            wheel: Wheel(letters: "FLIBBERNOTE"), // supplies letters for both FLIBBER and NOTE
+            validator: StubValidator(valid: ["FLIBBER", "NOTE"]),
+            limit: 10)
+        XCTAssertEqual(out, ["NOTE"], "FLIBBER should be rejected: not in GeneralWordList despite passing the validator")
+    }
 }
