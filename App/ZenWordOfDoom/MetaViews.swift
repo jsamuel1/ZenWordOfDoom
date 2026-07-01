@@ -18,7 +18,9 @@ struct FoundWordsTray: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         // Most-recent first so a new find slides in at the front.
-                        ForEach(Array(bonusWords.reversed().enumerated()), id: \.offset) { _, word in
+                        // Bonus words are unique (deduped in the engine), so the
+                        // word itself is a stable identity.
+                        ForEach(bonusWords.reversed(), id: \.self) { word in
                             Text(word)
                                 .font(.caption2.weight(.medium))
                                 .padding(.horizontal, 8)
