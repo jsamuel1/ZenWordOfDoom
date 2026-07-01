@@ -50,8 +50,24 @@ final class GameViewModel: ObservableObject {
             ? .doom(timeLimit: settings.reducedDoom ? 240 : 150)
             : .zen
         self.engine = GameEngine(level: level, validator: validator, mode: mode)
+        // Casual assist: pre-reveal each slot's first letter when enabled.
+        if settings.firstLetterHints {
+            engine.revealFirstLetters()
+        }
         sync()
         displayOrder = level.wheel.displayOrder(seed: Self.wheelSeed(for: level.id))
+    }
+
+    /// Progress toward finishing the level, for the found-words tray.
+    /// Crossword: grid slots solved. Boss: words found toward the target.
+    var progressLabel: String {
+        switch engine.level.format {
+        case .crossword:
+            return "\(solvedSlotIDs.count) / \(engine.level.slots.count) words"
+        case .pangramHunt(let target):
+            let pangramMark = engine.pangramCount > 0 ? " ✦" : ""
+            return "\(bonusWords.count) / \(target) words\(pangramMark)"
+        }
     }
 
     /// Stable FNV-1a seed from the level id so the initial wheel order is

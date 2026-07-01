@@ -43,6 +43,9 @@ struct GamePlayView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Pack banner shown briefly when entering a pack's first level.
+    @State private var packBanner: Pack?
+
     init(level: Level, settings: AppSettings, store: GameStore) {
         self.level = level
         _model = StateObject(wrappedValue: GameViewModel(
@@ -95,6 +98,8 @@ struct GamePlayView: View {
 
                 Spacer(minLength: 0)
 
+                FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords)
+
                 WordRibbonView(word: model.currentWord)
 
                 WheelView(
@@ -117,9 +122,18 @@ struct GamePlayView: View {
             }
             .padding()
         }
+        .overlay(alignment: .top) {
+            if let pack = packBanner {
+                PackBannerView(pack: pack)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(packTitle)
-        .onAppear { model.startTimerIfDoom() }
+        .onAppear {
+            model.startTimerIfDoom()
+            showPackBannerIfNeeded()
+        }
         .onDisappear {
             model.invalidate()
             voice.stop()
@@ -161,12 +175,6 @@ struct GamePlayView: View {
             .buttonStyle(.bordered)
             .accessibilityLabel("Shuffle letters")
 
-            if !model.bonusWords.isEmpty {
-                Text("Bonus: \(model.bonusWords.count)")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
             Spacer()
 
             Button("Submit") {
@@ -175,6 +183,15 @@ struct GamePlayView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(model.selection.count < GameEngine.minWordLength)
+        }
+    }
+
+    private func showPackBannerIfNeeded() {
+        guard packBanner == nil, levelService.isPackStart(level.id),
+              let pack = levelService.pack(forID: level.id) else { return }
+        withAnimation(.easeOut(duration: 0.4)) { packBanner = pack }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation(.easeIn(duration: 0.5)) { packBanner = nil }
         }
     }
 
