@@ -17,6 +17,9 @@ struct CutSceneView: View {
     let reducedDoom: Bool
     let reducedMotion: Bool
     let onContinue: () -> Void
+    /// Fired at the creature pop-out moment (for the audio sting). Not called
+    /// under reduced motion (there is no lunge to accompany).
+    let onPopout: () -> Void
 
     /// 0 = calm scene, 1 = full pop-out, easing back toward ~0.4 as it recedes.
     @State private var doom: Double = 0
@@ -31,13 +34,15 @@ struct CutSceneView: View {
         theme: Theme,
         reducedDoom: Bool,
         reducedMotion: Bool,
-        onContinue: @escaping () -> Void
+        onContinue: @escaping () -> Void,
+        onPopout: @escaping () -> Void = {}
     ) {
         self.cutScene = cutScene
         self.theme = theme
         self.reducedDoom = reducedDoom
         self.reducedMotion = reducedMotion
         self.onContinue = onContinue
+        self.onPopout = onPopout
     }
 
     /// How strong the doom presence is allowed to get given accessibility prefs.
@@ -299,6 +304,7 @@ struct CutSceneView: View {
             withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) {
                 doom = doomCap                   // the pop
             }
+            onPopout()                           // audio sting at the lunge
         }
         // Hold, then recede to a lingering low presence.
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.1) {
