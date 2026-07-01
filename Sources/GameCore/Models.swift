@@ -112,13 +112,19 @@ public struct Level: Identifiable, Sendable {
     public let slots: [GridSlot]
     public let sceneID: String
     public let creatureID: String
+    /// How the level is won. Defaults to `.crossword`; pack capstones use
+    /// `.pangramHunt`. Last parameter with a default so existing call sites and
+    /// serialized levels stay source-compatible.
+    public let format: LevelFormat
 
-    public init(id: String, wheel: Wheel, slots: [GridSlot], sceneID: String, creatureID: String) {
+    public init(id: String, wheel: Wheel, slots: [GridSlot], sceneID: String, creatureID: String,
+                format: LevelFormat = .crossword) {
         self.id = id
         self.wheel = wheel
         self.slots = slots
         self.sceneID = sceneID
         self.creatureID = creatureID
+        self.format = format
     }
 
     public var band: DifficultyBand { DifficultyBand(wheelSize: wheel.size) }

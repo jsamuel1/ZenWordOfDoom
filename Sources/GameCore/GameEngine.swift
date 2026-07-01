@@ -54,7 +54,17 @@ public final class GameEngine {
         self.mode = mode
     }
 
-    public var isComplete: Bool { solvedSlotIDs.count == level.slots.count }
+    public var isComplete: Bool {
+        switch level.format {
+        case .crossword:
+            return solvedSlotIDs.count == level.slots.count
+        case .pangramHunt(let target):
+            // Boss: find the pangram plus a word-count target. Boss levels have
+            // no grid, so every valid word lands in `foundWords` via the bonus
+            // path in `submit`.
+            return pangramCount >= 1 && foundWords.count >= target
+        }
+    }
 
     public var progress: Double {
         level.slots.isEmpty ? 1 : Double(solvedSlotIDs.count) / Double(level.slots.count)
