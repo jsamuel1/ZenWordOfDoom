@@ -9,11 +9,18 @@ public struct ProceduralLevelLibrary: Sendable {
 
     private static let bandOrder: [DifficultyBand] = [.easy, .medium, .hard, .expert, .master]
 
+    /// Order N maps to a stable `LevelSeed`. Band escalates every `packSize`
+    /// levels (unchanged). Theme starts at `.zen` and permanently swaps
+    /// (zen<->doom) each time a prime-numbered level (1-indexed, as shown to
+    /// the player) is crossed — an even count of primes seen so far means
+    /// zen, odd means doom. This replaces simple pack-based alternation so a
+    /// pack of levels can now contain a mix of themes.
     public func seed(atOrder order: Int) -> LevelSeed {
         let pack = order / packSize
-        let theme: Theme = (pack % 2 == 0) ? .zen : .doom
         let bandIdx = min(pack, Self.bandOrder.count - 1)
         let band = Self.bandOrder[bandIdx]
+        let levelNumber = order + 1
+        let theme: Theme = Primes.count(upTo: levelNumber).isMultiple(of: 2) ? .zen : .doom
         // Global order is the per-level index, keeping every id unique.
         return LevelSeed(theme: theme, band: band, index: order)
     }

@@ -18,6 +18,16 @@ final class ProceduralLevelLibraryTests: XCTestCase {
         XCTAssertEqual(lib.seed(atOrder: 20).theme, .zen)  // pack 2
     }
 
+    func test_themeSwapsOnPrimeLevelNumbers() {
+        // Level numbers are 1-indexed (order + 1). Zen is the baseline; each prime
+        // level number permanently swaps the theme going forward. See worked
+        // example in the commit/PR description for the derivation.
+        let expected: [Theme] = [.zen, .doom, .zen, .zen, .doom, .doom, .zen, .zen, .zen, .zen, .doom, .doom]
+        for (order, theme) in expected.enumerated() {
+            XCTAssertEqual(lib.seed(atOrder: order).theme, theme, "level \(order + 1)")
+        }
+    }
+
     func test_lookupByIDRoundTrips() {
         let seed = lib.seed(atOrder: 13)
         XCTAssertEqual(lib.seed(forID: seed.id)?.id, seed.id)

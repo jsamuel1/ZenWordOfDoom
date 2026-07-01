@@ -220,3 +220,16 @@ words" is now guaranteed by the bundled corpus itself (no separate dictionary
 test needed for the seed list). Everything else (seeded wheel, layout engine,
 scene/creature, generator, library, stability/caching, FM as the cached primary
 provider with this deterministic path as fallback + top-up) is unchanged.
+
+## 14. Design revision (2026-07-01): prime-triggered theme swap
+
+Supersedes the pack-parity theme rule in §6 and §13. `ProceduralLevelLibrary`
+no longer alternates theme purely by pack. Instead: theme starts at `Theme.zen`
+and permanently swaps (zen<->doom) each time the game crosses a level whose
+1-indexed player-facing number is prime (2, 3, 5, 7, 11, 13, ...) — an even
+count of primes encountered so far means zen, odd means doom. The swap is
+cumulative, not a one-level blip. Difficulty band escalation (`packSize`-based)
+is unchanged and independent of this. A consequence: a single 10-level "pack"
+can now contain a mix of themes (primes are dense at low level numbers), so
+`LevelSelectView` shows theme per-level (row subtitle) rather than assuming a
+single theme per section — see the app-side change in the same commit series.
