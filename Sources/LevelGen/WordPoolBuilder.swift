@@ -1,9 +1,11 @@
 import GameCore
 
 /// Builds a level's word pool from model-proposed candidates plus a trusted
-/// deterministic fallback. The model is never trusted for correctness: its words
-/// must be buildable from the wheel AND pass the validator. Fallback words are
-/// already corpus-real, so they are only buildability-checked.
+/// deterministic fallback. The model is never trusted for correctness: its
+/// words must be buildable from the wheel, pass the validator, AND be present
+/// in the bundled main corpus (`GeneralWordList`) -- the game's single source
+/// of truth for "this is a real word." Fallback words are already corpus-real
+/// by construction, so they are only buildability-checked.
 public enum WordPoolBuilder {
     public static func merge(
         primary: [String],
@@ -19,6 +21,7 @@ public enum WordPoolBuilder {
                 let w = raw.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
                 guard w.count >= minLength, multiset.canBuild(w) else { return nil }
                 if validate, !validator.isValidWord(w) { return nil }
+                if validate, !GeneralWordList.shared.contains(w) { return nil }
                 return w
             }
         }
