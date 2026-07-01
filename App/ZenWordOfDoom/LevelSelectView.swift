@@ -2,9 +2,10 @@ import SwiftUI
 import GameCore
 import LevelGen
 
-/// Lists the procedural level sequence from `LevelService` in themed packs,
-/// surfacing cleared/locked state from the player's save. Tapping a level
-/// pushes into the game.
+/// Lists the procedural level sequence from `LevelService` in band-based packs
+/// (theme now swaps mid-pack on prime-numbered levels, so it's shown per row
+/// rather than per section), surfacing cleared/locked state from the player's
+/// save. Tapping a level pushes into the game.
 struct LevelSelectView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var store: GameStore
@@ -20,7 +21,11 @@ struct LevelSelectView: View {
         return levelService.ids(through: furthest + 3)
     }
 
-    /// `visibleIDs` chunked into packs of 10, titled by the chunk's theme · band.
+    /// `visibleIDs` chunked into packs of 10, titled by the chunk's band. Theme
+    /// is NOT part of the title: it now swaps mid-pack on prime-numbered
+    /// levels rather than aligning to pack boundaries, so a single section can
+    /// contain a mix of themes — each row shows its own theme instead (see
+    /// `subtitle(for:progress:)`).
     private var sections: [(key: String, title: String, ids: [String])] {
         let ids = visibleIDs
         var result: [(key: String, title: String, ids: [String])] = []
@@ -28,12 +33,11 @@ struct LevelSelectView: View {
         while i < ids.count {
             let chunk = Array(ids[i..<min(i + 10, ids.count)])
             if let first = chunk.first {
-                let theme = levelService.theme(forID: first).rawValue.capitalized
                 let band = DifficultyBand(wheelSize: levelService.wheelSize(forID: first))
                     .rawValue.capitalized
                 // Key by the chunk's first id so distinct packs that share a
-                // title (e.g. repeated "Zen · Master") don't collide in ForEach.
-                result.append((key: first, title: "\(theme) · \(band)", ids: chunk))
+                // title (e.g. repeated "Master") don't collide in ForEach.
+                result.append((key: first, title: band, ids: chunk))
             }
             i += 10
         }
@@ -118,7 +122,8 @@ struct LevelSelectView: View {
     private func subtitle(for levelID: String, progress: LevelProgress?) -> String {
         let n = levelService.wheelSize(forID: levelID)
         let band = DifficultyBand(wheelSize: n).rawValue.capitalized
-        var parts = ["\(band) · \(n) letters"]
+        let theme = levelService.theme(forID: levelID).rawValue.capitalized
+        var parts = ["\(theme) · \(band) · \(n) letters"]
         if let progress, progress.cleared {
             parts.append("Best \(progress.bestScore)")
         }
