@@ -80,6 +80,19 @@ final class GameStore: ObservableObject {
         save()
     }
 
+    /// Record that the player engaged with the game today, advancing the daily
+    /// streak. Uses a UTC day count (stable across timezone/DST changes, never
+    /// nil) rather than a local-calendar ordinal, so travel can't desync a streak.
+    func recordDailyPlay() {
+        state.stats.recordPlay(dayNumber: Self.utcDayNumber())
+        save()
+    }
+
+    /// Whole days since the Unix epoch in UTC. Monotonic and always positive.
+    private static func utcDayNumber(now: Date = Date()) -> Int {
+        Int(now.timeIntervalSince1970 / 86_400)
+    }
+
     func addSerenity(_ amount: Int) {
         guard amount != 0 else { return }
         state.serenity = max(0, state.serenity + amount)

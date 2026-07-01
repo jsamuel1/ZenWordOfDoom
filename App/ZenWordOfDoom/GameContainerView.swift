@@ -140,6 +140,7 @@ struct GamePlayView: View {
         .onAppear {
             model.startTimerIfDoom()
             showPackBannerIfNeeded()
+            store.recordDailyPlay()   // playing today keeps the streak alive
         }
         .onDisappear {
             model.invalidate()
