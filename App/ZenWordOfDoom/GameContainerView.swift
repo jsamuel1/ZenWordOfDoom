@@ -55,7 +55,7 @@ struct GamePlayView: View {
 
     var body: some View {
         ZStack {
-            RevealBackgroundView(
+            SceneRevealView(
                 sceneID: model.level.sceneID,
                 creatureID: model.level.creatureID,
                 stir: model.stir,
@@ -99,6 +99,7 @@ struct GamePlayView: View {
 
                 WheelView(
                     tiles: model.level.wheel.tiles,
+                    displayOrder: model.displayOrder,
                     selection: model.selection,
                     onTap: { id in
                         Haptics.tap()
@@ -143,6 +144,16 @@ struct GamePlayView: View {
                 .buttonStyle(.bordered)
 
             Spacer()
+
+            Button {
+                Haptics.tap()
+                model.shuffle()
+            } label: {
+                Label("Shuffle", systemImage: "shuffle")
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("Shuffle letters")
 
             if !model.bonusWords.isEmpty {
                 Text("Bonus: \(model.bonusWords.count)")

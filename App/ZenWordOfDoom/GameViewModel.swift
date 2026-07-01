@@ -14,6 +14,8 @@ final class GameViewModel: ObservableObject {
     private let store: GameStore
 
     @Published private(set) var selection: [Int] = []
+    /// Tile-id order for placing tiles around the wheel. Re-rolled by `shuffle()`.
+    @Published private(set) var displayOrder: [Int] = []
     @Published private(set) var filledCells: [GridCoord: Character] = [:]
     @Published private(set) var solvedSlotIDs: Set<Int> = []
     @Published private(set) var bonusWords: [String] = []
@@ -35,6 +37,9 @@ final class GameViewModel: ObservableObject {
     private var timer: Timer?
     private var deadline: Date?
 
+    /// Re-roll counter feeding the wheel shuffle so each press changes the order.
+    private var shuffleSalt: UInt64 = 0
+
     init(level: Level,
          validator: WordValidating,
          settings: AppSettings,
@@ -46,6 +51,15 @@ final class GameViewModel: ObservableObject {
             : .zen
         self.engine = GameEngine(level: level, validator: validator, mode: mode)
         sync()
+        displayOrder = level.wheel.displayOrder(seed: Self.wheelSeed(for: level.id))
+    }
+
+    /// Stable FNV-1a seed from the level id so the initial wheel order is
+    /// shuffled (not canonical) yet reproducible across launches.
+    private static func wheelSeed(for id: String) -> UInt64 {
+        var h: UInt64 = 1469598103934665603
+        for b in id.utf8 { h = (h ^ UInt64(b)) &* 1099511628211 }
+        return h
     }
 
     // MARK: Derived
@@ -108,6 +122,17 @@ final class GameViewModel: ObservableObject {
         builder.apply(.cancel)
         selection = builder.selection
         lastMessage = "Cleared"
+    }
+
+    /// Re-randomize tile positions on the wheel. Cosmetic: never changes the
+    /// letter set. Cancels any in-progress word so the trail stays consistent.
+    func shuffle() {
+        builder.apply(.cancel)
+        selection = builder.selection
+        shuffleSalt &+= 1
+        displayOrder = engine.level.wheel.displayOrder(
+            seed: Self.wheelSeed(for: engine.level.id), salt: shuffleSalt)
+        lastMessage = "Shuffled"
     }
 
     // MARK: Submission
