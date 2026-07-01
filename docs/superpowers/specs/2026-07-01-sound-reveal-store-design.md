@@ -29,6 +29,8 @@ shuffleable wheel.
    cosmetic sink, and free-tier cut-scene ads gated behind a Continue button.
 5. **Scene-coupled words** — the words you spell relate to the scene revealed.
 6. **Shuffleable wheel** — randomized tile positions + a re-randomize button.
+7. **Boss capstones** — each pack's last level (10) is a harder, non-crossword
+   **Pangram Hunt** where the signature creature is revealed.
 
 ## 3. Non-goals (v0.2)
 
@@ -261,12 +263,58 @@ count across bands); generator produces a wheel derived from a real key word;
 grid answers are all sub-anagrams of the wheel; a scene-poor edge case falls
 back without crashing; determinism (same seed → same level) preserved.
 
+---
+
+### G. Pangram Hunt boss capstones
+
+The **last level of every pack (level 10)** — the level that reveals the pack's
+**signature creature** (workstream C) — swaps the crossword for a harder
+**Pangram Hunt** format. This makes the capstone feel like a boss and rewards
+the pack's difficulty ramp.
+
+**Format:** no interlocking grid. The player is given the shuffled wheel and must
+**find the pangram** (the word using *all* N wheel letters — the "key" that
+unlocks the creature) **and** reach a **word-count target** `T` (so it is not a
+single lucky guess). `T` scales with the band (e.g. 4 easy → 8 master).
+
+- The **key word is scene-related** where possible (reuses workstream F: the
+  capstone's wheel is derived from a scene-related word of exactly N letters,
+  which is guaranteed to have at least one pangram — itself).
+- **Progress/reveal:** `stir` is driven by words found toward `T` and spikes on
+  the pangram; the signature-creature reveal (workstream A) plays on win.
+- **UI:** the play screen hides the grid and shows a **Pangram Hunt panel** —
+  the found-words tray (workstream C), an "N-letter word: ▢▢▢▢▢▢" prompt, and
+  progress toward `T`. Wheel, ribbon, input, hints, and audio are unchanged.
+- **Hints on a boss:** `revealHintCell` is grid-specific and does not apply; the
+  boss offers a **"reveal a letter of the key word"** hint instead (same
+  serenity cost), so hints stay meaningful without trivializing the pangram.
+
+**Engine change:** introduce `LevelFormat { case crossword; case pangramHunt(target: Int) }`
+on `Level`. `GameEngine.isComplete` and scoring branch on it:
+- `crossword` — unchanged (all slots filled).
+- `pangramHunt` — complete when `pangramCount >= 1 && foundWords.count >= target`.
+The crossword path (`level.slots`) is empty for a boss; `submit` treats every
+valid word as a bonus/collected word and tracks the pangram via the existing
+`isPangram`. Doom capstones still catalog the signature creature to the
+bestiary; Zen capstones reveal a calm guardian (unchanged rule).
+
+**Generation:** `ProceduralGenerator` checks whether the seed's order is a pack
+capstone (via `PackCatalog`/`packSize`) and, if so, emits a `.pangramHunt`
+level: pick the scene-related N-letter key word, wheel = its multiset, no grid,
+`target` from the band. Non-capstone levels are unchanged.
+
+**Testing:** capstone detection (order % packSize == packSize-1) selects
+`pangramHunt`; a boss level's wheel admits at least one pangram; `isComplete`
+requires both the pangram and `target` words; scoring credits the pangram
+bonus; determinism preserved.
+
 ## 5. Data model changes (summary)
 
 - `SaveState`: `premiumUnlocked: Bool`, `ownedCosmetics: Set<String>`,
   `lastPlayedDate` + `streak`, (serenity already present).
-- New pure types: `SceneLexicon`, `PackCatalog`, `MusicalPalette`, `SoundCue`,
-  protocols `SoundEngine` / `StoreService`.
+- `Level`: `format: LevelFormat` (`.crossword` default / `.pangramHunt(target:)`).
+- New pure types: `SceneLexicon`, `PackCatalog`, `LevelFormat`, `MusicalPalette`,
+  `SoundCue`, protocols `SoundEngine` / `StoreService`.
 - `WheelView`: `displayOrder: [Int]`; `GameViewModel`: owns display order +
   shuffle, emits `setMood`/`SoundCue`.
 
@@ -275,9 +323,12 @@ back without crashing; determinism (same seed → same level) preserved.
 1. **F** (scene-coupled words) + **A-wheel-shuffle** — pure generator + small UI;
    fully unit-testable, no new deps.
 2. **A-reveal** — swap the play-screen background to real art.
-3. **B** (audio) — new dep + module; `NullSoundEngine` keeps CI green.
-4. **C** (packs, celebration, tray, stats, first-letter hints).
-5. **D** (StoreKit unlock + serenity packs + cosmetics + AdMob ads + privacy).
+3. **G** (Pangram Hunt boss capstones) — `LevelFormat` engine branch + generator
+   + boss UI; pure engine work is unit-testable. Depends on C's `PackCatalog`
+   for capstone detection, so land `PackCatalog` (from C) first or alongside.
+4. **B** (audio) — new dep + module; `NullSoundEngine` keeps CI green.
+5. **C** (packs, celebration, tray, stats, first-letter hints).
+6. **D** (StoreKit unlock + serenity packs + cosmetics + AdMob ads + privacy).
 
 ## 7. Open questions
 
@@ -293,6 +344,7 @@ back without crashing; determinism (same seed → same level) preserved.
 ## 8. Testing philosophy (unchanged)
 
 Pure cores (`GameCore`, `LevelGen`, new `SceneLexicon`/`PackCatalog`/
-`MusicalPalette`/store gating) stay UI-free and fully unit-tested. Hardware/
+`LevelFormat` completion/`MusicalPalette`/store gating) stay UI-free and fully
+unit-tested. Hardware/
 service paths (AudioKit, StoreKit, AdMob) sit behind protocols with null/mock
 implementations so CI needs no entitlements or devices.
