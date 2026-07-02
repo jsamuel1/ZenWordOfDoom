@@ -31,14 +31,21 @@ struct WheelView: View {
     let onSwipeEnd: () -> Void
 
     /// Diameter of a single tile, scaled with Dynamic Type (clamped so the
-    /// touch target never shrinks below 44pt or grows so large a 9-tile
-    /// wheel would overlap).
+    /// touch target never shrinks below 44pt; the 80pt cap is load-bearing —
+    /// see `wheelHeight` below, which caps at a height chosen specifically so
+    /// a 9-tile (Master band) wheel never overlaps at this tile size).
     @ScaledMetric(relativeTo: .title) private var scaledTileSize: CGFloat = 56
     private var tileSize: CGFloat { min(max(scaledTileSize, 44), 80) }
     /// Height of the wheel's frame, scaled with Dynamic Type (never smaller
-    /// than the original fixed size, capped so it doesn't consume the whole screen).
+    /// than the original fixed size). The 350pt cap is derived, not arbitrary:
+    /// with `tileSize` capped at 80 and the layout inset of `tileSize * 0.64`
+    /// (see `layout(in:count:)`), 9 evenly-spaced tiles need a radius of at
+    /// least `tileSize / (2 * sin(π/9)) ≈ 116.95pt` to avoid touching circles
+    /// overlapping. A 320pt cap only yields a 108.8pt radius (overlap); 350pt
+    /// yields 123.8pt — about a 6% margin. If either the tile-size cap or the
+    /// inset formula changes, re-derive this cap for the worst case (9 tiles).
     @ScaledMetric(relativeTo: .title) private var scaledWheelHeight: CGFloat = 240
-    private var wheelHeight: CGFloat { min(max(scaledWheelHeight, 240), 320) }
+    private var wheelHeight: CGFloat { min(max(scaledWheelHeight, 240), 350) }
     /// The tile id currently under the dragging finger (nil when not dragging).
     @State private var activeSwipeTile: Int?
     /// True once a drag has moved far enough to count as a swipe rather than a tap.
