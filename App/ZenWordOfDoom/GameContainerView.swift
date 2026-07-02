@@ -65,6 +65,11 @@ struct GamePlayView: View {
     /// Gates the scorecard: stays false during the held creature-reveal beat so
     /// the reveal isn't covered, then flips true once the hold completes.
     @State private var showClear = false
+    /// True while a word-trace drag is in flight on the wheel. Disables the
+    /// enclosing ScrollView for the drag's duration so the scroll pan can't
+    /// steal the trace (belt-and-braces alongside the wheel's
+    /// .highPriorityGesture).
+    @State private var wheelDragging = false
 
     /// Shared audio engine, retained for start/stop/enable over the level's life.
     private let soundEngine: any SoundEngine
@@ -85,6 +90,98 @@ struct GamePlayView: View {
 
     var body: some View {
         ZStack {
+            // GeometryReader gives the scroll content a minHeight equal to the
+            // viewport, so the Spacer inside the VStack resolves exactly as it
+            // did pre-ScrollView at standard type sizes; at accessibility
+            // sizes the content exceeds the viewport and scrolls instead.
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(spacing: 14) {
+                        HUDView(
+                            score: model.score,
+                            scoreVoided: model.doomExpired,
+                            serenity: model.serenity,
+                            hintCost: model.hintCost,
+                            timeRemaining: model.timeRemaining,
+                            isListening: voice.isListening,
+                            voiceEnabled: settings.voiceEnabled,
+                            onHint: {
+                                Haptics.reveal()
+                                model.useHintRevealCell()
+                            },
+                            onMicStart: { startListening() },
+                            onMicStop: { voice.stop() }
+                        )
+
+                        Text(model.lastMessage)
+                            .font(.subheadline)
+                            .foregroundStyle(model.wantsSerenityOffer ? .primary : .secondary)
+                            .underline(model.wantsSerenityOffer)
+                            .animation(.default, value: model.lastMessage)
+                            .accessibilityLiveRegion()
+                            .onTapGesture {
+                                guard model.wantsSerenityOffer else { return }
+                                showSerenitySheet = true
+                            }
+                            .accessibilityAddTraits(model.wantsSerenityOffer ? .isButton : [])
+
+                        GridView(
+                            level: model.level,
+                            filledCells: model.filledCells,
+                            solvedSlotIDs: model.solvedSlotIDs
+                        )
+                        .frame(maxHeight: gridMaxHeight(viewport: proxy.size.height, rows: gridRowCount))
+
+                        Spacer(minLength: 0)
+
+                        FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords)
+
+                        WordRibbonView(word: model.currentWord)
+
+                        WheelView(
+                            tiles: model.level.wheel.tiles,
+                            displayOrder: model.displayOrder,
+                            selection: model.selection,
+                            onTap: { id in
+                                Haptics.tap()
+                                model.tap(tileID: id)
+                            },
+                            onSwipeBegin: { id in
+                                Haptics.tap()
+                                wheelDragging = true
+                                model.swipeBegin(tileID: id)
+                            },
+                            onSwipeExtend: { id in model.swipeExtend(tileID: id) },
+                            onSwipeEnd: {
+                                wheelDragging = false
+                                model.swipeEnd()
+                            }
+                        )
+
+                        controls
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                    .opacity(model.isComplete ? 0 : 1)
+                    .animation(.easeOut(duration: 0.5), value: model.isComplete)
+                    .allowsHitTesting(!model.isComplete)
+                    // VoiceOver must not be able to reach hidden/inactive
+                    // controls behind the LevelClearView or DoomExpiredOverlay.
+                    .accessibilityHidden(model.isComplete || model.showDoomOverlay)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                // Frozen chrome must not scroll behind the clear overlay, and
+                // an in-flight wheel trace must never turn into a scroll.
+                .scrollDisabled(wheelDragging || model.isComplete)
+            }
+        }
+        // The scene is a .background — NOT a ZStack child — so its
+        // scaledToFill art can never inflate the layout proposal the chrome
+        // receives. (As a ZStack sibling, the oversized fill made the chrome
+        // lay out wider than the screen, pushing the HUD edges and the
+        // Clear/Submit row off-screen at every type size.) It stays
+        // full-screen, outside the scroll, and never scrolls.
+        .background {
             SceneRevealView(
                 sceneID: model.level.sceneID,
                 creatureID: model.level.creatureID,
@@ -95,71 +192,6 @@ struct GamePlayView: View {
                 paletteID: store.state.equippedPalette
             )
             .ignoresSafeArea()
-
-            VStack(spacing: 14) {
-                HUDView(
-                    score: model.score,
-                    scoreVoided: model.doomExpired,
-                    serenity: model.serenity,
-                    hintCost: model.hintCost,
-                    timeRemaining: model.timeRemaining,
-                    isListening: voice.isListening,
-                    voiceEnabled: settings.voiceEnabled,
-                    onHint: {
-                        Haptics.reveal()
-                        model.useHintRevealCell()
-                    },
-                    onMicStart: { startListening() },
-                    onMicStop: { voice.stop() }
-                )
-
-                Text(model.lastMessage)
-                    .font(.subheadline)
-                    .foregroundStyle(model.wantsSerenityOffer ? .primary : .secondary)
-                    .underline(model.wantsSerenityOffer)
-                    .animation(.default, value: model.lastMessage)
-                    .accessibilityLiveRegion()
-                    .onTapGesture {
-                        guard model.wantsSerenityOffer else { return }
-                        showSerenitySheet = true
-                    }
-                    .accessibilityAddTraits(model.wantsSerenityOffer ? .isButton : [])
-
-                GridView(
-                    level: model.level,
-                    filledCells: model.filledCells,
-                    solvedSlotIDs: model.solvedSlotIDs
-                )
-                .frame(maxHeight: 380)
-
-                Spacer(minLength: 0)
-
-                FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords)
-
-                WordRibbonView(word: model.currentWord)
-
-                WheelView(
-                    tiles: model.level.wheel.tiles,
-                    displayOrder: model.displayOrder,
-                    selection: model.selection,
-                    onTap: { id in
-                        Haptics.tap()
-                        model.tap(tileID: id)
-                    },
-                    onSwipeBegin: { id in
-                        Haptics.tap()
-                        model.swipeBegin(tileID: id)
-                    },
-                    onSwipeExtend: { id in model.swipeExtend(tileID: id) },
-                    onSwipeEnd: { model.swipeEnd() }
-                )
-
-                controls
-            }
-            .padding()
-            .opacity(model.isComplete ? 0 : 1)
-            .animation(.easeOut(duration: 0.5), value: model.isComplete)
-            .allowsHitTesting(!model.isComplete)
         }
         .overlay(alignment: .top) {
             if let pack = packBanner {
@@ -169,10 +201,18 @@ struct GamePlayView: View {
         }
         .overlay {
             if showClear, let summary = model.clearSummary {
-                LevelClearView(summary: summary, reducedMotion: reduceMotion) {
-                    router.push(.cutScene(afterLevelID: level.id, sceneID: level.sceneID, creatureID: level.creatureID))
+                // Scrim mirrors DoomExpiredOverlay's dimming so the card's
+                // text holds contrast over whatever scene art sits behind it;
+                // this is legibility, not doom, so `settings.reducedDoom`
+                // doesn't gate it.
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    LevelClearView(summary: summary, reducedMotion: reduceMotion) {
+                        router.push(.cutScene(afterLevelID: level.id, sceneID: level.sceneID, creatureID: level.creatureID))
+                    }
+                    .padding(.horizontal, 40)
                 }
-                .padding(.horizontal, 40)
                 .transition(.opacity)
             }
         }
@@ -224,6 +264,32 @@ struct GamePlayView: View {
         }
     }
 
+    /// Height available to the grid: the viewport minus the rest of the
+    /// chrome (HUD + message + tray + ribbon + 240pt wheel + controls +
+    /// spacing ≈ 610pt at standard Dynamic Type), capped at the design's
+    /// 380pt. Pre-ScrollView, the fixed-height proposal squeezed the grid
+    /// to this leftover automatically; inside a ScrollView the height
+    /// proposal is unbounded, so without this cap the grid takes its full
+    /// ideal and pushes the content past the viewport at default sizes.
+    ///
+    /// The floor scales with `rows` (24pt/row — a legible cell height at
+    /// GridView's 0.8 minimumScaleFactor) rather than a flat constant: a
+    /// flat floor sized for a small easy-band grid (4-6 rows) would crush a
+    /// master-band grid (up to ~12 rows from CrosswordLayoutEngine) into
+    /// unreadable cells. 100pt is the absolute floor for 1-2 row levels so
+    /// the grid never collapses to nothing.
+    private func gridMaxHeight(viewport: CGFloat, rows: Int) -> CGFloat {
+        let rowFloor = max(CGFloat(rows) * 24, 100)
+        return min(380, max(rowFloor, viewport - 610))
+    }
+
+    /// Row count of the current level's crossword grid, for `gridMaxHeight`'s
+    /// per-level floor. Mirrors `GridView.bounds`'s row computation.
+    private var gridRowCount: Int {
+        let maxRow = level.slots.flatMap(\.cells).map(\.row).max() ?? 0
+        return maxRow + 1
+    }
+
     private var packTitle: String {
         if let pack = levelService.pack(forID: level.id) { return pack.name }
         let theme = levelService.theme(forID: level.id).rawValue.capitalized
@@ -235,6 +301,7 @@ struct GamePlayView: View {
         HStack {
             Button("Clear", role: .destructive) { model.clear() }
                 .buttonStyle(.bordered)
+                .controlSize(.large)
 
             Spacer()
 
@@ -246,6 +313,7 @@ struct GamePlayView: View {
                     .labelStyle(.iconOnly)
             }
             .buttonStyle(.bordered)
+            .controlSize(.large)
             .accessibilityLabel("Shuffle letters")
 
             Spacer()
@@ -255,6 +323,7 @@ struct GamePlayView: View {
                 model.submit()
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .disabled(model.selection.count < GameEngine.minWordLength)
         }
     }
@@ -306,6 +375,8 @@ private struct DoomExpiredOverlay: View {
     let reducedDoom: Bool
     let onContinue: () -> Void
 
+    @AccessibilityFocusState private var focused: Bool
+
     var body: some View {
         ZStack {
             Color.black.opacity(reducedDoom ? 0.35 : 0.55)
@@ -314,17 +385,19 @@ private struct DoomExpiredOverlay: View {
                 Text("The doom has claimed this hour")
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
+                    .accessibilityFocused($focused)
                 Text("The words remain. The points do not.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Button("Continue without points", action: onContinue)
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
             }
             .padding(28)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial))
+            .a11yCardBackground(cornerRadius: 24)
             .padding(.horizontal, 32)
         }
         .transition(.opacity)
+        .onAppear { focused = true }
     }
 }

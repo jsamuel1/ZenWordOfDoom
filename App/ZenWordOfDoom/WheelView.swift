@@ -30,8 +30,22 @@ struct WheelView: View {
     let onSwipeExtend: (Int) -> Void
     let onSwipeEnd: () -> Void
 
-    /// Diameter of a single tile.
-    private let tileSize: CGFloat = 56
+    /// Diameter of a single tile, scaled with Dynamic Type (clamped so the
+    /// touch target never shrinks below 44pt; the 80pt cap is load-bearing —
+    /// see `wheelHeight` below, which caps at a height chosen specifically so
+    /// a 9-tile (Master band) wheel never overlaps at this tile size).
+    @ScaledMetric(relativeTo: .title) private var scaledTileSize: CGFloat = 56
+    private var tileSize: CGFloat { min(max(scaledTileSize, 44), 80) }
+    /// Height of the wheel's frame, scaled with Dynamic Type (never smaller
+    /// than the original fixed size). The 350pt cap is derived, not arbitrary:
+    /// with `tileSize` capped at 80 and the layout inset of `tileSize * 0.64`
+    /// (see `layout(in:count:)`), 9 evenly-spaced tiles need a radius of at
+    /// least `tileSize / (2 * sin(π/9)) ≈ 116.95pt` to avoid touching circles
+    /// overlapping. A 320pt cap only yields a 108.8pt radius (overlap); 350pt
+    /// yields 123.8pt — about a 6% margin. If either the tile-size cap or the
+    /// inset formula changes, re-derive this cap for the worst case (9 tiles).
+    @ScaledMetric(relativeTo: .title) private var scaledWheelHeight: CGFloat = 240
+    private var wheelHeight: CGFloat { min(max(scaledWheelHeight, 240), 350) }
     /// The tile id currently under the dragging finger (nil when not dragging).
     @State private var activeSwipeTile: Int?
     /// True once a drag has moved far enough to count as a swipe rather than a tap.
@@ -75,14 +89,27 @@ struct WheelView: View {
                     )
                     .position(layout.position(for: index))
                     .onTapGesture { onTap(tile.id) }
+                    // VoiceOver activation paths alongside the tap/swipe
+                    // gestures above: a named custom action always works,
+                    // and the default activation action + isButton trait
+                    // make a plain double-tap work too, in case the wheel's
+                    // DragGesture ever intercepts the standard activation.
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { onTap(tile.id) }
+                    .accessibilityAction(named: "Select \(tile.letter)") { onTap(tile.id) }
+                    .accessibilityRespondsToUserInteraction(true)
                 }
             }
             .contentShape(Rectangle())
-            .gesture(swipeGesture(ordered: ordered, layout: layout))
+            // High priority so the word-trace drag beats the enclosing
+            // ScrollView's pan within the wheel's bounds — a plain .gesture
+            // would lose swipes with a vertical component to the scroll.
+            .highPriorityGesture(swipeGesture(ordered: ordered, layout: layout))
         }
-        .frame(height: 240)
+        .frame(height: wheelHeight)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Letter wheel")
+        .accessibilityHint("Double-tap a letter to add it to the word. Use the Submit button to submit.")
     }
 
     // MARK: - Layout
@@ -103,7 +130,7 @@ struct WheelView: View {
     }
 
     private func layout(in size: CGSize, count: Int) -> WheelLayout {
-        let radius = min(size.width, size.height) / 2 - 36
+        let radius = min(size.width, size.height) / 2 - tileSize * 0.64
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         return WheelLayout(center: center, radius: max(radius, 0), count: count)
     }
@@ -193,11 +220,13 @@ private struct TileView: View {
     var body: some View {
         Text(String(letter))
             .font(.system(.title, design: .rounded).weight(.bold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             .frame(width: size, height: size)
             .background(
-                Circle().fill(isSelected ? Color.accentColor : Color(.sRGB, white: 1, opacity: 0.9))
+                Circle().fill(isSelected ? AccessibilityPalette.wheelTileSelectedFill : AccessibilityPalette.wheelTileFill)
             )
-            .foregroundStyle(isSelected ? .white : .primary)
+            .foregroundStyle(isSelected ? AccessibilityPalette.wheelTileSelectedText : AccessibilityPalette.wheelTileText)
             .shadow(radius: 2)
             .accessibilityLabel(String(letter))
             .accessibilityValue(order.map { "Selected, position \($0)" } ?? "")

@@ -14,6 +14,9 @@ final class GameViewModel: ObservableObject {
     private let soundEngine: any SoundEngine
     /// Musical mood for this level (its theme), fed to the sound engine with stir.
     private let mood: MusicMood
+    /// Posts VoiceOver announcements for meaningful `lastMessage` changes and
+    /// doom-timer urgency. Swappable in tests via `SpyAnnouncer`.
+    private let announcer: any AccessibilityAnnouncing
 
     @Published private(set) var selection: [Int] = []
     /// Tile-id order for placing tiles around the wheel. Re-rolled by `shuffle()`.
@@ -48,6 +51,10 @@ final class GameViewModel: ObservableObject {
 
     private var timer: Timer?
     private var deadline: Date?
+    /// Doom-timer urgency thresholds (seconds) already announced this level,
+    /// so each is spoken at most once as the countdown crosses it.
+    private var announcedThresholds: Set<Int> = []
+    private static let urgencyThresholds = [30, 15, 5]
 
     /// Re-roll counter feeding the wheel shuffle so each press changes the order.
     private var shuffleSalt: UInt64 = 0
@@ -57,11 +64,13 @@ final class GameViewModel: ObservableObject {
          settings: AppSettings,
          store: GameStore,
          soundEngine: any SoundEngine = NullSoundEngine(),
-         mood: MusicMood = .zen) {
+         mood: MusicMood = .zen,
+         announcer: any AccessibilityAnnouncing = SystemAnnouncer()) {
         self.settings = settings
         self.store = store
         self.soundEngine = soundEngine
         self.mood = mood
+        self.announcer = announcer
         let mode: GameMode = settings.doomMode
             ? .doom(timeLimit: settings.reducedDoom ? 240 : 150)
             : .zen
@@ -186,6 +195,7 @@ final class GameViewModel: ObservableObject {
         guard !cleaned.isEmpty else { return }
         guard engine.level.wheel.multiset.canBuild(String(cleaned)) else {
             lastMessage = "Couldn't hear letters on the wheel"
+            announcer.announce(lastMessage)
             return
         }
         // Greedily map each spoken letter onto an unused wheel tile.
@@ -222,6 +232,7 @@ final class GameViewModel: ObservableObject {
             soundEngine.play(.invalid)
             lastMessage = message(for: reason, word: word)
         }
+        announcer.announce(lastMessage)
         sync()
         updateAudioMood()
         if engine.isComplete && !isComplete {
@@ -248,6 +259,7 @@ final class GameViewModel: ObservableObject {
         guard !engine.isComplete else { return }
         guard store.spendSerenity(hintCost) else {
             lastMessage = "Not enough serenity — tap for more"
+            announcer.announce(lastMessage)
             wantsSerenityOffer = true
             return
         }
@@ -258,12 +270,14 @@ final class GameViewModel: ObservableObject {
             // Refund: nothing was revealed.
             store.addSerenity(hintCost)
             lastMessage = "Nothing left to reveal"
+            announcer.announce(lastMessage)
             return
         }
         usedHint = true
         revealCount += 1
         soundEngine.play(.hintReveal)
         lastMessage = "Revealed \(letter)"
+        announcer.announce(lastMessage)
         sync()
         updateAudioMood()
     }
@@ -287,7 +301,10 @@ final class GameViewModel: ObservableObject {
         timer = t
     }
 
-    private func tickTimer() {
+    /// Internal (not private) so tests can drive it deterministically after
+    /// setting a short deadline via `debugSetDeadline(_:)`, rather than
+    /// waiting on the real repeating `Timer`.
+    func tickTimer() {
         guard let deadline else { return }
         let remaining = deadline.timeIntervalSinceNow
         if remaining <= 0 {
@@ -296,7 +313,25 @@ final class GameViewModel: ObservableObject {
             if !engine.isComplete { handleDoomExpiry() }
         } else {
             timeRemaining = remaining
+            announceUrgencyIfNeeded(remaining: remaining)
         }
+    }
+
+    /// Announces each doom-timer urgency threshold (30s/15s/5s) at most once,
+    /// paired with a haptic tap, as the countdown crosses it.
+    private func announceUrgencyIfNeeded(remaining: TimeInterval) {
+        for threshold in Self.urgencyThresholds {
+            guard remaining <= Double(threshold), !announcedThresholds.contains(threshold) else { continue }
+            announcedThresholds.insert(threshold)
+            announcer.announce("\(threshold) seconds remaining")
+            Haptics.reveal()
+        }
+    }
+
+    /// Test seam: set the countdown deadline directly so tests can drive
+    /// `tickTimer()` without waiting for the real 0.1s-interval `Timer`.
+    func debugSetDeadline(_ date: Date) {
+        deadline = date
     }
 
     /// The doom timer ran out: void the score and raise the overlay.
@@ -306,6 +341,7 @@ final class GameViewModel: ObservableObject {
         doomExpired = true
         showDoomOverlay = true
         lastMessage = "The doom has claimed this hour"
+        announcer.announce(lastMessage)
         sync()
         updateAudioMood()
     }
@@ -352,6 +388,7 @@ final class GameViewModel: ObservableObject {
         )
         isComplete = true
         lastMessage = "The garden settles\u{2026}"
+        announcer.announce("Level cleared")
     }
 
     // MARK: Sync

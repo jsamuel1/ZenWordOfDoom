@@ -11,6 +11,8 @@ struct GridView: View {
     let filledCells: [GridCoord: Character]
     let solvedSlotIDs: Set<Int>
 
+    @Environment(\.colorSchemeContrast) private var contrast
+
     /// All grid coordinates that belong to at least one slot.
     private var occupiedCells: Set<GridCoord> {
         Set(level.slots.flatMap(\.cells))
@@ -49,9 +51,35 @@ struct GridView: View {
             }
         }
         .padding(8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Crossword grid")
+        .a11yCardBackground(cornerRadius: 12)
+        // `.contain` (not `.ignore`) so the container label below coexists with
+        // the per-slot elements supplied via `.accessibilityChildren` — `.ignore`
+        // collapses the subtree and swallows those synthesized children too.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Crossword grid, \(solvedSlotIDs.count) of \(level.slots.count) words solved")
+        .accessibilityChildren {
+            ForEach(level.slots, id: \.id) { slot in
+                Text(slotDescription(slot))
+            }
+        }
+    }
+
+    /// A VoiceOver-friendly summary of one slot's current reveal state.
+    /// Direction is read straight off the slot (it's already derived from the
+    /// same row/column relationship that defines `cells`).
+    func slotDescription(_ slot: GridSlot) -> String {
+        let prefix = "\(slot.answer.count)-letter word, \(slot.direction.rawValue) — "
+        if solvedSlotIDs.contains(slot.id) {
+            return prefix + "solved: \(slot.answer)"
+        }
+        let revealed = slot.cells.map { filledCells[$0] }
+        if revealed.allSatisfy({ $0 == nil }) {
+            return prefix + "no letters revealed"
+        }
+        let letters = revealed
+            .map { $0.map(String.init) ?? "blank" }
+            .joined(separator: ", ")
+        return prefix + letters
     }
 
     @ViewBuilder
@@ -65,20 +93,47 @@ struct GridView: View {
                     if let letter {
                         Text(String(letter))
                             .font(.system(.title3, design: .rounded).weight(.bold))
-                            .foregroundStyle(solved ? Color.green.opacity(0.9) : .black)
-                            .minimumScaleFactor(0.5)
+                            .foregroundStyle(solved ? AccessibilityPalette.gridSolvedText : AccessibilityPalette.gridFilledText)
+                            .minimumScaleFactor(0.8)
+                            .lineLimit(1)
                     }
                 }
+                // Rendered exactly as the palette constant (at standard
+                // contrast) — no extra opacity — so the on-screen stroke
+                // matches what WCAGContrastTests pins. Under Increase
+                // Contrast (audit 6.2) it swaps to a stronger, non-pinned
+                // variant.
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(cellStroke, lineWidth: contrast == .increased ? 1.5 : 1)
+                )
         } else {
             Color.clear.aspectRatio(1, contentMode: .fit)
         }
     }
 
+    /// These fills sit on light cells within the grid's `.ultraThinMaterial`
+    /// background — see `AccessibilityPalette.relativeLuminance` for the
+    /// "composite over white" approximation this depends on.
     private func fillColor(letter: Character?, solved: Bool) -> Color {
         if solved {
-            return Color.green.opacity(0.18)
+            return AccessibilityPalette.gridSolvedFill
         }
-        return letter == nil ? Color.white.opacity(0.5) : Color.white
+        return letter == nil ? unfilledFill : AccessibilityPalette.gridFilledFill
+    }
+
+    /// Increase Contrast (audit 6.2): a less-translucent unfilled fill so
+    /// empty cells read more solidly against scene art. Deliberately a
+    /// separate, non-pinned constant — `AccessibilityPalette.gridUnfilledFill`
+    /// stays exactly what `WCAGContrastTests` pins.
+    private var unfilledFill: Color {
+        contrast == .increased ? AccessibilityPalette.gridUnfilledFillIncreased : AccessibilityPalette.gridUnfilledFill
+    }
+
+    /// Increase Contrast (audit 6.2): a darker, more opaque stroke than the
+    /// pinned `AccessibilityPalette.gridCellStroke`.
+    private var cellStroke: Color {
+        contrast == .increased ? AccessibilityPalette.gridCellStrokeIncreased : AccessibilityPalette.gridCellStroke
     }
 }
 

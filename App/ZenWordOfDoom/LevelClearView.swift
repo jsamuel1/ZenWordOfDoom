@@ -19,6 +19,9 @@ struct LevelClearView: View {
     @State private var shownScore = 0
     @State private var appeared = false
 
+    @ScaledMetric(relativeTo: .largeTitle) private var scoreSize: CGFloat = 44
+    @AccessibilityFocusState private var focused: Bool
+
     var body: some View {
         VStack(spacing: 14) {
             VStack(spacing: 14) {
@@ -27,7 +30,7 @@ struct LevelClearView: View {
 
                 VStack(spacing: 2) {
                     Text("\(shownScore)")
-                        .font(.system(size: 44, weight: .heavy, design: .rounded))
+                        .font(.system(size: scoreSize, weight: .heavy, design: .rounded))
                         .monospacedDigit()
                         .contentTransition(.numericText())
                     Text("points")
@@ -53,24 +56,26 @@ struct LevelClearView: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(accessibilityText)
+            .accessibilityFocused($focused)
 
             Button(action: onContinue) {
                 Text("Continue")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .padding(.top, 6)
             .accessibilityHint("On to the breath between levels")
         }
         .padding(28)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
+        .a11yCardBackground(cornerRadius: 24)
         .shadow(radius: 20, y: 8)
         .scaleEffect(appeared || reducedMotion ? 1 : 0.85)
         .opacity(appeared ? 1 : 0)
-        .onAppear(perform: animateIn)
+        .onAppear {
+            animateIn()
+            focused = true
+        }
     }
 
     private func animateIn() {

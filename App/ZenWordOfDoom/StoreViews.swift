@@ -49,12 +49,16 @@ struct SerenitySheetView: View {
             Button {
                 buy(pack)
             } label: {
-                if purchasing == pack {
-                    ProgressView()
-                } else {
-                    Text(storeService.displayPrice(for: pack) ?? "—")
-                        .font(.subheadline.weight(.semibold))
+                // 44pt touch-target floor (audit 4.1) on the label content.
+                Group {
+                    if purchasing == pack {
+                        ProgressView()
+                    } else {
+                        Text(storeService.displayPrice(for: pack) ?? "—")
+                            .font(.subheadline.weight(.semibold))
+                    }
                 }
+                .frame(minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
             .disabled(purchasing != nil || storeService.displayPrice(for: pack) == nil)

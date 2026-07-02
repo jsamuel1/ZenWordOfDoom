@@ -8,6 +8,9 @@ import SwiftUI
 struct WordRibbonView: View {
     let word: String
 
+    @ScaledMetric(relativeTo: .title2) private var tileSide: CGFloat = 38
+    @ScaledMetric(relativeTo: .title2) private var ribbonHeight: CGFloat = 44
+
     private var letters: [Character] { Array(word) }
 
     var body: some View {
@@ -23,7 +26,7 @@ struct WordRibbonView: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .frame(height: 44)
+        .frame(height: ribbonHeight)
         .frame(maxWidth: .infinity)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: word)
         .accessibilityElement(children: .ignore)
@@ -33,8 +36,10 @@ struct WordRibbonView: View {
     private func letterTile(_ letter: Character) -> some View {
         Text(String(letter))
             .font(.system(.title2, design: .rounded).weight(.bold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             .foregroundStyle(.white)
-            .frame(width: 38, height: 38)
+            .frame(width: tileSide, height: tileSide)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.accentColor.opacity(0.85))
@@ -45,7 +50,10 @@ struct WordRibbonView: View {
     private var placeholder: some View {
         Text("Trace a word")
             .font(.system(.subheadline, design: .rounded))
-            .foregroundStyle(.white.opacity(0.4))
+            .foregroundStyle(.white.opacity(0.85))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color.black.opacity(0.3)))
     }
 }
 

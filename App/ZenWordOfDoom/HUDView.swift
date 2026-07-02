@@ -21,7 +21,17 @@ struct HUDView: View {
     let onMicStart: () -> Void
     let onMicStop: () -> Void
 
+    @Environment(\.colorSchemeContrast) private var contrast
+    /// Reduce Motion (audit 5.3): the mic's pulse symbol effect is purely
+    /// decorative, so it's suppressed rather than replaced.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var canAffordHint: Bool { serenity >= hintCost }
+
+    /// Increase Contrast (audit 6.2): the caption labels default to
+    /// `.secondary`, which can thin out over busy scene art; bump to
+    /// `.primary` when the setting is on.
+    private var labelStyle: Color { contrast == .increased ? .primary : .secondary }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -41,21 +51,26 @@ struct HUDView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: Capsule())
+        // Constant dark backing sits beneath the material (audit 3.5) so
+        // `.secondary` labels hold contrast over bright/light scene art;
+        // `a11yCardBackground` layers on top and goes opaque under Reduce
+        // Transparency.
+        .a11yCardBackground(cornerRadius: .infinity)
+        .background(Capsule().fill(Color.black.opacity(0.25)))
     }
 
     private func stat(title: String, value: String, systemImage: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: systemImage)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(labelStyle)
             VStack(alignment: .leading, spacing: 0) {
                 Text(value)
                     .font(.system(.subheadline, design: .rounded).weight(.bold))
                     .monospacedDigit()
                 Text(title)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(labelStyle)
             }
         }
         .accessibilityElement(children: .combine)
@@ -90,6 +105,10 @@ struct HUDView: View {
                         : Color.gray.opacity(0.4))
                 )
                 .foregroundStyle(.white)
+                // 44pt touch-target floor (audit 4.1): enlarges the tappable
+                // area only — the visible circle above stays its original size.
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .disabled(!canAffordHint)
         .accessibilityLabel("Reveal a hint for \(hintCost) serenity")
@@ -107,7 +126,11 @@ struct HUDView: View {
                         : Color.secondary.opacity(0.25))
                 )
                 .foregroundStyle(isListening ? .white : .primary)
-                .symbolEffect(.pulse, isActive: isListening)
+                .symbolEffect(.pulse, isActive: isListening && !reduceMotion)
+                // 44pt touch-target floor (audit 4.1): enlarges the tappable
+                // area only — the visible circle above stays its original size.
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .accessibilityLabel(isListening ? "Stop listening" : "Speak a word")
     }

@@ -62,6 +62,10 @@ struct LevelSelectView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    // Button-shape affordance (audit 6.3) is intentionally NOT added here:
+    // this row lives inside a `List` (see `body` above, `.listStyle(.insetGrouped)`),
+    // and List rows already carry the platform's own row affordance/separators,
+    // so a stroked-border overlay would be redundant chrome on top of chrome.
     @ViewBuilder
     private func levelRow(levelID: String) -> some View {
         let progress = store.state.progress[levelID]
