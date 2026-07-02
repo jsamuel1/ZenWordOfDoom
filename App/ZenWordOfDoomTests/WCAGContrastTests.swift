@@ -8,7 +8,7 @@ final class WCAGContrastTests: XCTestCase {
     }
 
     func testWheelTilePairsMeetAA() {
-        XCTAssertGreaterThanOrEqual(ratio(.init(.sRGB, white: 0.12, opacity: 1),
+        XCTAssertGreaterThanOrEqual(ratio(AccessibilityPalette.wheelTileText,
                                           AccessibilityPalette.wheelTileFill), 4.5)
         XCTAssertGreaterThanOrEqual(ratio(AccessibilityPalette.wheelTileSelectedText,
                                           AccessibilityPalette.wheelTileSelectedFill), 4.5)

@@ -69,9 +69,11 @@ struct GridView: View {
                             .minimumScaleFactor(0.5)
                     }
                 }
+                // Rendered exactly as the palette constant — no extra opacity —
+                // so the on-screen stroke matches what WCAGContrastTests pins.
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(AccessibilityPalette.gridCellStroke.opacity(0.35), lineWidth: 1)
+                        .stroke(AccessibilityPalette.gridCellStroke, lineWidth: 1)
                 )
         } else {
             Color.clear.aspectRatio(1, contentMode: .fit)

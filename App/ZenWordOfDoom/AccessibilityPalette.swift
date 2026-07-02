@@ -21,7 +21,11 @@ enum AccessibilityPalette {
     static let gridSolvedFill = Color(.sRGB, red: 0.85, green: 0.94, blue: 0.86, opacity: 1)
     static let gridSolvedText = Color(.sRGB, red: 0.05, green: 0.38, blue: 0.13, opacity: 1)
     static let gridUnfilledFill = Color(.sRGB, white: 1, opacity: 0.72)
-    static let gridCellStroke = Color(.sRGB, white: 0.25, opacity: 1)
+    /// Rendered as-is (no extra opacity) so the on-screen stroke is exactly
+    /// the color the contrast test pins. Tuned to read as a subtle hairline:
+    /// 3.71:1 against `gridUnfilledFill` — above the 3:1 UI-component floor,
+    /// below the ~4:1 point where it starts reading as a heavy border.
+    static let gridCellStroke = Color(.sRGB, white: 0.52, opacity: 1)
     static let gridFilledText = Color.black
     static let gridFilledFill = Color.white
 
@@ -30,10 +34,15 @@ enum AccessibilityPalette {
     /// WCAG 2.x relative luminance of an sRGB color (resolved via UIColor).
     ///
     /// Approximation: translucent fills (e.g. `wheelTileFill`, `gridUnfilledFill`)
-    /// are alpha-composited over a white backdrop before computing luminance,
-    /// since every fill in this palette sits on a light cell background or a
-    /// light system material — that's the surface it's actually judged against
-    /// on screen, not the color's raw (uncomposited) RGB.
+    /// are alpha-composited over a white backdrop before computing luminance —
+    /// white is the *lightest* plausible backdrop for these fill-vs-dark-text
+    /// pairs, i.e. the backdrop that maximizes the fill's luminance. The grid
+    /// fills do sit on light cells/materials, but the wheel tile sits directly
+    /// on scene art that can be dark; its pair was hand-checked over black as
+    /// the worst case: white @ 0.9 over black gives ~13.2:1 against
+    /// `wheelTileText`, still comfortably >= 4.5:1. (Compositing over white
+    /// yields ~16.6:1, so the pinned test covers the lighter end and the
+    /// hand-check covers the darker end.)
     static func relativeLuminance(of color: Color) -> Double {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
