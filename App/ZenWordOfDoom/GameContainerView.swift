@@ -130,7 +130,7 @@ struct GamePlayView: View {
                             filledCells: model.filledCells,
                             solvedSlotIDs: model.solvedSlotIDs
                         )
-                        .frame(maxHeight: gridMaxHeight(viewport: proxy.size.height))
+                        .frame(maxHeight: gridMaxHeight(viewport: proxy.size.height, rows: gridRowCount))
 
                         Spacer(minLength: 0)
 
@@ -261,11 +261,23 @@ struct GamePlayView: View {
     /// to this leftover automatically; inside a ScrollView the height
     /// proposal is unbounded, so without this cap the grid takes its full
     /// ideal and pushes the content past the viewport at default sizes.
-    /// Floored at 140pt so the grid stays legible when larger type eats the
-    /// leftover — at accessibility sizes the ScrollView provides the room
-    /// instead.
-    private func gridMaxHeight(viewport: CGFloat) -> CGFloat {
-        min(380, max(140, viewport - 610))
+    ///
+    /// The floor scales with `rows` (24pt/row — a legible cell height at
+    /// GridView's 0.8 minimumScaleFactor) rather than a flat constant: a
+    /// flat floor sized for a small easy-band grid (4-6 rows) would crush a
+    /// master-band grid (up to ~12 rows from CrosswordLayoutEngine) into
+    /// unreadable cells. 100pt is the absolute floor for 1-2 row levels so
+    /// the grid never collapses to nothing.
+    private func gridMaxHeight(viewport: CGFloat, rows: Int) -> CGFloat {
+        let rowFloor = max(CGFloat(rows) * 24, 100)
+        return min(380, max(rowFloor, viewport - 610))
+    }
+
+    /// Row count of the current level's crossword grid, for `gridMaxHeight`'s
+    /// per-level floor. Mirrors `GridView.bounds`'s row computation.
+    private var gridRowCount: Int {
+        let maxRow = level.slots.flatMap(\.cells).map(\.row).max() ?? 0
+        return maxRow + 1
     }
 
     private var packTitle: String {
