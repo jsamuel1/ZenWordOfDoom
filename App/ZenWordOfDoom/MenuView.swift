@@ -6,6 +6,8 @@ struct MenuView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var store: GameStore
 
+    @State private var showSerenitySheet = false
+
     /// Hero illustrations depicting the game's "Zen meets Doom" premise. One is
     /// picked per launch (stable for the session) as the title screen backdrop.
     /// `static` so the choice survives MenuView being re-created on every
@@ -45,9 +47,15 @@ struct MenuView: View {
                 .multilineTextAlignment(.center)
                 .shadow(radius: 4)
 
-                Text("Serenity \(store.state.serenity)")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                Button {
+                    showSerenitySheet = true
+                } label: {
+                    Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Get more serenity")
 
                 Spacer()
 
@@ -86,6 +94,15 @@ struct MenuView: View {
                     .controlSize(.large)
 
                     Button {
+                        router.push(.shrine)
+                    } label: {
+                        Label("Shrine", systemImage: "sparkles")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+
+                    Button {
                         router.push(.stats)
                     } label: {
                         Label("Stats", systemImage: "chart.bar.fill")
@@ -111,5 +128,8 @@ struct MenuView: View {
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showSerenitySheet) {
+            SerenitySheetView()
+        }
     }
 }

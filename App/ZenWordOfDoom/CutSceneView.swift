@@ -16,6 +16,9 @@ struct CutSceneView: View {
     let theme: Theme
     let reducedDoom: Bool
     let reducedMotion: Bool
+    /// While true the breath cannot be skipped: the Continue button is hidden
+    /// and tap-to-continue is ignored (an ad is occupying the slot).
+    let continueLocked: Bool
     let onContinue: () -> Void
     /// Fired at the creature pop-out moment (for the audio sting). Not called
     /// under reduced motion (there is no lunge to accompany).
@@ -34,6 +37,7 @@ struct CutSceneView: View {
         theme: Theme,
         reducedDoom: Bool,
         reducedMotion: Bool,
+        continueLocked: Bool = false,
         onContinue: @escaping () -> Void,
         onPopout: @escaping () -> Void = {}
     ) {
@@ -41,6 +45,7 @@ struct CutSceneView: View {
         self.theme = theme
         self.reducedDoom = reducedDoom
         self.reducedMotion = reducedMotion
+        self.continueLocked = continueLocked
         self.onContinue = onContinue
         self.onPopout = onPopout
     }
@@ -66,12 +71,17 @@ struct CutSceneView: View {
                 Spacer(minLength: 0)
                 poemCard
                 Spacer(minLength: 0)
-                continueButton
+                if !continueLocked {
+                    continueButton
+                }
             }
             .padding(24)
         }
         .contentShape(Rectangle())
-        .onTapGesture { onContinue() }
+        .onTapGesture {
+            guard !continueLocked else { return }
+            onContinue()
+        }
         .onAppear { begin() }
     }
 

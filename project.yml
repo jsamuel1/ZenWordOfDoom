@@ -56,5 +56,7 @@ schemes:
         ZenWordOfDoom: all
     run:
       config: Debug
+      # Local StoreKit testing: fake-money purchases in the simulator.
+      storeKitConfiguration: App/ZenWordOfDoom/Products.storekit
     archive:
       config: Release

@@ -31,6 +31,10 @@ final class GameViewModel: ObservableObject {
     @Published private(set) var creatureRevealed: Bool = false
     /// Set once on completion to drive the level-clear celebration overlay.
     @Published private(set) var clearSummary: ClearSummary?
+    /// True when the last hint attempt failed for lack of serenity — the status
+    /// message becomes a tappable path to the top-up sheet (the only in-play
+    /// store surface; never a popup).
+    @Published private(set) var wantsSerenityOffer = false
 
     /// True once the player has used at least one hint reveal this level.
     private var usedHint = false
@@ -240,9 +244,11 @@ final class GameViewModel: ObservableObject {
     func useHintRevealCell() {
         guard !engine.isComplete else { return }
         guard store.spendSerenity(hintCost) else {
-            lastMessage = "Not enough serenity"
+            lastMessage = "Not enough serenity — tap for more"
+            wantsSerenityOffer = true
             return
         }
+        wantsSerenityOffer = false
         let seed = seedForHint()
         var gen = SeededRandom(seed: seed)
         guard let (_, letter) = engine.revealHintCell(using: &gen) else {
