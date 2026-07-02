@@ -20,6 +20,7 @@ struct LevelClearView: View {
     @State private var appeared = false
 
     @ScaledMetric(relativeTo: .largeTitle) private var scoreSize: CGFloat = 44
+    @AccessibilityFocusState private var focused: Bool
 
     var body: some View {
         VStack(spacing: 14) {
@@ -55,6 +56,7 @@ struct LevelClearView: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(accessibilityText)
+            .accessibilityFocused($focused)
 
             Button(action: onContinue) {
                 Text("Continue")
@@ -72,7 +74,10 @@ struct LevelClearView: View {
         .shadow(radius: 20, y: 8)
         .scaleEffect(appeared || reducedMotion ? 1 : 0.85)
         .opacity(appeared ? 1 : 0)
-        .onAppear(perform: animateIn)
+        .onAppear {
+            animateIn()
+            focused = true
+        }
     }
 
     private func animateIn() {

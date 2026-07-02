@@ -162,10 +162,12 @@ struct GamePlayView: View {
                     }
                     .padding()
                     .frame(maxWidth: .infinity, minHeight: proxy.size.height)
-                    // Task 4 hooks here
                     .opacity(model.isComplete ? 0 : 1)
                     .animation(.easeOut(duration: 0.5), value: model.isComplete)
                     .allowsHitTesting(!model.isComplete)
+                    // VoiceOver must not be able to reach hidden/inactive
+                    // controls behind the LevelClearView or DoomExpiredOverlay.
+                    .accessibilityHidden(model.isComplete || model.showDoomOverlay)
                 }
                 .scrollBounceBehavior(.basedOnSize)
                 // Frozen chrome must not scroll behind the clear overlay, and
@@ -362,6 +364,8 @@ private struct DoomExpiredOverlay: View {
     let reducedDoom: Bool
     let onContinue: () -> Void
 
+    @AccessibilityFocusState private var focused: Bool
+
     var body: some View {
         ZStack {
             Color.black.opacity(reducedDoom ? 0.35 : 0.55)
@@ -370,6 +374,7 @@ private struct DoomExpiredOverlay: View {
                 Text("The doom has claimed this hour")
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
+                    .accessibilityFocused($focused)
                 Text("The words remain. The points do not.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -382,5 +387,6 @@ private struct DoomExpiredOverlay: View {
             .padding(.horizontal, 32)
         }
         .transition(.opacity)
+        .onAppear { focused = true }
     }
 }

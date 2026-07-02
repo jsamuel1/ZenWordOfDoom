@@ -6,6 +6,13 @@ private struct AcceptAll: WordValidating {
     func isValidWord(_ word: String) -> Bool { true }
 }
 
+/// Records every announcement made by the view model, for asserting VoiceOver
+/// behavior without a real accessibility runtime.
+private final class SpyAnnouncer: AccessibilityAnnouncing {
+    var messages: [String] = []
+    func announce(_ message: String) { messages.append(message) }
+}
+
 @MainActor
 final class GameViewModelTests: XCTestCase {
     private var tempFileURLs: [URL] = []
@@ -19,7 +26,7 @@ final class GameViewModelTests: XCTestCase {
         super.tearDown()
     }
 
-    private func makeModel(doom: Bool = false) -> (GameViewModel, GameStore) {
+    private func makeModel(doom: Bool = false, announcer: any AccessibilityAnnouncing = SpyAnnouncer()) -> (GameViewModel, GameStore) {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("vm-\(UUID().uuidString).json")
         tempFileURLs.append(url)
@@ -30,7 +37,7 @@ final class GameViewModelTests: XCTestCase {
         settings.doomMode = doom
         settings.firstLetterHints = false
         let model = GameViewModel(level: SampleLevel.make(), validator: AcceptAll(),
-                                  settings: settings, store: store)
+                                  settings: settings, store: store, announcer: announcer)
         return (model, store)
     }
 
@@ -72,5 +79,51 @@ final class GameViewModelTests: XCTestCase {
         XCTAssertFalse(model.doomExpired)
         solve(model)
         XCTAssertGreaterThan(model.score, 0)
+    }
+
+    // MARK: Accessibility announcements
+
+    func testFoundWordAnnouncesTheWord() {
+        let spy = SpyAnnouncer()
+        let (model, _) = makeModel(announcer: spy)
+        model.submitSpoken("STONE")
+        XCTAssertTrue(spy.messages.contains { $0.contains("STONE") })
+    }
+
+    func testDoomExpiryAnnouncesOnce() {
+        let spy = SpyAnnouncer()
+        let (model, _) = makeModel(doom: true, announcer: spy)
+        model.handleDoomExpiry()
+        model.handleDoomExpiry()   // guarded: must not announce a second time
+        XCTAssertEqual(spy.messages.filter { $0.contains("doom has claimed") }.count, 1)
+    }
+
+    func testCompletionAnnounces() {
+        let spy = SpyAnnouncer()
+        let (model, _) = makeModel(announcer: spy)
+        solve(model)
+        XCTAssertTrue(model.isComplete)
+        XCTAssertTrue(spy.messages.contains("Level cleared"))
+    }
+
+    func testDoomTimerUrgencyThresholdsAnnounceOnceEach() {
+        let spy = SpyAnnouncer()
+        let (model, _) = makeModel(doom: true, announcer: spy)
+        // Drive the countdown across all three thresholds without waiting on
+        // the real repeating Timer: `debugSetDeadline` sets the countdown
+        // target directly, and `tickTimer()` is exposed (not private) so the
+        // test can invoke a single tick deterministically at each point.
+        model.debugSetDeadline(Date().addingTimeInterval(29))
+        model.tickTimer()
+        model.debugSetDeadline(Date().addingTimeInterval(14))
+        model.tickTimer()
+        model.debugSetDeadline(Date().addingTimeInterval(4))
+        model.tickTimer()
+        // A second tick at the same threshold must not re-announce.
+        model.tickTimer()
+
+        XCTAssertEqual(spy.messages.filter { $0 == "30 seconds remaining" }.count, 1)
+        XCTAssertEqual(spy.messages.filter { $0 == "15 seconds remaining" }.count, 1)
+        XCTAssertEqual(spy.messages.filter { $0 == "5 seconds remaining" }.count, 1)
     }
 }
