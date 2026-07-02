@@ -30,8 +30,15 @@ struct WheelView: View {
     let onSwipeExtend: (Int) -> Void
     let onSwipeEnd: () -> Void
 
-    /// Diameter of a single tile.
-    private let tileSize: CGFloat = 56
+    /// Diameter of a single tile, scaled with Dynamic Type (clamped so the
+    /// touch target never shrinks below 44pt or grows so large a 9-tile
+    /// wheel would overlap).
+    @ScaledMetric(relativeTo: .title) private var scaledTileSize: CGFloat = 56
+    private var tileSize: CGFloat { min(max(scaledTileSize, 44), 80) }
+    /// Height of the wheel's frame, scaled with Dynamic Type (never smaller
+    /// than the original fixed size, capped so it doesn't consume the whole screen).
+    @ScaledMetric(relativeTo: .title) private var scaledWheelHeight: CGFloat = 240
+    private var wheelHeight: CGFloat { min(max(scaledWheelHeight, 240), 320) }
     /// The tile id currently under the dragging finger (nil when not dragging).
     @State private var activeSwipeTile: Int?
     /// True once a drag has moved far enough to count as a swipe rather than a tap.
@@ -83,7 +90,7 @@ struct WheelView: View {
             // would lose swipes with a vertical component to the scroll.
             .highPriorityGesture(swipeGesture(ordered: ordered, layout: layout))
         }
-        .frame(height: 240)
+        .frame(height: wheelHeight)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Letter wheel")
     }
@@ -106,7 +113,7 @@ struct WheelView: View {
     }
 
     private func layout(in size: CGSize, count: Int) -> WheelLayout {
-        let radius = min(size.width, size.height) / 2 - 36
+        let radius = min(size.width, size.height) / 2 - tileSize * 0.64
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         return WheelLayout(center: center, radius: max(radius, 0), count: count)
     }
@@ -196,6 +203,8 @@ private struct TileView: View {
     var body: some View {
         Text(String(letter))
             .font(.system(.title, design: .rounded).weight(.bold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             .frame(width: size, height: size)
             .background(
                 Circle().fill(isSelected ? AccessibilityPalette.wheelTileSelectedFill : AccessibilityPalette.wheelTileFill)
