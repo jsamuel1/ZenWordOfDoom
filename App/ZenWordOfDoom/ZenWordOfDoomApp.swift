@@ -2,9 +2,10 @@ import SwiftUI
 
 @main
 struct ZenWordOfDoomApp: App {
-    @StateObject private var settings = AppSettings()
+    @StateObject private var settings: AppSettings
     @StateObject private var store: GameStore
     @StateObject private var storeService: StoreKitStoreService
+    @StateObject private var adBox: AdServiceBox
     @StateObject private var router = AppRouter()
     @StateObject private var levelService = LevelService()
     @StateObject private var visuals = VisualProviderBox(provider: ImagePlaygroundVisualProvider())
@@ -21,6 +22,11 @@ struct ZenWordOfDoomApp: App {
                 gameStore.creditPurchase(item: item, transactionID: txID)
             }
         ))
+        // Ads read the personalization setting live, so both share one instance.
+        let appSettings = AppSettings()
+        _settings = StateObject(wrappedValue: appSettings)
+        _adBox = StateObject(wrappedValue: AdServiceBox(
+            service: AdMobAdService(settings: appSettings)))
     }
 
     var body: some Scene {
@@ -33,6 +39,7 @@ struct ZenWordOfDoomApp: App {
                 .environmentObject(levelService)
                 .environmentObject(visuals)
                 .environmentObject(sound)
+                .environmentObject(adBox)
         }
     }
 }

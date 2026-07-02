@@ -16,6 +16,9 @@ options:
 packages:
   ZenWordOfDoomKit:
     path: .
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: 12.0.0
 
 targets:
   ZenWordOfDoom:
@@ -48,6 +51,8 @@ targets:
         product: LevelKit
       - package: ZenWordOfDoomKit
         product: LevelGen
+      - package: GoogleMobileAds
+        product: GoogleMobileAds
 
   # Unit tests for App-layer logic (the pure cores are tested via `swift test`).
   # Hosted by the app target so `@testable import ZenWordOfDoom` can reach

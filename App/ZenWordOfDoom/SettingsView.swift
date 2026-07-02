@@ -38,6 +38,13 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                if !storeService.isPremium {
+                    Toggle("Personalized Ads", isOn: $settings.personalizedAds)
+                    Text("Off means the ads between levels are generic instead of tailored. Nothing else changes.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 Text("Store")
             } footer: {

@@ -170,6 +170,7 @@ struct HouseAdCard: View {
             remaining = Int(duration.rounded())
             while remaining > 0 {
                 try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
                 remaining -= 1
             }
             done = true
