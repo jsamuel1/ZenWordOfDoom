@@ -12,6 +12,7 @@ final class AppSettings: ObservableObject {
         static let firstLetterHints = "settings.firstLetterHints"
         static let soundEnabled = "settings.soundEnabled"
         static let doomMode = "settings.doomMode"
+        static let personalizedAds = "settings.personalizedAds"
     }
 
     private let defaults: UserDefaults
@@ -31,6 +32,11 @@ final class AppSettings: ObservableObject {
     @Published var doomMode: Bool {
         didSet { defaults.set(doomMode, forKey: Key.doomMode) }
     }
+    /// Personalized ads (spec: on by default, opt-outable). Only takes effect
+    /// when App Tracking Transparency is also granted; off means non-personalized.
+    @Published var personalizedAds: Bool {
+        didSet { defaults.set(personalizedAds, forKey: Key.personalizedAds) }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -41,11 +47,13 @@ final class AppSettings: ObservableObject {
             Key.firstLetterHints: false,
             Key.soundEnabled: true,
             Key.doomMode: false,
+            Key.personalizedAds: true,
         ])
         self.reducedDoom = defaults.bool(forKey: Key.reducedDoom)
         self.voiceEnabled = defaults.bool(forKey: Key.voiceEnabled)
         self.firstLetterHints = defaults.bool(forKey: Key.firstLetterHints)
         self.soundEnabled = defaults.bool(forKey: Key.soundEnabled)
         self.doomMode = defaults.bool(forKey: Key.doomMode)
+        self.personalizedAds = defaults.bool(forKey: Key.personalizedAds)
     }
 }

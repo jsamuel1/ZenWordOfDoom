@@ -48,7 +48,7 @@ struct CutSceneContainerView: View {
                 )
                 .overlay(alignment: .bottom) {
                     if adGated && !adComplete {
-                        HouseAdCard(duration: 5) { adComplete = true }
+                        AdSlotView { adComplete = true }
                             .padding(.horizontal, 24)
                             .padding(.bottom, 90)
                             .transition(.opacity)
