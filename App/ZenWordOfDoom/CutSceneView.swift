@@ -1,5 +1,5 @@
 import SwiftUI
-import LevelKit
+import GameCore
 import LevelGen
 
 /// A between-levels "breath". A gently moving, asset-free procedural zen scene

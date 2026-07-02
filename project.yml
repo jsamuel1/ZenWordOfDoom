@@ -46,10 +46,6 @@ targets:
       - package: ZenWordOfDoomKit
         product: GameCore
       - package: ZenWordOfDoomKit
-        product: WordEngine
-      - package: ZenWordOfDoomKit
-        product: LevelKit
-      - package: ZenWordOfDoomKit
         product: LevelGen
       - package: GoogleMobileAds
         product: GoogleMobileAds

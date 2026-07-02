@@ -1,5 +1,5 @@
 import Foundation
-import LevelKit
+import GameCore
 import LevelGen
 
 /// Builds a between-levels "breath" for a procedurally generated level. The

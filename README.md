@@ -61,11 +61,10 @@ that need a device) lives in the app target (`App/ZenWordOfDoom/`).
 
 ```
 Sources/
-  GameCore/     Pure rules & models: wheel, grid, submission pipeline, scoring, RNG
-  WordEngine/   Word list / anagram support used for authoring & tests
+  GameCore/     Pure rules & models: wheel, grid, submission pipeline, scoring, RNG,
+                between-levels cut-scene data
   LevelGen/     Procedural generation: corpus, theme lexicons, wheel/word/grid/scene
                 pickers, ProceduralLevelLibrary, Primes, prompt text — all deterministic
-  LevelKit/     Between-levels cut-scene data
 App/ZenWordOfDoom/
   SwiftUI views (menu, game, grid, wheel, HUD, bestiary, cut scene, settings)
   LevelService              async level resolution + play order (injected)

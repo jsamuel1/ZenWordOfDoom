@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 import GameCore
-import WordEngine
 
 /// Drives a single playable level. Bridges the pure `GameEngine` to SwiftUI and
 /// wires scoring, hints, the doom timer, voice submission, and completion
