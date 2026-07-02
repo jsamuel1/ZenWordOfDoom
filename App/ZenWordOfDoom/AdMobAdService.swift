@@ -76,23 +76,34 @@ final class AdMobAdService: NSObject, AdService {
         while !loadFinished && Date() < deadline {
             try? await Task.sleep(for: .milliseconds(100))
         }
+        // Detach the loader so a LATE callback for this (possibly timed-out)
+        // load can't be mistaken for a future load's result: the delegate
+        // methods identity-check against `activeLoader` before writing state.
+        activeLoader?.delegate = nil
         activeLoader = nil
         return loadedAd
+    }
+
+    /// Delegate entry point. Ignores callbacks from any loader that is no
+    /// longer the active one (e.g. a late fill after the timeout already
+    /// resolved that slot), so a stale result can never satisfy the next load.
+    fileprivate func finish(loader: AdLoader, ad: NativeAd?) {
+        guard loader === activeLoader else { return }
+        if let ad { loadedAd = ad }
+        loadFinished = true
     }
 }
 
 extension AdMobAdService: NativeAdLoaderDelegate {
+    // The SDK documents main-thread callbacks, but that's a convention of a
+    // third-party binary, not a compiler guarantee — hop instead of asserting
+    // (`assumeIsolated` would trap the whole app on a violation).
     nonisolated func adLoader(_ adLoader: AdLoader, didReceive nativeAd: NativeAd) {
-        MainActor.assumeIsolated {
-            loadedAd = nativeAd
-            loadFinished = true
-        }
+        Task { @MainActor in self.finish(loader: adLoader, ad: nativeAd) }
     }
 
     nonisolated func adLoader(_ adLoader: AdLoader, didFailToReceiveAdWithError error: Error) {
-        MainActor.assumeIsolated {
-            loadFinished = true
-        }
+        Task { @MainActor in self.finish(loader: adLoader, ad: nil) }
     }
 }
 

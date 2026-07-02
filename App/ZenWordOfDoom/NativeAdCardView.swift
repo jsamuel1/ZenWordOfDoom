@@ -30,6 +30,11 @@ struct AdSlotView: View {
                             .fill(.black.opacity(0.35))
                     )
                     .task {
+                        // Let the cut scene's entrance transition settle before
+                        // any load — the first load may raise the ATT system
+                        // prompt, which mustn't race a presentation animation.
+                        try? await Task.sleep(for: .milliseconds(800))
+                        guard !Task.isCancelled else { return }
                         if let ad = await adBox.service.loadNativeAd() {
                             phase = .native(ad)
                         } else {
@@ -39,7 +44,10 @@ struct AdSlotView: View {
             case .native(let ad):
                 NativeAdCard(nativeAd: ad, dwell: 5, onComplete: onComplete)
             case .house:
-                HouseAdCard(duration: 5, onComplete: onComplete)
+                // Shorter dwell on the fallback: the load wait already elapsed,
+                // keeping the worst-case Continue lock well under the two cards'
+                // combined times.
+                HouseAdCard(duration: 4, onComplete: onComplete)
             }
         }
     }
@@ -81,6 +89,7 @@ struct NativeAdCard: View {
             remaining = Int(dwell.rounded())
             while remaining > 0 {
                 try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
                 remaining -= 1
             }
             done = true
