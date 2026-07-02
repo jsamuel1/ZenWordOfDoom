@@ -5,9 +5,45 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: GameStore
+    @EnvironmentObject private var storeService: StoreKitStoreService
+
+    @State private var restoring = false
+    @State private var restoreMessage: String?
 
     var body: some View {
         Form {
+            Section {
+                RemoveAdsButton()
+                Button {
+                    restoring = true
+                    restoreMessage = nil
+                    Task {
+                        await storeService.restore()
+                        restoring = false
+                        restoreMessage = storeService.isPremium
+                            ? "Purchases restored."
+                            : "No previous purchases found."
+                    }
+                } label: {
+                    HStack {
+                        Text("Restore Purchases")
+                        Spacer()
+                        if restoring { ProgressView() }
+                    }
+                }
+                .disabled(restoring)
+
+                if let restoreMessage {
+                    Text(restoreMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Store")
+            } footer: {
+                Text("Every level is free. Ads appear only between levels after the first pack; removing them is a one-time purchase.")
+            }
+
             Section("Mode") {
                 Toggle("Doom Mode", isOn: $settings.doomMode)
                 Text("Doom mode adds a ticking time limit. Zen mode is untimed.")

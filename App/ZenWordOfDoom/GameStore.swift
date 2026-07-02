@@ -93,6 +93,53 @@ final class GameStore: ObservableObject {
         Int(now.timeIntervalSince1970 / 86_400)
     }
 
+    // MARK: - Store
+
+    /// Mirror the StoreKit premium entitlement so ad gating works offline.
+    func setPremium(_ on: Bool) {
+        guard state.premiumUnlocked != on else { return }
+        state.premiumUnlocked = on
+        save()
+    }
+
+    /// Deliver a verified purchase. Consumables credit serenity exactly once
+    /// per transaction id (StoreKit can replay unfinished transactions after a
+    /// crash); the premium non-consumable flips the entitlement mirror.
+    func creditPurchase(item: StoreItem, transactionID: UInt64) {
+        guard let amount = item.serenityAmount else {
+            setPremium(true)
+            return
+        }
+        guard state.markTransactionProcessed(transactionID) else { return }
+        addSerenity(amount)
+    }
+
+    // MARK: - Cosmetics (the Shrine)
+
+    /// Buy a cosmetic with serenity. Owning it already counts as success;
+    /// otherwise it succeeds only if the player can afford `cost`.
+    @discardableResult
+    func unlockCosmetic(id: String, cost: Int) -> Bool {
+        if state.ownedCosmetics.contains(id) { return true }
+        guard spendSerenity(cost) else { return false }
+        state.ownedCosmetics.insert(id)
+        save()
+        return true
+    }
+
+    /// Equip an owned palette / poem set (nil = the built-in default).
+    func equipPalette(_ id: String?) {
+        guard id == nil || state.ownedCosmetics.contains(id!) else { return }
+        state.equippedPalette = id
+        save()
+    }
+
+    func equipPoemSet(_ id: String?) {
+        guard id == nil || state.ownedCosmetics.contains(id!) else { return }
+        state.equippedPoemSet = id
+        save()
+    }
+
     func addSerenity(_ amount: Int) {
         guard amount != 0 else { return }
         state.serenity = max(0, state.serenity + amount)

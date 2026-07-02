@@ -48,6 +48,8 @@ struct GamePlayView: View {
 
     /// Pack banner shown briefly when entering a pack's first level.
     @State private var packBanner: Pack?
+    /// Serenity top-up sheet, reachable only via the failed-hint message.
+    @State private var showSerenitySheet = false
 
     /// Shared audio engine, retained for start/stop/enable over the level's life.
     private let soundEngine: any SoundEngine
@@ -95,9 +97,15 @@ struct GamePlayView: View {
 
                 Text(model.lastMessage)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(model.wantsSerenityOffer ? .primary : .secondary)
+                    .underline(model.wantsSerenityOffer)
                     .animation(.default, value: model.lastMessage)
                     .accessibilityLiveRegion()
+                    .onTapGesture {
+                        guard model.wantsSerenityOffer else { return }
+                        showSerenitySheet = true
+                    }
+                    .accessibilityAddTraits(model.wantsSerenityOffer ? .isButton : [])
 
                 GridView(
                     level: model.level,
@@ -161,6 +169,9 @@ struct GamePlayView: View {
         }
         .onChange(of: settings.soundEnabled) { _, on in
             soundEngine.setEnabled(on)
+        }
+        .sheet(isPresented: $showSerenitySheet) {
+            SerenitySheetView()
         }
         .onChange(of: model.isComplete) { _, complete in
             guard complete else { return }

@@ -1,0 +1,78 @@
+{
+  "identifier" : "F3E9A1C2-5D14-4E0B-9A37-6C2D8F41B7E9",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "7A1B2C3D",
+      "localizations" : [
+        {
+          "description" : "Remove all ads, permanently.",
+          "displayName" : "Remove Ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "wtf.sauhsoj.zenwordofdoom.premium",
+      "referenceName" : "Remove Ads",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "7A1B2C3E",
+      "localizations" : [
+        {
+          "description" : "10 serenity.",
+          "displayName" : "Small Serenity Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "wtf.sauhsoj.zenwordofdoom.serenity.small",
+      "referenceName" : "Serenity Small",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "7A1B2C3F",
+      "localizations" : [
+        {
+          "description" : "25 serenity.",
+          "displayName" : "Medium Serenity Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "wtf.sauhsoj.zenwordofdoom.serenity.medium",
+      "referenceName" : "Serenity Medium",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "7A1B2C40",
+      "localizations" : [
+        {
+          "description" : "50 serenity.",
+          "displayName" : "Large Serenity Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "wtf.sauhsoj.zenwordofdoom.serenity.large",
+      "referenceName" : "Serenity Large",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
