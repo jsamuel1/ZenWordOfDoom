@@ -69,12 +69,29 @@ targets:
       - package: ZenWordOfDoomKit
         product: LevelGen
 
+  # iOS 17 accessibility audit UI tests (performAccessibilityAudit) across the
+  # app's key screens. See App/ZenWordOfDoomUITests/AccessibilityAuditTests.swift.
+  ZenWordOfDoomUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: App/ZenWordOfDoomUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: wtf.sauhsoj.zenwordofdoom.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.9"
+    dependencies:
+      - target: ZenWordOfDoom
+
 schemes:
   ZenWordOfDoom:
     build:
       targets:
         ZenWordOfDoom: all
         ZenWordOfDoomTests: [test]
+        ZenWordOfDoomUITests: [test]
     run:
       config: Debug
       # Local StoreKit testing: fake-money purchases in the simulator.
@@ -83,5 +100,6 @@ schemes:
       config: Debug
       targets:
         - ZenWordOfDoomTests
+        - ZenWordOfDoomUITests
     archive:
       config: Release
