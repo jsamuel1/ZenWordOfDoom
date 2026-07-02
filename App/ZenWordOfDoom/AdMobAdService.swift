@@ -29,18 +29,25 @@ final class NullAdService: AdService {
 @MainActor
 final class AdMobAdService: NSObject, AdService {
     private let settings: AppSettings
+    private let consentGate: any ConsentGate
 
     private var sdkStarted = false
     private var activeLoader: AdLoader?
     private var loadedAd: NativeAd?
     private var loadFinished = false
 
-    init(settings: AppSettings) {
+    init(settings: AppSettings, consentGate: any ConsentGate) {
         self.settings = settings
+        self.consentGate = consentGate
         super.init()
     }
 
     func loadNativeAd() async -> NativeAd? {
+        // EEA/UK/Swiss gate: if consent is required and unresolved, no ad
+        // request goes out — the cut scene falls back to the house card
+        // exactly as it does on a fill timeout. Elsewhere (or once the player
+        // has answered), this is a no-op pass-through.
+        guard consentGate.canRequestAds else { return nil }
         guard activeLoader == nil else { return nil }   // one load at a time
 
         if !sdkStarted {
