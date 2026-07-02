@@ -65,20 +65,27 @@ struct GridView: View {
                     if let letter {
                         Text(String(letter))
                             .font(.system(.title3, design: .rounded).weight(.bold))
-                            .foregroundStyle(solved ? Color.green.opacity(0.9) : .black)
+                            .foregroundStyle(solved ? AccessibilityPalette.gridSolvedText : AccessibilityPalette.gridFilledText)
                             .minimumScaleFactor(0.5)
                     }
                 }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(AccessibilityPalette.gridCellStroke.opacity(0.35), lineWidth: 1)
+                )
         } else {
             Color.clear.aspectRatio(1, contentMode: .fit)
         }
     }
 
+    /// These fills sit on light cells within the grid's `.ultraThinMaterial`
+    /// background — see `AccessibilityPalette.relativeLuminance` for the
+    /// "composite over white" approximation this depends on.
     private func fillColor(letter: Character?, solved: Bool) -> Color {
         if solved {
-            return Color.green.opacity(0.18)
+            return AccessibilityPalette.gridSolvedFill
         }
-        return letter == nil ? Color.white.opacity(0.5) : Color.white
+        return letter == nil ? AccessibilityPalette.gridUnfilledFill : AccessibilityPalette.gridFilledFill
     }
 }
 

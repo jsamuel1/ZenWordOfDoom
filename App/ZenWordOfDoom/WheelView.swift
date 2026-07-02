@@ -195,9 +195,9 @@ private struct TileView: View {
             .font(.system(.title, design: .rounded).weight(.bold))
             .frame(width: size, height: size)
             .background(
-                Circle().fill(isSelected ? Color.accentColor : Color(.sRGB, white: 1, opacity: 0.9))
+                Circle().fill(isSelected ? AccessibilityPalette.wheelTileSelectedFill : AccessibilityPalette.wheelTileFill)
             )
-            .foregroundStyle(isSelected ? .white : .primary)
+            .foregroundStyle(isSelected ? AccessibilityPalette.wheelTileSelectedText : AccessibilityPalette.wheelTileText)
             .shadow(radius: 2)
             .accessibilityLabel(String(letter))
             .accessibilityValue(order.map { "Selected, position \($0)" } ?? "")
