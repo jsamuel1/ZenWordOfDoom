@@ -40,6 +40,10 @@ public final class GameEngine {
     /// 0 = calm, 1 = creature fully revealed. Driven by progress.
     public private(set) var stir: Double = 0
 
+    /// Additive flourishes on top of the progress-derived stir.
+    private var bonusStirExtra: Double = 0
+    private var hintStirExtra: Double = 0
+
     public static let minWordLength = 3
 
     public init(level: Level, validator: WordValidating) {
@@ -74,6 +78,28 @@ public final class GameEngine {
             guard target > 0 else { return 1 }
             return min(1, Double(foundWords.count) / Double(target))
         }
+    }
+
+    /// Fraction of the completion requirement met (drives the reveal).
+    private var completionFraction: Double {
+        switch level.format {
+        case .crossword:
+            return level.slots.isEmpty ? 0
+                : Double(solvedSlotIDs.count) / Double(level.slots.count)
+        case .pangramHunt(let target):
+            let words = target > 0 ? min(1, Double(foundWords.count) / Double(target)) : 0
+            let pangram: Double = pangramCount > 0 ? 1 : 0
+            return 0.6 * pangram + 0.4 * words   // the pangram is the boss's spine
+        }
+    }
+
+    /// Stir tracks progress so the creature surfaces on every grid size:
+    /// 0.85 × completion fraction, plus small extras for bonus words/hints,
+    /// capped at 0.95 until the clear snaps it to 1. Monotonic.
+    private func refreshStir() {
+        if isComplete { stir = 1; return }
+        let derived = 0.85 * completionFraction + bonusStirExtra + hintStirExtra
+        stir = max(stir, min(0.95, derived))
     }
 
     /// A word is a pangram when it spans the whole wheel and is buildable from it.
@@ -123,9 +149,8 @@ public final class GameEngine {
                 // earns its full bonus.
                 score += Scoring.wordScore(length: word.count, isPangram: pangram)
             }
-            bumpStir(by: 0.02)
-            // Boss levels complete here (no slots), so snap to the full reveal.
-            if isComplete { stir = 1 }
+            bonusStirExtra += 0.02
+            refreshStir()
             return .bonusWord(word)
         }
 
@@ -141,8 +166,7 @@ public final class GameEngine {
             }
         }
         score += Scoring.wordScore(length: word.count, isPangram: pangram)
-        bumpStir(by: 0.08 * Double(matches.count))
-        if isComplete { stir = 1 }
+        refreshStir()
         return .filledSlots(matches.map(\.id))
     }
 
@@ -169,7 +193,8 @@ public final class GameEngine {
         let coord = ordered[idx]
         let letter = candidates[coord]!
         filledCells[coord] = letter
-        bumpStir(by: 0.01)
+        hintStirExtra += 0.01
+        refreshStir()
         return (coord, letter)
     }
 
@@ -182,9 +207,5 @@ public final class GameEngine {
             guard let firstCell = slot.cells.first, filledCells[firstCell] == nil else { continue }
             filledCells[firstCell] = Array(slot.answer).first ?? " "
         }
-    }
-
-    private func bumpStir(by amount: Double) {
-        stir = min(1, stir + amount)
     }
 }
