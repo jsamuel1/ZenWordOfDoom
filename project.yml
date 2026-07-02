@@ -19,6 +19,9 @@ packages:
   GoogleMobileAds:
     url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
     from: 12.0.0
+  GoogleUserMessagingPlatform:
+    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git
+    from: 3.0.0
 
 targets:
   ZenWordOfDoom:
@@ -49,6 +52,8 @@ targets:
         product: LevelGen
       - package: GoogleMobileAds
         product: GoogleMobileAds
+      - package: GoogleUserMessagingPlatform
+        product: GoogleUserMessagingPlatform
 
   # Unit tests for App-layer logic (the pure cores are tested via `swift test`).
   # Hosted by the app target so `@testable import ZenWordOfDoom` can reach

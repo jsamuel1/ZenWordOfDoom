@@ -6,6 +6,7 @@ struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: GameStore
     @EnvironmentObject private var storeService: StoreKitStoreService
+    @EnvironmentObject private var consentBox: ConsentGateBox
 
     @State private var restoring = false
     @State private var restoreMessage: String?
@@ -44,6 +45,12 @@ struct SettingsView: View {
                     Text("Off means the ads between levels are generic instead of tailored. Nothing else changes.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+
+                if consentBox.gate.privacyOptionsRequired {
+                    Button("Privacy Options") {
+                        Task { await consentBox.gate.presentPrivacyOptions() }
+                    }
                 }
             } header: {
                 Text("Store")

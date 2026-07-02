@@ -6,6 +6,7 @@ struct ZenWordOfDoomApp: App {
     @StateObject private var store: GameStore
     @StateObject private var storeService: StoreKitStoreService
     @StateObject private var adBox: AdServiceBox
+    @StateObject private var consentBox: ConsentGateBox
     @StateObject private var router = AppRouter()
     @StateObject private var levelService = LevelService()
     @StateObject private var visuals = VisualProviderBox(provider: ImagePlaygroundVisualProvider())
@@ -25,8 +26,12 @@ struct ZenWordOfDoomApp: App {
         // Ads read the personalization setting live, so both share one instance.
         let appSettings = AppSettings()
         _settings = StateObject(wrappedValue: appSettings)
+        // The consent gate is asked before every ad load, so both share one
+        // instance too (and ContentView gathers consent through the same box).
+        let consentGate = UMPConsentGate()
+        _consentBox = StateObject(wrappedValue: ConsentGateBox(gate: consentGate))
         _adBox = StateObject(wrappedValue: AdServiceBox(
-            service: AdMobAdService(settings: appSettings)))
+            service: AdMobAdService(settings: appSettings, consentGate: consentGate)))
     }
 
     var body: some Scene {
@@ -40,6 +45,7 @@ struct ZenWordOfDoomApp: App {
                 .environmentObject(visuals)
                 .environmentObject(sound)
                 .environmentObject(adBox)
+                .environmentObject(consentBox)
         }
     }
 }

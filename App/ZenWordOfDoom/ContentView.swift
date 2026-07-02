@@ -6,6 +6,7 @@ struct ContentView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: GameStore
+    @EnvironmentObject private var consentBox: ConsentGateBox
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -14,6 +15,9 @@ struct ContentView: View {
                     destination(for: screen)
                 }
         }
+        // Gather EEA/UK/Swiss consent once, early — packs 1-10 are ad-free, so
+        // this resolves long before the player reaches an ad-gated cut scene.
+        .task { await consentBox.gate.gatherConsent() }
     }
 
     @ViewBuilder
