@@ -50,6 +50,10 @@ final class LevelService: ObservableObject {
     func ids(through order: Int) -> [String] { library.ids(through: order) }
     func wheelSize(forID id: String) -> Int { library.wheelSize(forID: id) }
 
+    /// Number of levels per pack, single-sourced from the library (never
+    /// hardcode this elsewhere).
+    var packSize: Int { library.packSize }
+
     /// The theme for an id (for themed loaders / cut scenes), defaulting to zen.
     func theme(forID id: String) -> Theme {
         if DailyPuzzle.isDailyID(id) { return DailyPuzzle.seed(forID: id)?.theme ?? .zen }

@@ -31,15 +31,16 @@ struct LevelSelectView: View {
         var result: [(key: String, title: String, ids: [String])] = []
         var i = 0
         while i < ids.count {
-            let chunk = Array(ids[i..<min(i + 10, ids.count)])
+            let chunk = Array(ids[i..<min(i + levelService.packSize, ids.count)])
             if let first = chunk.first {
                 let band = DifficultyBand(wheelSize: levelService.wheelSize(forID: first))
                     .rawValue.capitalized
+                let packName = levelService.pack(forID: first)?.name ?? band
                 // Key by the chunk's first id so distinct packs that share a
                 // title (e.g. repeated "Master") don't collide in ForEach.
-                result.append((key: first, title: band, ids: chunk))
+                result.append((key: first, title: "\(packName) — \(band)", ids: chunk))
             }
-            i += 10
+            i += levelService.packSize
         }
         return result
     }
@@ -113,10 +114,20 @@ struct LevelSelectView: View {
     }
 
     private func displayName(for levelID: String) -> String {
-        levelID
-            .replacingOccurrences(of: "-", with: " ")
-            .replacingOccurrences(of: "_", with: " ")
-            .capitalized
+        guard let order = levelService.order(forID: levelID),
+              let pack = levelService.pack(forID: levelID) else {
+            // Dailies (and any other id order/pack can't resolve) never
+            // actually reach this view, but keep the fallback sane rather
+            // than showing a raw seed id if that ever changes.
+            if levelID.hasPrefix("daily-") {
+                let date = levelID.dropFirst("daily-".count)
+                return "Daily — \(date)"
+            }
+            return levelID.replacingOccurrences(of: "-", with: " ").capitalized
+        }
+        let n = order % levelService.packSize + 1
+        let isCapstone = n == levelService.packSize
+        return isCapstone ? "\(pack.name) — Boss" : "\(pack.name) \(n)"
     }
 
     private func subtitle(for levelID: String, progress: LevelProgress?) -> String {

@@ -220,6 +220,7 @@ struct GamePlayView: View {
     }
 
     private var packTitle: String {
+        if let pack = levelService.pack(forID: level.id) { return pack.name }
         let theme = levelService.theme(forID: level.id).rawValue.capitalized
         let band = level.band.rawValue.capitalized
         return "\(theme) · \(band)"

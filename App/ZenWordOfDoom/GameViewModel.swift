@@ -72,6 +72,7 @@ final class GameViewModel: ObservableObject {
             engine.revealFirstLetters()
         }
         sync()
+        updateAudioMood()
         displayOrder = level.wheel.displayOrder(seed: Self.wheelSeed(for: level.id))
     }
 
@@ -223,6 +224,7 @@ final class GameViewModel: ObservableObject {
             lastMessage = message(for: reason, word: word)
         }
         sync()
+        updateAudioMood()
         if engine.isComplete && !isComplete {
             completeLevel()
         }
@@ -264,6 +266,7 @@ final class GameViewModel: ObservableObject {
         soundEngine.play(.hintReveal)
         lastMessage = "Revealed \(letter)"
         sync()
+        updateAudioMood()
     }
 
     private func seedForHint() -> UInt64 {
@@ -305,6 +308,7 @@ final class GameViewModel: ObservableObject {
         showDoomOverlay = true
         lastMessage = "The doom has claimed this hour"
         sync()
+        updateAudioMood()
     }
 
     /// Dismiss the expiry overlay and keep playing, pointless but unbowed.
@@ -363,7 +367,10 @@ final class GameViewModel: ObservableObject {
         bonusWords = engine.bonusWords
         stir = engine.stir
         score = engine.score
-        // Drive the generative bed from the current stir (reactive doom bus).
+    }
+
+    /// Push the current stir into the generative bed (reactive doom bus).
+    private func updateAudioMood() {
         soundEngine.setMood(mood, stir: engine.stir)
     }
 }
