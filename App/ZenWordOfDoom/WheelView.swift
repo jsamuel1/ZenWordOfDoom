@@ -89,6 +89,15 @@ struct WheelView: View {
                     )
                     .position(layout.position(for: index))
                     .onTapGesture { onTap(tile.id) }
+                    // VoiceOver activation paths alongside the tap/swipe
+                    // gestures above: a named custom action always works,
+                    // and the default activation action + isButton trait
+                    // make a plain double-tap work too, in case the wheel's
+                    // DragGesture ever intercepts the standard activation.
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { onTap(tile.id) }
+                    .accessibilityAction(named: "Select \(tile.letter)") { onTap(tile.id) }
+                    .accessibilityRespondsToUserInteraction(true)
                 }
             }
             .contentShape(Rectangle())
@@ -100,6 +109,7 @@ struct WheelView: View {
         .frame(height: wheelHeight)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Letter wheel")
+        .accessibilityHint("Double-tap a letter to add it to the word. Use the Submit button to submit.")
     }
 
     // MARK: - Layout

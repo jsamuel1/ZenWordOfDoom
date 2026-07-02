@@ -50,6 +50,7 @@ struct BestiaryView: View {
             }
             .frame(width: 44, height: 44)
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(revealed ? displayName(for: creatureID) : "Not yet revealed")
@@ -62,6 +63,11 @@ struct BestiaryView: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            entry.map { "\(displayName(for: creatureID)). First seen in \(displayName(for: $0.firstRevealedLevelID))" }
+                ?? "Not yet revealed"
+        )
     }
 
     private func displayName(for id: String) -> String {

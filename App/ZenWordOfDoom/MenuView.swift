@@ -136,6 +136,7 @@ struct MenuView: View {
                 Image(Self.backdrop)
                     .resizable()
                     .scaledToFill()
+                    .accessibilityHidden(true)
 
                 LinearGradient(
                     colors: [
