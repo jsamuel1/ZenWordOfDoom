@@ -16,6 +16,9 @@ options:
 packages:
   ZenWordOfDoomKit:
     path: .
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: 12.0.0
 
 targets:
   ZenWordOfDoom:
@@ -31,8 +34,8 @@ targets:
         # Bump per release with scripts/bump-version.sh [patch|minor|major]
         # (defaults to patch). CURRENT_PROJECT_VERSION is the build number and
         # is incremented on every release — TestFlight rejects re-used builds.
-        MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "0.3.0"
+        CURRENT_PROJECT_VERSION: "8"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/ZenWordOfDoom/Info.plist
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.word-games"
@@ -48,13 +51,41 @@ targets:
         product: LevelKit
       - package: ZenWordOfDoomKit
         product: LevelGen
+      - package: GoogleMobileAds
+        product: GoogleMobileAds
+
+  # Unit tests for App-layer logic (the pure cores are tested via `swift test`).
+  # Hosted by the app target so `@testable import ZenWordOfDoom` can reach
+  # internal types like BundledVisuals.
+  ZenWordOfDoomTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: App/ZenWordOfDoomTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: wtf.sauhsoj.zenwordofdoom.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.9"
+    dependencies:
+      - target: ZenWordOfDoom
+      - package: ZenWordOfDoomKit
+        product: LevelGen
 
 schemes:
   ZenWordOfDoom:
     build:
       targets:
         ZenWordOfDoom: all
+        ZenWordOfDoomTests: [test]
     run:
       config: Debug
+      # Local StoreKit testing: fake-money purchases in the simulator.
+      storeKitConfiguration: App/ZenWordOfDoom/Products.storekit
+    test:
+      config: Debug
+      targets:
+        - ZenWordOfDoomTests
     archive:
       config: Release

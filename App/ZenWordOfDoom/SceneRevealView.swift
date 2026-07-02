@@ -15,6 +15,8 @@ struct SceneRevealView: View {
     let stir: Double
     let reducedDoom: Bool
     let reducedMotion: Bool
+    /// Equipped Shrine palette id (nil = the scene's natural colors).
+    var paletteID: String? = nil
 
     private var intensity: Double {
         let clamped = min(max(stir, 0), 1)
@@ -35,7 +37,24 @@ struct SceneRevealView: View {
                 )
             }
         }
+        .hueRotation(palette.hue)
+        .overlay(
+            palette.tint
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        )
         .accessibilityHidden(true)
+    }
+
+    /// Equipped-palette treatment: a gentle hue shift + translucent cast over
+    /// whichever layer is showing (real art or procedural fallback).
+    private var palette: (hue: Angle, tint: Color) {
+        switch paletteID {
+        case "palette-ember":   return (.degrees(-10), Color.orange.opacity(0.12))
+        case "palette-moonlit": return (.degrees(15), Color.blue.opacity(0.14))
+        case "palette-bloom":   return (.degrees(0), Color.pink.opacity(0.10))
+        default:                return (.degrees(0), Color.clear)
+        }
     }
 
     private func realArt(_ sceneAsset: String) -> some View {

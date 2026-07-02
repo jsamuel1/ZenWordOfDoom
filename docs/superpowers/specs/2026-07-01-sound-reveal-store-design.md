@@ -25,8 +25,10 @@ shuffleable wheel.
    `stir`/theme; the "reactive doom bus" the original spec wanted.
 3. **A meta spine** — named packs over the infinite generator, a level-clear
    celebration, a found-words tray, streaks/stats.
-4. **Monetization** — premium demo→unlock, serenity IAP packs, a serenity
-   cosmetic sink, and free-tier cut-scene ads gated behind a Continue button.
+4. **Monetization** — free-to-play and **ad-supported after pack 1** (cut-scene
+   ads only, gated behind the Continue button); a **$4.99 remove-ads premium**;
+   serenity IAP packs; and a serenity cosmetic sink (**the Shrine**). No
+   content is ever paywalled.
 5. **Scene-coupled words** — the words you spell relate to the scene revealed.
 6. **Shuffleable wheel** — randomized tile positions + a re-randomize button.
 7. **Boss capstones** — each pack's last level (10) is a harder, non-crossword
@@ -46,7 +48,7 @@ shuffleable wheel.
 
 Each workstream is independently shippable behind its own tests. Suggested
 build order: F → A → B → C → D (F and A share the reveal path; D depends on C's
-pack/paywall boundary).
+pack boundary — it defines where the ad-free grace period ends).
 
 ---
 
@@ -180,26 +182,42 @@ pure and unit-tested.
 New `StoreService` protocol with a real (`StoreKitStoreService`) and a mock
 (`MockStoreService`) implementation.
 
-- **Premium unlock (non-consumable), $4.99:** the game is free through the
-  **end of pack 1 (level 10)**. Entering level 11+ without premium shows a
-  **paywall**. Entitlement is derived from StoreKit's current entitlements and
-  mirrored into `SaveState` for offline reads. **Restore Purchases** in Settings.
+- **Model (revised 2026-07-02): free-to-play, ad-supported, pay to remove
+  ads.** All levels are free forever — there is **no content paywall**. Pack 1
+  (levels 1–10) is an ad-free grace period; from level 11 on, free players see
+  a cut-scene ad after each level (below). This replaces the earlier
+  demo→unlock design.
+- **Premium "Remove Ads" (non-consumable), $4.99:** removes all ads,
+  permanently. Offered unobtrusively: a "Remove ads · $4.99" affordance on the
+  ad slot itself, plus Settings and menu entries — never a gate. **No Family
+  Sharing.** Entitlement is derived from StoreKit's current entitlements and
+  mirrored into `SaveState.premiumUnlocked` for offline reads; a refund
+  observed via `Transaction.updates` flips it back. **Restore Purchases** in
+  Settings. Consumable purchases record processed transaction IDs in
+  `SaveState` so replayed unfinished transactions can't double-credit.
 - **Serenity packs (consumables), three tiers:** `$0.99 → 10`, `$1.99 → 25`,
   `$3.99 → 50` serenity (small-number values consistent with the existing
   economy: hints cost 5, clears earn ~10–15). Purchases credit serenity via the
   existing `GameStore.addSerenity`. Serenity remains fully earnable; it only buys
   hints + cosmetics (**no pay-to-win**).
-- **Serenity sink — cosmetics (palettes + poem sets):** unlock alternate **scene
-  palettes** *and* **cut-scene poem sets** with earned *or* bought serenity,
-  giving the currency a reason to accumulate. Priced ~25–75 serenity each to sit
+- **Serenity sink — the Shrine (cosmetics: palettes + poem sets):** a dedicated
+  menu item (between Bestiary and Stats) where the player browses, previews,
+  unlocks (with earned *or* bought serenity), and equips alternate **scene
+  palettes** and **cut-scene poem sets** — a shop that doesn't feel like a
+  shop, and the reason serenity accumulates. Priced ~25–75 serenity each to sit
   within the small-number economy. Owned cosmetics persist in `SaveState`
-  (`ownedCosmetics`).
-- **Cut-scene ads (free tier only):**
-  - On the cut scene, free-tier players get an interstitial; the **Continue
-    button stays hidden until the ad completes** (or, if no ad fills within a
-    short timeout, a fallback timed delay elapses — the player is never
-    trapped). Premium players skip ads entirely and see Continue immediately
-    (current behavior).
+  (`ownedCosmetics`); the equipped choice applies immediately.
+- **Cut-scene ads (free players, level 11+ only):**
+  - Ads appear **only in the between-level cut scenes**, never mid-puzzle. The
+    **Continue button stays hidden until the ad completes** (or, if no ad
+    fills within a short timeout, a fallback timed delay elapses — the player
+    is never trapped). Pack 1 (levels 1–10) is always ad-free; premium players
+    never see ads and get Continue immediately (current behavior).
+  - **`AdService` protocol seam:** the ad slot + Continue gating is built
+    against an `AdService` protocol first, with a Null/house-placeholder
+    implementation (a timed, skip-safe slot) so the whole flow is testable in
+    the simulator without the SDK; the AdMob-backed implementation drops in
+    behind the protocol as the final step.
   - **Provider (decided):** **AdMob, single network** (no mediation).
     **Personalized ads by default with a user opt-out** — a "Personalized ads"
     toggle in Settings; when off, the app requests non-personalized ads.
@@ -344,10 +362,13 @@ bonus; determinism preserved.
 
 1. **SceneLexicon authoring** — generated **once, offline, per bundle** into a
    checked-in resource (with a generation script + hand review), not at runtime.
-2. **Premium price** — **$4.99** (non-consumable, unlocks level 11+ and removes
-   ads).
+2. **Monetization model (revised 2026-07-02)** — free-to-play with **no content
+   paywall**; ad-supported after pack 1 (cut-scene ads only); **premium $4.99 =
+   remove ads** (non-consumable, **no Family Sharing**).
 3. **Serenity packs** — three consumables: `$0.99 → 10`, `$1.99 → 25`,
-   `$3.99 → 50`; cosmetics priced ~25–75 serenity.
+   `$3.99 → 50`; cosmetics priced ~25–75 serenity. Serenity counters (menu/HUD)
+   and the "Not enough serenity" hint message are **tappable**, opening the
+   top-up sheet — the only in-play path; no popups.
 4. **Cosmetic scope** — **both** scene palettes **and** cut-scene poem sets.
 5. **Ad provider** — **AdMob, single network**, personalized by default with a
    Settings opt-out; ATT prompt required, non-personalized fallback on denial.
