@@ -21,112 +21,131 @@ struct MenuView: View {
 
     var body: some View {
         ZStack {
-            Image(Self.backdrop)
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
+            // GeometryReader gives the scroll content a minHeight equal to
+            // the viewport, so the Spacers resolve exactly as they did
+            // before the ScrollView existed at standard type sizes; at
+            // accessibility sizes the content exceeds the viewport and
+            // scrolls instead.
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(spacing: 32) {
+                        Spacer()
 
-            LinearGradient(
-                colors: [
-                    Color(hue: 0.33, saturation: 0.22, brightness: 0.92).opacity(0.35),
-                    Color(hue: 0.55, saturation: 0.30, brightness: 0.45).opacity(0.75),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
+                        VStack(spacing: 8) {
+                            Text("Zen Word")
+                                .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                            Text("of Doom")
+                                .font(.system(.title, design: .rounded).weight(.semibold))
+                                .foregroundStyle(.red.opacity(0.85))
+                        }
+                        .multilineTextAlignment(.center)
+                        .shadow(radius: 4)
 
-            ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 8) {
-                        Text("Zen Word")
-                            .font(.system(.largeTitle, design: .rounded).weight(.heavy))
-                        Text("of Doom")
-                            .font(.system(.title, design: .rounded).weight(.semibold))
-                            .foregroundStyle(.red.opacity(0.85))
-                    }
-                    .multilineTextAlignment(.center)
-                    .shadow(radius: 4)
-
-                    Button {
-                        showSerenitySheet = true
-                    } label: {
-                        Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Get more serenity")
-
-                    dailyCard
-
-                    VStack(spacing: 16) {
                         Button {
-                            // Drop straight into the next level to play; if every
-                            // level is cleared there's nothing new, so show the list.
-                            if let next = store.nextUnclearedLevelID {
-                                router.push(.game(levelID: next))
-                            } else {
-                                router.push(.levelSelect)
+                            showSerenitySheet = true
+                        } label: {
+                            Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Get more serenity")
+
+                        Spacer()
+
+                        dailyCard
+
+                        VStack(spacing: 16) {
+                            Button {
+                                // Drop straight into the next level to play; if every
+                                // level is cleared there's nothing new, so show the list.
+                                if let next = store.nextUnclearedLevelID {
+                                    router.push(.game(levelID: next))
+                                } else {
+                                    router.push(.levelSelect)
+                                }
+                            } label: {
+                                Label("Play", systemImage: "leaf.fill")
+                                    .frame(maxWidth: .infinity)
                             }
-                        } label: {
-                            Label("Play", systemImage: "leaf.fill")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.large)
 
-                        Button {
-                            router.push(.levelSelect)
-                        } label: {
-                            Label("Select Level", systemImage: "square.grid.2x2.fill")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
+                            Button {
+                                router.push(.levelSelect)
+                            } label: {
+                                Label("Select Level", systemImage: "square.grid.2x2.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
 
-                        Button {
-                            router.push(.bestiary)
-                        } label: {
-                            Label("Bestiary", systemImage: "pawprint.fill")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
+                            Button {
+                                router.push(.bestiary)
+                            } label: {
+                                Label("Bestiary", systemImage: "pawprint.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
 
-                        Button {
-                            router.push(.shrine)
-                        } label: {
-                            Label("Shrine", systemImage: "sparkles")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
+                            Button {
+                                router.push(.shrine)
+                            } label: {
+                                Label("Shrine", systemImage: "sparkles")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
 
-                        Button {
-                            router.push(.stats)
-                        } label: {
-                            Label("Stats", systemImage: "chart.bar.fill")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
+                            Button {
+                                router.push(.stats)
+                            } label: {
+                                Label("Stats", systemImage: "chart.bar.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
 
-                        Button {
-                            router.push(.settings)
-                        } label: {
-                            Label("Settings", systemImage: "gearshape.fill")
-                                .frame(maxWidth: .infinity)
+                            Button {
+                                router.push(.settings)
+                            } label: {
+                                Label("Settings", systemImage: "gearshape.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
+                        .padding(.horizontal, 40)
+
+                        Spacer()
                     }
-                    .padding(.horizontal, 40)
+                    .padding()
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
                 }
-                .padding()
-                .padding(.top, 48)
-                .padding(.bottom, 48)
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .scrollBounceBehavior(.basedOnSize)
+        }
+        // Hero image + gradient live in .background — NOT as ZStack children —
+        // so the scaledToFill image can never inflate the layout proposal the
+        // menu content receives. (As a sibling, the oversized fill made the
+        // buttons lay out wider than the screen.) Full-bleed, outside the
+        // scroll, never scrolls.
+        .background {
+            ZStack {
+                Image(Self.backdrop)
+                    .resizable()
+                    .scaledToFill()
+
+                LinearGradient(
+                    colors: [
+                        Color(hue: 0.33, saturation: 0.22, brightness: 0.92).opacity(0.35),
+                        Color(hue: 0.55, saturation: 0.30, brightness: 0.45).opacity(0.75),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+            }
+            .ignoresSafeArea()
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)

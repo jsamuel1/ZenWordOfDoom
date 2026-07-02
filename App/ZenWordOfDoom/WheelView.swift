@@ -78,7 +78,10 @@ struct WheelView: View {
                 }
             }
             .contentShape(Rectangle())
-            .gesture(swipeGesture(ordered: ordered, layout: layout))
+            // High priority so the word-trace drag beats the enclosing
+            // ScrollView's pan within the wheel's bounds — a plain .gesture
+            // would lose swipes with a vertical component to the scroll.
+            .highPriorityGesture(swipeGesture(ordered: ordered, layout: layout))
         }
         .frame(height: 240)
         .accessibilityElement(children: .contain)
