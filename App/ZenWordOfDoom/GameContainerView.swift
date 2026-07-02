@@ -191,14 +191,16 @@ struct GamePlayView: View {
             SerenitySheetView()
         }
         .task(id: model.isComplete) {
-            guard model.isComplete else { return }
+            // `!showClear` guards re-entrancy: .task(id:) restarts when the view
+            // reappears (e.g. swiping back from the cut scene) with isComplete
+            // still true, and the celebration must not replay.
+            guard model.isComplete, !showClear else { return }
             Haptics.success()
             voice.stop()
             // Hold on the fully revealed creature (stir is 1) with the chrome
             // faded, so the payoff is actually seen; then bring in the scorecard.
             let hold: UInt64 = reduceMotion ? 800_000_000 : 2_200_000_000
-            try? await Task.sleep(nanoseconds: hold)
-            guard !Task.isCancelled else { return }
+            guard (try? await Task.sleep(nanoseconds: hold)) != nil else { return }
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 showClear = true
             }

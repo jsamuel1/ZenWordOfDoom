@@ -60,7 +60,6 @@ struct LevelClearView: View {
             }
             .buttonStyle(.borderedProminent)
             .padding(.top, 6)
-            .accessibilityLabel("Continue")
             .accessibilityHint("On to the breath between levels")
         }
         .padding(28)
