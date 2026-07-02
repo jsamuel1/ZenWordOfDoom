@@ -22,6 +22,18 @@ final class LevelService: ObservableObject {
     /// player in a mislabeled SampleLevel.
     func level(id: String) async -> Level? {
         if let hit = cache[id] { return hit }
+        if DailyPuzzle.isDailyID(id) {
+            guard let seed = DailyPuzzle.seed(forID: id) else { return nil }
+            do {
+                let raw = try await generator.level(for: seed)
+                // Re-key by date so progress/streak records land on the day.
+                let level = Level(id: id, wheel: raw.wheel, slots: raw.slots,
+                                  sceneID: raw.sceneID, creatureID: raw.creatureID,
+                                  format: raw.format)
+                cache[id] = level
+                return level
+            } catch { return nil }
+        }
         guard let seed = library.seed(forID: id) else { return nil }
         do {
             let level = try await generator.level(for: seed)
@@ -40,7 +52,8 @@ final class LevelService: ObservableObject {
 
     /// The theme for an id (for themed loaders / cut scenes), defaulting to zen.
     func theme(forID id: String) -> Theme {
-        library.seed(forID: id)?.theme ?? .zen
+        if DailyPuzzle.isDailyID(id) { return DailyPuzzle.seed(forID: id)?.theme ?? .zen }
+        return library.seed(forID: id)?.theme ?? .zen
     }
 
     /// The pack a level belongs to (name/flavor/signature), or nil if unknown.

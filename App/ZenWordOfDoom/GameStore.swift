@@ -56,6 +56,10 @@ final class GameStore: ObservableObject {
 
         state.stats.recordClear()
 
+        // The daily streak advances on a *clear* (any level, dailies included),
+        // not on merely opening the app — a streak you keep by playing.
+        state.stats.recordPlay(dayNumber: Self.utcDayNumber())
+
         // Only Doom levels contribute to the bestiary (the collection of Doom
         // creatures); Zen levels reveal a calm guardian that isn't catalogued.
         let isDoom = library.seed(forID: level.id)?.theme == .doom
@@ -77,14 +81,6 @@ final class GameStore: ObservableObject {
     /// totals). Called per submission; `recordClear` handles the clear tally.
     func recordWord(_ word: String, isBonus: Bool, isPangram: Bool) {
         state.stats.recordWord(word, isBonus: isBonus, isPangram: isPangram)
-        save()
-    }
-
-    /// Record that the player engaged with the game today, advancing the daily
-    /// streak. Uses a UTC day count (stable across timezone/DST changes, never
-    /// nil) rather than a local-calendar ordinal, so travel can't desync a streak.
-    func recordDailyPlay() {
-        state.stats.recordPlay(dayNumber: Self.utcDayNumber())
         save()
     }
 

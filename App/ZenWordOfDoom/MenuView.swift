@@ -1,4 +1,5 @@
 import SwiftUI
+import LevelGen
 
 /// The home screen. Play descends into level select; secondary buttons reach
 /// the bestiary and settings.
@@ -58,6 +59,8 @@ struct MenuView: View {
                 .accessibilityHint("Get more serenity")
 
                 Spacer()
+
+                dailyCard
 
                 VStack(spacing: 16) {
                     Button {
@@ -131,5 +134,39 @@ struct MenuView: View {
         .sheet(isPresented: $showSerenitySheet) {
             SerenitySheetView()
         }
+    }
+
+    private var dailyCard: some View {
+        let dailyID = DailyPuzzle.id(for: Date())
+        let cleared = store.isCleared(dailyID)
+        let streak = store.state.stats.currentStreak
+        return Button {
+            router.push(.game(levelID: dailyID))
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: cleared ? "checkmark.seal.fill" : "sun.haze.fill")
+                    .foregroundStyle(cleared ? .green : .orange)
+                    .imageScale(.large)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Today's Doom")
+                        .font(.headline)
+                    Text(cleared ? "Cleared — the garden rests" : "One puzzle. Every soul. Every day.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if streak > 0 {
+                    Label("\(streak)", systemImage: "flame.fill")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.orange)
+                        .accessibilityLabel("\(streak) day streak")
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 40)
     }
 }
