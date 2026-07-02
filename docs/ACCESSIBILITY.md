@@ -97,12 +97,11 @@ repo's CI/sandbox environment:
   which is the guaranteed activation path — plus a default
   `.accessibilityAction` and the `.isButton` trait so a plain double-tap
   works too, in case the wheel's `DragGesture` ever intercepts standard
-  activation (see the comment in `WheelView.swift`). The named action is
-  exercised by nothing headless can drive interactively; every review on
-  this branch flagged that CI/sandbox environments can't drive a real
-  VoiceOver session. Confirm the primary double-tap-to-activate path also
-  works via Accessibility Inspector or an on-device VoiceOver walk of the
-  wheel.
+  activation (see the comment in `WheelView.swift`). Nothing headless can
+  exercise the named action interactively — every review on this branch
+  flagged that CI/sandbox environments can't drive a real VoiceOver session.
+  Confirm the primary double-tap-to-activate path also works via
+  Accessibility Inspector or an on-device VoiceOver walk of the wheel.
 - [ ] **AX5 reflow pass on an iPhone SE-class device.** Automated screenshots
   during the Dynamic Type fix loop confirmed reachability at AX5 in the
   simulator; do a fresh human pass on an SE-class (smallest supported)
@@ -120,21 +119,24 @@ repo's CI/sandbox environment:
 specified a 320pt cap for the wheel's `wheelHeight`. Review found a real
 geometric overlap at accessibility text sizes with that number; the cap was
 independently re-derived and verified by two separate reviewers and shipped
-as **350pt** (`WheelView.scaledWheelHeight`'s cap in
+as **350pt** (the cap in `WheelView`'s computed `wheelHeight` property, in
 `App/ZenWordOfDoom/WheelView.swift`). If you encounter the 320pt figure in an
 older planning doc, treat 350pt as authoritative.
 
 ## Running the automated checks
 
-Contrast-pair math (fast, no simulator):
+Contrast-pair math and grid VoiceOver description coverage both run as part
+of the app's Xcode test target (`ZenWordOfDoomTests`) — needs `xcodebuild
+test` against a scheme/simulator, since it's `@testable import
+ZenWordOfDoom`; root `swift test` only runs the two SPM package suites and
+won't see either of these:
 
 ```sh
-swift test --filter WCAGContrastTests
+xcodegen generate
+xcodebuild -project ZenWordOfDoom.xcodeproj -scheme ZenWordOfDoom \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:ZenWordOfDoomTests/WCAGContrastTests test
 ```
-
-Grid VoiceOver description coverage runs as part of the app's Xcode test
-target (`ZenWordOfDoomTests`) — needs `xcodebuild test` against a
-scheme/simulator, since it's `@testable import ZenWordOfDoom`:
 
 ```sh
 xcodegen generate
@@ -156,7 +158,26 @@ xcodebuild -project ZenWordOfDoom.xcodeproj -scheme ZenWordOfDoom \
   -only-testing:ZenWordOfDoomUITests/AccessibilityAuditTests test
 ```
 
-`.contrast` is deliberately excluded from that audit's type set: several
-screens sit on photographic hero backdrops chosen randomly per launch, so a
-contrast audit over those screens would be nondeterministic; `WCAGContrastTests`
-covers contrast deterministically instead, over the app's fixed color pairs.
+`.contrast` is deliberately excluded from that audit's type set: `MenuView`
+sits on a photographic hero backdrop chosen randomly per launch (the only
+screen with randomized art — level select, play, and settings have none), so
+a contrast audit over that screen would be nondeterministic;
+`WCAGContrastTests` covers contrast deterministically instead, over the
+app's fixed color pairs.
+
+**Known audit suppressions.** `AccessibilityAuditTests.swift` filters four
+categories of `.dynamicType` finding, each with an inline comment explaining
+why — read them before treating a new failure as expected:
+1. HUDView's combined Score/Serenity stat elements (a `.combine`'d element
+   with a scalable-text-plus-icon audit false positive).
+2. Wheel-tile single-letter labels (a deliberate, documented scale-factor
+   cap that keeps a 9-tile wheel from overlapping — see the wheel-height-cap
+   note above).
+3. The Settings Store-section footer text (an empirical List/Form footer
+   false positive; the exact rendering mechanism is not asserted).
+4. A nil-element, nil-label issue instance on the play screen (~75% of runs
+   during investigation) with nothing to point at — a reproduced,
+   audit-engine-level artifact, filtered narrowly on `issue.element == nil`
+   so any future issue that DOES carry an element still fails the test.
+An Accessibility Inspector pass will likely surface the same four; they are
+known and accepted, not gaps to re-report.
