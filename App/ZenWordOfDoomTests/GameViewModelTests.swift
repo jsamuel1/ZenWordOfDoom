@@ -8,11 +8,25 @@ private struct AcceptAll: WordValidating {
 
 @MainActor
 final class GameViewModelTests: XCTestCase {
+    private var tempFileURLs: [URL] = []
+    private var defaultsSuiteNames: [String] = []
+
+    override func tearDown() {
+        for url in tempFileURLs { try? FileManager.default.removeItem(at: url) }
+        tempFileURLs = []
+        for name in defaultsSuiteNames { UserDefaults().removePersistentDomain(forName: name) }
+        defaultsSuiteNames = []
+        super.tearDown()
+    }
+
     private func makeModel(doom: Bool = false) -> (GameViewModel, GameStore) {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("vm-\(UUID().uuidString).json")
+        tempFileURLs.append(url)
         let store = GameStore(fileURL: url)
-        let settings = AppSettings(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        let suiteName = UUID().uuidString
+        defaultsSuiteNames.append(suiteName)
+        let settings = AppSettings(defaults: UserDefaults(suiteName: suiteName)!)
         settings.doomMode = doom
         settings.firstLetterHints = false
         let model = GameViewModel(level: SampleLevel.make(), validator: AcceptAll(),

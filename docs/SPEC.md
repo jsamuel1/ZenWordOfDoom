@@ -227,7 +227,7 @@ not a loading screen.
   (readable at a calm pace), or on tap. Always skippable; a setting can disable
   cut scenes entirely. Respects Dynamic Type and VoiceOver (the poem is read
   aloud when VoiceOver is on).
-- **Content.** Poems and pop-out creature/item are **data** (per [`LevelKit`](ARCHITECTURE.md)),
+- **Content.** Poems and pop-out creature/item are **data** (per [`GameCore`](ARCHITECTURE.md)),
   themed to the pack and ideally foreshadowing the next level's hidden creature,
   so the breaths form a loose through-line rather than random interludes.
 

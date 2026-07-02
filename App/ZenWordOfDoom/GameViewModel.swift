@@ -211,12 +211,12 @@ final class GameViewModel: ObservableObject {
         switch engine.submit(word) {
         case .filledSlots:
             soundEngine.play(.wordLand)
-            store.recordWord(word, isBonus: false, isPangram: engine.isPangram(word))
+            store.recordWord(word, isBonus: false, isPangram: engine.isPangram(word), voided: doomExpired)
             lastMessage = "Found \(word)"
         case .bonusWord:
             soundEngine.play(.bonus)
             bonusWordCount += 1
-            store.recordWord(word, isBonus: true, isPangram: engine.isPangram(word))
+            store.recordWord(word, isBonus: true, isPangram: engine.isPangram(word), voided: doomExpired)
             lastMessage = "Bonus: \(word)"
         case .invalid(let reason):
             soundEngine.play(.invalid)

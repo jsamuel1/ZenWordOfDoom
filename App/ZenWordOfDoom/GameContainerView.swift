@@ -199,6 +199,11 @@ struct GamePlayView: View {
         .onChange(of: settings.soundEnabled) { _, on in
             soundEngine.setEnabled(on)
         }
+        // The doom overlay blocks all play input; the mic must not keep
+        // listening (and submitting words) underneath it.
+        .onChange(of: model.showDoomOverlay) { _, shown in
+            if shown { voice.stop() }
+        }
         .sheet(isPresented: $showSerenitySheet) {
             SerenitySheetView()
         }

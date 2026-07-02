@@ -1,5 +1,6 @@
 import XCTest
 import GameCore
+import LevelGen
 @testable import ZenWordOfDoom
 
 @MainActor
@@ -62,6 +63,39 @@ final class GameStoreTests: XCTestCase {
         XCTAssertEqual(store.state.serenity, 0)   // grid words pay nothing directly
         store.recordWord("GARDEN", isBonus: true, isPangram: false)
         XCTAssertEqual(store.state.serenity, 1)   // bonus words pay Economy.bonusWordReward
+    }
+
+    func testVoidedBonusWordPaysNoSerenityButStillCountsStats() {
+        let store = makeStore()
+        store.recordWord("GARDEN", isBonus: true, isPangram: false, voided: true)
+        XCTAssertEqual(store.state.serenity, 0)                    // voided: no payout
+        XCTAssertEqual(store.state.stats.totalBonusWords, 1)       // stats still tracked
+    }
+
+    func testDoomDailyClearRecordsBestiaryEntry() throws {
+        let store = makeStore()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        var components = DateComponents(year: 2026, month: 7, day: 1)
+        var doomID: String?
+        for offset in 0..<14 {
+            components.day = 1 + offset
+            let date = calendar.date(from: components)!
+            let id = DailyPuzzle.id(for: date, calendar: calendar)
+            if DailyPuzzle.seed(forID: id)?.theme == .doom {
+                doomID = id
+                break
+            }
+        }
+        guard let dailyID = doomID else {
+            throw XCTSkip("No doom-themed daily id found in the probed date range")
+        }
+        let base = SampleLevel.make()
+        let level = Level(id: dailyID, wheel: base.wheel, slots: base.slots,
+                          sceneID: base.sceneID, creatureID: "daily-doom-creature")
+        store.recordClear(level: level, score: 10, bonusWords: 0,
+                          usedHint: false, creatureRevealed: true)
+        XCTAssertNotNil(store.state.bestiary["daily-doom-creature"])
     }
 
     func testSpendSerenityGuards() {

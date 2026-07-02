@@ -71,7 +71,10 @@ final class GameStore: ObservableObject {
 
         // Only Doom levels contribute to the bestiary (the collection of Doom
         // creatures); Zen levels reveal a calm guardian that isn't catalogued.
-        let isDoom = library.seed(forID: level.id)?.theme == .doom
+        // Campaign ids resolve via the procedural library; daily ids (which the
+        // library doesn't know) fall back to `DailyPuzzle`.
+        let theme = library.seed(forID: level.id)?.theme ?? DailyPuzzle.seed(forID: level.id)?.theme
+        let isDoom = theme == .doom
         if creatureRevealed, isDoom, state.bestiary[level.creatureID] == nil {
             state.bestiary[level.creatureID] = BestiaryEntry(
                 creatureID: level.creatureID,
@@ -91,9 +94,11 @@ final class GameStore: ObservableObject {
     /// totals). Called per submission; `recordClear` handles the clear tally.
     /// Bonus words (found beyond the grid) pay a small serenity reward; grid
     /// words pay nothing directly (their reward is folded into the clear).
-    func recordWord(_ word: String, isBonus: Bool, isPangram: Bool) {
+    /// A voided run (`voided: true`, doom expired) still counts the word toward
+    /// stats but pays no serenity — matching `recordClear`'s voided handling.
+    func recordWord(_ word: String, isBonus: Bool, isPangram: Bool, voided: Bool = false) {
         state.stats.recordWord(word, isBonus: isBonus, isPangram: isPangram)
-        if isBonus {
+        if isBonus, !voided {
             addSerenity(Economy.bonusWordReward)
         }
         save()
