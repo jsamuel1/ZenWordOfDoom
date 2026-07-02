@@ -31,8 +31,10 @@ expiry, level clear) post real VoiceOver announcements through the
 app; a null implementation keeps view-model tests deterministic. Overlays
 (`LevelClearView`, `DoomExpiredOverlay`) hide the gameplay stack from the
 accessibility tree while shown and move VoiceOver focus to the overlay
-heading. Each wheel tile carries an explicit `.accessibilityAction(.default)`
-as a guaranteed programmatic activation path, independent of the
+heading. Each wheel tile carries a named custom accessibility action
+(`.accessibilityAction(named: "Select <letter>")`) as a guaranteed
+programmatic activation path, plus a default `.accessibilityAction` and the
+`.isButton` trait so plain double-tap works too — independent of the
 drag-gesture recognizer used for sighted play.
 
 **Contrast.** `App/ZenWordOfDoom/AccessibilityPalette.swift` holds every
@@ -43,8 +45,8 @@ Each pair is computed with the real WCAG relative-luminance/contrast-ratio
 math and pinned by `App/ZenWordOfDoomTests/WCAGContrastTests.swift`: text
 pairs assert ≥ 4.5:1, UI-component pairs (e.g. grid cell stroke vs. fill)
 assert ≥ 3:1. `AccessibilityPalette` also exposes separate, unpinned
-Increase-Contrast variants for the marginal pairs (unfilled grid cell, solved
-green) used only when `colorSchemeContrast == .increased`.
+Increase-Contrast variants for the marginal pairs (unfilled grid cell fill,
+grid cell stroke) used only when `colorSchemeContrast == .increased`.
 
 **Touch targets.** All interactive controls — wheel tiles, HUD hint/mic
 buttons, play controls, overlay Continue buttons, store price buttons — meet
@@ -90,10 +92,14 @@ on-device accessibility audit) is enforced in CI. The following need a human
 with a device or simulator and are **not** currently automatable in this
 repo's CI/sandbox environment:
 
-- [ ] **VoiceOver wheel-tile activation, on device.** The wheel's
-  `.accessibilityAction(.default)` is a guaranteed programmatic fallback
-  (exercised by nothing headless can drive interactively), but every review
-  on this branch flagged that CI/sandbox environments can't drive a real
+- [ ] **VoiceOver wheel-tile activation, on device.** Each wheel tile carries
+  a named custom action (`.accessibilityAction(named: "Select <letter>")`),
+  which is the guaranteed activation path — plus a default
+  `.accessibilityAction` and the `.isButton` trait so a plain double-tap
+  works too, in case the wheel's `DragGesture` ever intercepts standard
+  activation (see the comment in `WheelView.swift`). The named action is
+  exercised by nothing headless can drive interactively; every review on
+  this branch flagged that CI/sandbox environments can't drive a real
   VoiceOver session. Confirm the primary double-tap-to-activate path also
   works via Accessibility Inspector or an on-device VoiceOver walk of the
   wheel.
