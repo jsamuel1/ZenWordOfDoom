@@ -22,6 +22,9 @@ struct HUDView: View {
     let onMicStop: () -> Void
 
     @Environment(\.colorSchemeContrast) private var contrast
+    /// Reduce Motion (audit 5.3): the mic's pulse symbol effect is purely
+    /// decorative, so it's suppressed rather than replaced.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var canAffordHint: Bool { serenity >= hintCost }
 
@@ -102,6 +105,10 @@ struct HUDView: View {
                         : Color.gray.opacity(0.4))
                 )
                 .foregroundStyle(.white)
+                // 44pt touch-target floor (audit 4.1): enlarges the tappable
+                // area only — the visible circle above stays its original size.
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .disabled(!canAffordHint)
         .accessibilityLabel("Reveal a hint for \(hintCost) serenity")
@@ -119,7 +126,11 @@ struct HUDView: View {
                         : Color.secondary.opacity(0.25))
                 )
                 .foregroundStyle(isListening ? .white : .primary)
-                .symbolEffect(.pulse, isActive: isListening)
+                .symbolEffect(.pulse, isActive: isListening && !reduceMotion)
+                // 44pt touch-target floor (audit 4.1): enlarges the tappable
+                // area only — the visible circle above stays its original size.
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .accessibilityLabel(isListening ? "Stop listening" : "Speak a word")
     }

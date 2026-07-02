@@ -54,6 +54,16 @@ struct MenuView: View {
                                 Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
                                     .font(.subheadline.weight(.medium))
                                     .foregroundStyle(.white.opacity(0.85))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    // Button-shape affordance (audit 6.3): this is
+                                    // a plain-styled tappable row, not inside a
+                                    // List, so it gets no platform row affordance
+                                    // for free.
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+                                    )
                             }
                             .buttonStyle(.plain)
                             .accessibilityHint("Get more serenity")
@@ -200,6 +210,14 @@ struct MenuView: View {
             }
             .padding(14)
             .a11yCardBackground(cornerRadius: 16)
+            // Button-shape affordance (audit 6.3): plain-styled tappable row,
+            // not inside a List. Corner radius matches `a11yCardBackground`
+            // above (16, not the brief's literal 12) so the stroke traces
+            // the card's own rounded fill instead of cutting across it.
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 40)

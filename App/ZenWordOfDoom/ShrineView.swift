@@ -54,6 +54,10 @@ struct ShrineView: View {
         }
     }
 
+    // Button-shape affordance (audit 6.3) is intentionally NOT added here:
+    // this row lives inside a `List` (see `body` above), and List rows
+    // already carry the platform's own row affordance/separators, so a
+    // stroked-border overlay would be redundant chrome on top of chrome.
     private func row(_ item: Cosmetic, equippedID: String?) -> some View {
         let owned = store.state.ownedCosmetics.contains(item.id)
         let equipped = equippedID == item.id

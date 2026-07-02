@@ -301,6 +301,7 @@ struct GamePlayView: View {
         HStack {
             Button("Clear", role: .destructive) { model.clear() }
                 .buttonStyle(.bordered)
+                .controlSize(.large)
 
             Spacer()
 
@@ -312,6 +313,7 @@ struct GamePlayView: View {
                     .labelStyle(.iconOnly)
             }
             .buttonStyle(.bordered)
+            .controlSize(.large)
             .accessibilityLabel("Shuffle letters")
 
             Spacer()
@@ -321,6 +323,7 @@ struct GamePlayView: View {
                 model.submit()
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .disabled(model.selection.count < GameEngine.minWordLength)
         }
     }
@@ -388,6 +391,7 @@ private struct DoomExpiredOverlay: View {
                     .foregroundStyle(.secondary)
                 Button("Continue without points", action: onContinue)
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
             }
             .padding(28)
             .a11yCardBackground(cornerRadius: 24)

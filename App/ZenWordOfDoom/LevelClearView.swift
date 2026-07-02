@@ -63,6 +63,7 @@ struct LevelClearView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .padding(.top, 6)
             .accessibilityHint("On to the breath between levels")
         }
