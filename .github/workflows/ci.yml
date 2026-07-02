@@ -39,7 +39,7 @@ jobs:
         run: swift test --parallel
 
   ios-app:
-    name: iOS app (build)
+    name: iOS app (build & test)
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -59,18 +59,35 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build (iOS simulator)
+      - name: Build & test (iOS simulator)
         env:
           SCHEME: ${{ vars.APP_SCHEME || 'ZenWordOfDoom' }}
-          # Generic simulator destination — no specific device needed for a
-          # compile check, and robust to whatever devices the runner has.
-          DESTINATION: "generic/platform=iOS Simulator"
         run: |
           set -o pipefail
+          # Running the App-target unit tests needs a concrete simulator (a
+          # generic destination can only build). Pick an eligible iPhone by
+          # UDID from `-showdestinations` — it only lists destinations valid
+          # for this scheme's deployment target, so we skip simulators on
+          # older runtimes and don't hardcode a device name that shifts
+          # between Xcode versions.
+          UDID=$(xcodebuild \
+            -project ZenWordOfDoom.xcodeproj \
+            -scheme "$SCHEME" \
+            -showdestinations 2>/dev/null \
+            | grep 'platform:iOS Simulator' \
+            | grep 'name:iPhone' \
+            | grep -v placeholder \
+            | grep -oE 'id:[0-9A-Fa-f-]+' \
+            | head -1 | cut -d: -f2)
+          if [ -z "$UDID" ]; then
+            echo "::error::No eligible iPhone simulator for the ZenWordOfDoom scheme."
+            exit 1
+          fi
+          echo "Using simulator UDID: $UDID"
           xcodebuild \
             -project ZenWordOfDoom.xcodeproj \
             -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
-            clean build \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            clean test \
             CODE_SIGNING_ALLOWED=NO \
           | xcbeautify
