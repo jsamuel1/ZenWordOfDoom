@@ -31,6 +31,8 @@ level**.
 - Difficulty scales with wheel size (5 letters → 9), escalating as you progress.
 - Linear unlock, per-level best scores, a **bestiary** of revealed creatures,
   and accessibility options (**Reduced Doom**, reduced motion).
+- **VoiceOver-playable**, Dynamic Type throughout, and WCAG-AA contrast — see
+  [`docs/ACCESSIBILITY.md`](docs/ACCESSIBILITY.md).
 
 ### How levels are made
 

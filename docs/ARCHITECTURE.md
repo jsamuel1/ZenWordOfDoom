@@ -330,6 +330,23 @@ scheme/simulator.
 
 ---
 
+### 6.1 Accessibility
+
+`App/ZenWordOfDoom/AccessibilityPalette.swift` holds the fixed,
+WCAG-contrast-verified color pairs used wherever a scheme-adaptive color
+would be near-invisible (dark-mode wheel tiles, solved crossword letters),
+plus Increase-Contrast variants for the marginal pairs; pinned by
+`App/ZenWordOfDoomTests/WCAGContrastTests.swift`. `AccessibilityAnnouncer.swift`
+defines the `AccessibilityAnnouncing` seam (`SystemAnnouncer` posts real
+VoiceOver announcements; a null implementation keeps `GameViewModel` tests
+deterministic) that `GameViewModel` calls at meaningful game events.
+`A11yCardBackground.swift` provides the `a11yCardBackground(cornerRadius:)`
+modifier shared by every material-backed card, swapping `.ultraThinMaterial`
+for an opaque fill under Reduce Transparency. Grid VoiceOver descriptions
+(`GridView.slotDescription`) are covered by
+`App/ZenWordOfDoomTests/GridAccessibilityTests.swift`. Full conformance
+summary and release checklist: [`docs/ACCESSIBILITY.md`](ACCESSIBILITY.md).
+
 ## 7. History
 
 This document originally proposed a SpriteKit-rendered scene layer, eight
