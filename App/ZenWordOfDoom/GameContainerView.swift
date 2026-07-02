@@ -75,7 +75,8 @@ struct GamePlayView: View {
                 creatureID: model.level.creatureID,
                 stir: model.stir,
                 reducedDoom: settings.reducedDoom,
-                reducedMotion: reduceMotion
+                reducedMotion: reduceMotion,
+                paletteID: store.state.equippedPalette
             )
             .ignoresSafeArea()
 

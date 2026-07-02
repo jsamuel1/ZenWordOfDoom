@@ -79,7 +79,8 @@ struct CutSceneContainerView: View {
                 theme: levelService.theme(forID: afterLevelID),
                 order: levelService.order(forID: afterLevelID) ?? 0,
                 sceneID: level.sceneID,
-                creatureID: level.creatureID
+                creatureID: level.creatureID,
+                poemSet: store.state.equippedPoemSet
             )
         }
     }

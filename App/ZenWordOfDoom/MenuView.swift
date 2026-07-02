@@ -94,6 +94,15 @@ struct MenuView: View {
                     .controlSize(.large)
 
                     Button {
+                        router.push(.shrine)
+                    } label: {
+                        Label("Shrine", systemImage: "sparkles")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+
+                    Button {
                         router.push(.stats)
                     } label: {
                         Label("Stats", systemImage: "chart.bar.fill")
