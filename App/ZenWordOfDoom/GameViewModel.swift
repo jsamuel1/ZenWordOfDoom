@@ -301,7 +301,7 @@ final class GameViewModel: ObservableObject {
 
     /// The doom timer ran out: void the score and raise the overlay.
     func handleDoomExpiry() {
-        guard !doomExpired, !engine.isComplete else { return }
+        guard isDoom, !doomExpired, !engine.isComplete else { return }
         engine.voidScore()
         doomExpired = true
         showDoomOverlay = true
@@ -338,7 +338,8 @@ final class GameViewModel: ObservableObject {
             score: engine.score,
             bonusWords: bonusWordCount,
             usedHint: usedHint,
-            creatureRevealed: !alreadyRevealed
+            creatureRevealed: !alreadyRevealed,
+            voided: doomExpired
         )
         // Reward serenity for clearing; a no-hint clear earns a little extra.
         // A doom-voided clear earns progression but no serenity.

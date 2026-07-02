@@ -12,16 +12,22 @@ final class GameStore: ObservableObject {
     private let fileURL: URL
     private let library = ProceduralLevelLibrary.standard
 
-    init() {
-        let fm = FileManager.default
-        let base = (try? fm.url(for: .applicationSupportDirectory,
-                                in: .userDomainMask,
-                                appropriateFor: nil,
-                                create: true))
-            ?? fm.temporaryDirectory
-        self.fileURL = base.appendingPathComponent("ZenWordOfDoom.save.json")
+    /// - Parameter fileURL: Injectable save location for tests; defaults to the
+    ///   real Application Support path.
+    init(fileURL: URL? = nil) {
+        if let fileURL {
+            self.fileURL = fileURL
+        } else {
+            let fm = FileManager.default
+            let base = (try? fm.url(for: .applicationSupportDirectory,
+                                    in: .userDomainMask,
+                                    appropriateFor: nil,
+                                    create: true))
+                ?? fm.temporaryDirectory
+            self.fileURL = base.appendingPathComponent("ZenWordOfDoom.save.json")
+        }
 
-        if let data = try? Data(contentsOf: fileURL),
+        if let data = try? Data(contentsOf: self.fileURL),
            let decoded = try? JSONDecoder().decode(SaveState.self, from: data) {
             self.state = decoded
         } else {
@@ -38,12 +44,15 @@ final class GameStore: ObservableObject {
 
     /// Record a cleared level: updates per-level progress, lifetime stats, the
     /// bestiary, and awards serenity. Idempotent-ish — best score / best bonus
-    /// only ever improve.
+    /// only ever improve. A doom-voided clear (`voided: true`) still opens the
+    /// path, catalogues the creature, and advances the streak — but earns no
+    /// serenity.
     func recordClear(level: Level,
                      score: Int,
                      bonusWords: Int,
                      usedHint: Bool,
-                     creatureRevealed: Bool) {
+                     creatureRevealed: Bool,
+                     voided: Bool = false) {
         let wasCleared = state.progress[level.id]?.cleared ?? false
 
         var progress = state.progress[level.id] ?? LevelProgress(levelID: level.id)
@@ -72,7 +81,11 @@ final class GameStore: ObservableObject {
         }
 
         // Serenity reward: base for a clear, more for a first-time clear.
-        addSerenity(wasCleared ? 5 : 10)
+        // Nothing for a doom-voided clear — progression only (spec: a voided
+        // clear records no serenity).
+        if !voided {
+            addSerenity(wasCleared ? 5 : 10)
+        }
 
         save()
     }
