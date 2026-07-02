@@ -29,6 +29,18 @@ enum AccessibilityPalette {
     static let gridFilledText = Color.black
     static let gridFilledFill = Color.white
 
+    // MARK: - Increase Contrast variants (audit 6.2)
+
+    /// Unfilled-cell fill used only when `colorSchemeContrast == .increased`
+    /// (see `GridView`). Deliberately a separate constant from
+    /// `gridUnfilledFill` — that one is pinned by `WCAGContrastTests` and
+    /// must not change; this one is free to move independently.
+    static let gridUnfilledFillIncreased = Color(.sRGB, white: 1, opacity: 0.92)
+    /// Cell-stroke color used only when `colorSchemeContrast == .increased`
+    /// (see `GridView`). Darker and more opaque than `gridCellStroke` for a
+    /// stronger boundary; not pinned by `WCAGContrastTests`.
+    static let gridCellStrokeIncreased = Color(.sRGB, white: 0.15, opacity: 0.85)
+
     // MARK: - WCAG math
 
     /// WCAG 2.x relative luminance of an sRGB color (resolved via UIColor).

@@ -201,10 +201,18 @@ struct GamePlayView: View {
         }
         .overlay {
             if showClear, let summary = model.clearSummary {
-                LevelClearView(summary: summary, reducedMotion: reduceMotion) {
-                    router.push(.cutScene(afterLevelID: level.id, sceneID: level.sceneID, creatureID: level.creatureID))
+                // Scrim mirrors DoomExpiredOverlay's dimming so the card's
+                // text holds contrast over whatever scene art sits behind it;
+                // this is legibility, not doom, so `settings.reducedDoom`
+                // doesn't gate it.
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    LevelClearView(summary: summary, reducedMotion: reduceMotion) {
+                        router.push(.cutScene(afterLevelID: level.id, sceneID: level.sceneID, creatureID: level.creatureID))
+                    }
+                    .padding(.horizontal, 40)
                 }
-                .padding(.horizontal, 40)
                 .transition(.opacity)
             }
         }
@@ -382,8 +390,7 @@ private struct DoomExpiredOverlay: View {
                     .buttonStyle(.borderedProminent)
             }
             .padding(28)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial))
+            .a11yCardBackground(cornerRadius: 24)
             .padding(.horizontal, 32)
         }
         .transition(.opacity)

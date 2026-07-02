@@ -21,7 +21,14 @@ struct HUDView: View {
     let onMicStart: () -> Void
     let onMicStop: () -> Void
 
+    @Environment(\.colorSchemeContrast) private var contrast
+
     private var canAffordHint: Bool { serenity >= hintCost }
+
+    /// Increase Contrast (audit 6.2): the caption labels default to
+    /// `.secondary`, which can thin out over busy scene art; bump to
+    /// `.primary` when the setting is on.
+    private var labelStyle: Color { contrast == .increased ? .primary : .secondary }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -41,21 +48,26 @@ struct HUDView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: Capsule())
+        // Constant dark backing sits beneath the material (audit 3.5) so
+        // `.secondary` labels hold contrast over bright/light scene art;
+        // `a11yCardBackground` layers on top and goes opaque under Reduce
+        // Transparency.
+        .a11yCardBackground(cornerRadius: .infinity)
+        .background(Capsule().fill(Color.black.opacity(0.25)))
     }
 
     private func stat(title: String, value: String, systemImage: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: systemImage)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(labelStyle)
             VStack(alignment: .leading, spacing: 0) {
                 Text(value)
                     .font(.system(.subheadline, design: .rounded).weight(.bold))
                     .monospacedDigit()
                 Text(title)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(labelStyle)
             }
         }
         .accessibilityElement(children: .combine)

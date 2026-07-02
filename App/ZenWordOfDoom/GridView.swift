@@ -11,6 +11,8 @@ struct GridView: View {
     let filledCells: [GridCoord: Character]
     let solvedSlotIDs: Set<Int>
 
+    @Environment(\.colorSchemeContrast) private var contrast
+
     /// All grid coordinates that belong to at least one slot.
     private var occupiedCells: Set<GridCoord> {
         Set(level.slots.flatMap(\.cells))
@@ -49,7 +51,7 @@ struct GridView: View {
             }
         }
         .padding(8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .a11yCardBackground(cornerRadius: 12)
         // `.contain` (not `.ignore`) so the container label below coexists with
         // the per-slot elements supplied via `.accessibilityChildren` — `.ignore`
         // collapses the subtree and swallows those synthesized children too.
@@ -96,11 +98,14 @@ struct GridView: View {
                             .lineLimit(1)
                     }
                 }
-                // Rendered exactly as the palette constant — no extra opacity —
-                // so the on-screen stroke matches what WCAGContrastTests pins.
+                // Rendered exactly as the palette constant (at standard
+                // contrast) — no extra opacity — so the on-screen stroke
+                // matches what WCAGContrastTests pins. Under Increase
+                // Contrast (audit 6.2) it swaps to a stronger, non-pinned
+                // variant.
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(AccessibilityPalette.gridCellStroke, lineWidth: 1)
+                        .stroke(cellStroke, lineWidth: contrast == .increased ? 1.5 : 1)
                 )
         } else {
             Color.clear.aspectRatio(1, contentMode: .fit)
@@ -114,7 +119,21 @@ struct GridView: View {
         if solved {
             return AccessibilityPalette.gridSolvedFill
         }
-        return letter == nil ? AccessibilityPalette.gridUnfilledFill : AccessibilityPalette.gridFilledFill
+        return letter == nil ? unfilledFill : AccessibilityPalette.gridFilledFill
+    }
+
+    /// Increase Contrast (audit 6.2): a less-translucent unfilled fill so
+    /// empty cells read more solidly against scene art. Deliberately a
+    /// separate, non-pinned constant — `AccessibilityPalette.gridUnfilledFill`
+    /// stays exactly what `WCAGContrastTests` pins.
+    private var unfilledFill: Color {
+        contrast == .increased ? AccessibilityPalette.gridUnfilledFillIncreased : AccessibilityPalette.gridUnfilledFill
+    }
+
+    /// Increase Contrast (audit 6.2): a darker, more opaque stroke than the
+    /// pinned `AccessibilityPalette.gridCellStroke`.
+    private var cellStroke: Color {
+        contrast == .increased ? AccessibilityPalette.gridCellStrokeIncreased : AccessibilityPalette.gridCellStroke
     }
 }
 

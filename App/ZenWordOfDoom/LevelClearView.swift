@@ -67,10 +67,7 @@ struct LevelClearView: View {
             .accessibilityHint("On to the breath between levels")
         }
         .padding(28)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
+        .a11yCardBackground(cornerRadius: 24)
         .shadow(radius: 20, y: 8)
         .scaleEffect(appeared || reducedMotion ? 1 : 0.85)
         .opacity(appeared ? 1 : 0)

@@ -50,7 +50,10 @@ struct WordRibbonView: View {
     private var placeholder: some View {
         Text("Trace a word")
             .font(.system(.subheadline, design: .rounded))
-            .foregroundStyle(.white.opacity(0.4))
+            .foregroundStyle(.white.opacity(0.85))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color.black.opacity(0.3)))
     }
 }
 

@@ -25,7 +25,7 @@ struct FoundWordsTray: View {
                                 .font(.caption2.weight(.medium))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Capsule().fill(.ultraThinMaterial))
+                                .a11yCardBackground(cornerRadius: .infinity)
                         }
                     }
                     .padding(.horizontal, 2)
@@ -54,10 +54,7 @@ struct PackBannerView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
+        .a11yCardBackground(cornerRadius: 16)
         .shadow(radius: 8, y: 4)
         .padding(.top, 8)
         .accessibilityElement(children: .combine)

@@ -31,29 +31,46 @@ struct MenuView: View {
                     VStack(spacing: 32) {
                         Spacer()
 
-                        VStack(spacing: 8) {
-                            Text("Zen Word")
-                                .font(.system(.largeTitle, design: .rounded).weight(.heavy))
-                            Text("of Doom")
-                                .font(.system(.title, design: .rounded).weight(.semibold))
-                                .foregroundStyle(.red.opacity(0.85))
-                        }
-                        .multilineTextAlignment(.center)
-                        .shadow(radius: 4)
+                        // Localized scrim (audit 3.4) — not full-screen — so
+                        // the title/serenity/daily block holds contrast over
+                        // whichever hero photo was picked for this launch.
+                        // `.blur` + negative padding softens the scrim's
+                        // edge instead of a hard-edged box.
+                        VStack(spacing: 24) {
+                            VStack(spacing: 8) {
+                                Text("Zen Word")
+                                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                                    .foregroundStyle(.white)
+                                Text("of Doom")
+                                    .font(.system(.title, design: .rounded).weight(.semibold))
+                                    .foregroundStyle(.red.opacity(0.85))
+                            }
+                            .multilineTextAlignment(.center)
+                            .shadow(radius: 4)
 
-                        Button {
-                            showSerenitySheet = true
-                        } label: {
-                            Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.secondary)
+                            Button {
+                                showSerenitySheet = true
+                            } label: {
+                                Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(.white.opacity(0.85))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Get more serenity")
+
+                            dailyCard
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Get more serenity")
+                        .padding(.vertical, 12)
+                        .background(
+                            LinearGradient(
+                                colors: [.black.opacity(0.45), .black.opacity(0.25)],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                            .blur(radius: 8)
+                            .padding(-12)
+                        )
 
                         Spacer()
-
-                        dailyCard
 
                         VStack(spacing: 16) {
                             Button {
@@ -182,8 +199,7 @@ struct MenuView: View {
                 }
             }
             .padding(14)
-            .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial))
+            .a11yCardBackground(cornerRadius: 16)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 40)
