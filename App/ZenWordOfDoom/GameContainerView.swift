@@ -13,6 +13,7 @@ struct GameContainerView: View {
     @EnvironmentObject private var soundBox: SoundEngineBox
 
     @State private var loaded: Level?
+    @State private var failed = false
 
     var body: some View {
         Group {
@@ -20,13 +21,24 @@ struct GameContainerView: View {
                 GamePlayView(level: level, settings: settings, store: store,
                              soundEngine: soundBox.engine,
                              mood: levelService.theme(forID: level.id) == .doom ? .doom : .zen)
+            } else if failed {
+                VStack(spacing: 16) {
+                    Text("Couldn't compose this level")
+                        .font(.headline)
+                    Button("Retry") { failed = false; Task { await load() } }
+                        .buttonStyle(.borderedProminent)
+                }
             } else {
                 LoadingView(theme: levelService.theme(forID: levelID))
             }
         }
-        .task {
-            loaded = await levelService.level(id: levelID)
-        }
+        .task { await load() }
+    }
+
+    private func load() async {
+        guard loaded == nil else { return }
+        if let level = await levelService.level(id: levelID) { loaded = level }
+        else { failed = true }
     }
 }
 
@@ -158,7 +170,7 @@ struct GamePlayView: View {
         .overlay {
             if showClear, let summary = model.clearSummary {
                 LevelClearView(summary: summary, reducedMotion: reduceMotion) {
-                    router.push(.cutScene(afterLevelID: level.id))
+                    router.push(.cutScene(afterLevelID: level.id, sceneID: level.sceneID, creatureID: level.creatureID))
                 }
                 .padding(.horizontal, 40)
                 .transition(.opacity)

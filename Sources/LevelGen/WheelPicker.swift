@@ -15,12 +15,18 @@ public enum WheelPicker {
 
     /// Deterministically pick a themed base word of the band's length from the
     /// theme lexicon; its letters form the wheel.
-    public static func wheel(theme: Theme, band: DifficultyBand, index: Int) -> Wheel {
+    ///
+    /// Throws `LevelGenError.noAnchorWord` when the theme lexicon has no word
+    /// of the required length — every real theme/band pair is covered (see
+    /// `LevelGenErrorTests`), so this should never fire in practice.
+    public static func wheel(theme: Theme, band: DifficultyBand, index: Int) throws -> Wheel {
         let n = wheelLength(for: band)
         let candidates = ThemeLexicon.shared.words(for: theme)
             .filter { $0.count == n }
             .sorted()
-        precondition(!candidates.isEmpty, "no length-\(n) \(theme) anchor word")
+        guard !candidates.isEmpty else {
+            throw LevelGenError.noAnchorWord(theme: theme, length: n)
+        }
         var rng = SeededRandom(seed: seed(theme: theme, band: band, index: index))
         let pick = candidates[Int(rng.next() % UInt64(candidates.count))]
         return Wheel(letters: pick)
@@ -30,12 +36,12 @@ public enum WheelPicker {
     /// length so the letters (and thus the words) relate to the revealed scene.
     /// Falls back to the theme anchor when the scene has no word of that length,
     /// guaranteeing a non-empty, buildable wheel for every seed.
-    public static func wheel(sceneID: String, theme: Theme, band: DifficultyBand, index: Int) -> Wheel {
+    public static func wheel(sceneID: String, theme: Theme, band: DifficultyBand, index: Int) throws -> Wheel {
         let n = wheelLength(for: band)
         let candidates = SceneLexicon.shared.words(for: sceneID)
             .filter { $0.count == n }
             .sorted()
-        guard !candidates.isEmpty else { return wheel(theme: theme, band: band, index: index) }
+        guard !candidates.isEmpty else { return try wheel(theme: theme, band: band, index: index) }
         var rng = SeededRandom(seed: seed(theme: theme, band: band, index: index))
         return Wheel(letters: candidates[Int(rng.next() % UInt64(candidates.count))])
     }

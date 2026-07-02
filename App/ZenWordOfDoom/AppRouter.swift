@@ -5,7 +5,7 @@ import Combine
 enum Screen: Hashable {
     case levelSelect
     case game(levelID: String)
-    case cutScene(afterLevelID: String)
+    case cutScene(afterLevelID: String, sceneID: String, creatureID: String)
     case bestiary
     case shrine
     case stats

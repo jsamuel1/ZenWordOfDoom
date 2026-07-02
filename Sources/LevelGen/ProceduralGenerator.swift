@@ -29,8 +29,8 @@ public struct ProceduralGenerator: Sendable {
         // Scene first, then a scene-coupled wheel, so the words the player spells
         // relate to the scene being revealed (spec workstream F).
         let visual = SceneCreaturePicker(pools: pools).pick(theme: seed.theme, index: seed.index)
-        let wheel = WheelPicker.wheel(sceneID: visual.sceneID, theme: seed.theme,
-                                      band: seed.band, index: seed.index)
+        let wheel = try WheelPicker.wheel(sceneID: visual.sceneID, theme: seed.theme,
+                                          band: seed.band, index: seed.index)
 
         // Pack capstone => Pangram-Hunt boss (spec workstream G). The scene-coupled
         // wheel is a real N-letter word, so a pangram (that word) always exists.
@@ -64,7 +64,9 @@ public struct ProceduralGenerator: Sendable {
         if slots.count < Self.minInterestingSlots {
             slots = layout.layout(words: pool, maxSlots: Self.maxSlots, seed: layoutSeed)
         }
-        precondition(!slots.isEmpty, "ProceduralGenerator produced an empty grid for seed \(seed.id); word pool size \(pool.count)")
+        guard !slots.isEmpty else {
+            throw LevelGenError.emptyGrid(seedID: seed.id, poolSize: pool.count)
+        }
         return Level(
             id: seed.id,
             wheel: wheel,

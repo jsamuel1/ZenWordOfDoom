@@ -10,19 +10,26 @@ import LevelGen
 final class LevelService: ObservableObject {
     private let library = ProceduralLevelLibrary.standard
     private let generator: ProceduralGenerator
+    private var cache: [String: Level] = [:]
 
     init(wordProvider: any ThemedWordProvider = FoundationModelsWordProvider()) {
         self.generator = ProceduralGenerator(wordProvider: wordProvider,
                                              pools: .zenDoom)
     }
 
-    /// Generate (or in future, fetch from cache) the level for an id. Falls back
-    /// to a sample level if the id is unknown or generation fails, so the player
-    /// is never stranded on a blank screen.
-    func level(id: String) async -> Level {
-        guard let seed = library.seed(forID: id) else { return SampleLevel.make() }
-        do { return try await generator.level(for: seed) }
-        catch { return SampleLevel.make() }
+    /// Resolve a level id, memoized. Returns nil when generation genuinely
+    /// fails — the container shows a retry state; we no longer strand the
+    /// player in a mislabeled SampleLevel.
+    func level(id: String) async -> Level? {
+        if let hit = cache[id] { return hit }
+        guard let seed = library.seed(forID: id) else { return nil }
+        do {
+            let level = try await generator.level(for: seed)
+            cache[id] = level
+            return level
+        } catch {
+            return nil
+        }
     }
 
     func id(atOrder order: Int) -> String { library.id(atOrder: order) }

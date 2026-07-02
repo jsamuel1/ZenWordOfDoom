@@ -5,6 +5,8 @@ import LevelGen
 
 struct CutSceneContainerView: View {
     let afterLevelID: String
+    let sceneID: String
+    let creatureID: String
 
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var settings: AppSettings
@@ -15,7 +17,19 @@ struct CutSceneContainerView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var cutScene: CutSceneData?
+    /// Built synchronously from the route payload — the level was already
+    /// generated (and cached) to clear it, so there's no reason to await the
+    /// generator again just to read two strings.
+    private var cutScene: CutSceneData {
+        CutSceneFactory.cutScene(
+            forLevelID: afterLevelID,
+            theme: levelService.theme(forID: afterLevelID),
+            order: levelService.order(forID: afterLevelID) ?? 0,
+            sceneID: sceneID,
+            creatureID: creatureID,
+            poemSet: store.state.equippedPoemSet
+        )
+    }
     /// True once the ad slot has run its course (or no ad applies).
     @State private var adComplete = false
 
@@ -35,32 +49,26 @@ struct CutSceneContainerView: View {
     }
 
     var body: some View {
-        Group {
-            if let cutScene {
-                CutSceneView(
-                    cutScene: cutScene,
-                    theme: levelService.theme(forID: afterLevelID),
-                    reducedDoom: settings.reducedDoom,
-                    reducedMotion: reduceMotion,
-                    continueLocked: adGated && !adComplete,
-                    onContinue: advance,
-                    onPopout: { soundBox.engine.play(.cutScenePopout) }
-                )
-                .overlay(alignment: .bottom) {
-                    if adGated && !adComplete {
-                        AdSlotView { adComplete = true }
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 90)
-                            .transition(.opacity)
-                    }
-                }
-                .onChange(of: storeService.isPremium) { _, premium in
-                    // Buying remove-ads from the card frees the breath instantly.
-                    if premium { adComplete = true }
-                }
-            } else {
-                Color.clear
+        CutSceneView(
+            cutScene: cutScene,
+            theme: levelService.theme(forID: afterLevelID),
+            reducedDoom: settings.reducedDoom,
+            reducedMotion: reduceMotion,
+            continueLocked: adGated && !adComplete,
+            onContinue: advance,
+            onPopout: { soundBox.engine.play(.cutScenePopout) }
+        )
+        .overlay(alignment: .bottom) {
+            if adGated && !adComplete {
+                AdSlotView { adComplete = true }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 90)
+                    .transition(.opacity)
             }
+        }
+        .onChange(of: storeService.isPremium) { _, premium in
+            // Buying remove-ads from the card frees the breath instantly.
+            if premium { adComplete = true }
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -72,17 +80,6 @@ struct CutSceneContainerView: View {
             soundBox.engine.setMood(mood, stir: 0.3)
         }
         .onDisappear { soundBox.engine.stop() }
-        .task {
-            let level = await levelService.level(id: afterLevelID)
-            cutScene = CutSceneFactory.cutScene(
-                forLevelID: afterLevelID,
-                theme: levelService.theme(forID: afterLevelID),
-                order: levelService.order(forID: afterLevelID) ?? 0,
-                sceneID: level.sceneID,
-                creatureID: level.creatureID,
-                poemSet: store.state.equippedPoemSet
-            )
-        }
     }
 
     private func advance() {

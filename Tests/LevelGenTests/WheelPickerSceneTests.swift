@@ -3,9 +3,9 @@ import XCTest
 import GameCore
 
 final class WheelPickerSceneTests: XCTestCase {
-    func testSceneAnchorUsesSceneWordWhenAvailable() {
+    func testSceneAnchorUsesSceneWordWhenAvailable() throws {
         // still-pond has length-6 words; medium band => N=6.
-        let wheel = WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .medium, index: 0)
+        let wheel = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .medium, index: 0)
         XCTAssertEqual(wheel.size, 6)
         let letters = String(wheel.tiles.map(\.letter)).sorted()
         let sceneWords6 = SceneLexicon.shared.words(for: "still-pond").filter { $0.count == 6 }
@@ -13,15 +13,15 @@ final class WheelPickerSceneTests: XCTestCase {
                       "wheel letters should match a length-6 scene word")
     }
 
-    func testFallsBackToThemeAnchorForUnknownScene() {
+    func testFallsBackToThemeAnchorForUnknownScene() throws {
         // No lexicon words => must still yield a valid N-letter wheel.
-        let wheel = WheelPicker.wheel(sceneID: "no-such-scene", theme: .zen, band: .medium, index: 3)
+        let wheel = try WheelPicker.wheel(sceneID: "no-such-scene", theme: .zen, band: .medium, index: 3)
         XCTAssertEqual(wheel.size, 6)
     }
 
-    func testDeterministic() {
-        let a = WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .hard, index: 7)
-        let b = WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .hard, index: 7)
+    func testDeterministic() throws {
+        let a = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .hard, index: 7)
+        let b = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .hard, index: 7)
         XCTAssertEqual(String(a.tiles.map(\.letter)), String(b.tiles.map(\.letter)))
     }
 }

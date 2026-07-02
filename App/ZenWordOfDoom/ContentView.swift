@@ -27,8 +27,8 @@ struct ContentView: View {
             // GameViewModel instead of reusing the finished level's solved board.
             GameContainerView(levelID: levelID)
                 .id(levelID)
-        case .cutScene(let afterLevelID):
-            CutSceneContainerView(afterLevelID: afterLevelID)
+        case .cutScene(let afterLevelID, let sceneID, let creatureID):
+            CutSceneContainerView(afterLevelID: afterLevelID, sceneID: sceneID, creatureID: creatureID)
                 .id(afterLevelID)
         case .bestiary:
             BestiaryView()
