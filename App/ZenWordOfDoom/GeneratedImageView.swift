@@ -8,6 +8,7 @@ import LevelGen
 struct GeneratedImageView<Fallback: View>: View {
     let request: VisualRequest
     var maxPixel: Int = 512
+    var contentMode: ContentMode = .fill
     @ViewBuilder let fallback: () -> Fallback
 
     @EnvironmentObject private var visuals: VisualProviderBox
@@ -16,10 +17,10 @@ struct GeneratedImageView<Fallback: View>: View {
     var body: some View {
         ZStack {
             if let image {
-                Image(decorative: image, scale: 1).resizable().scaledToFill()
+                Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: contentMode)
                     .transition(.opacity)
             } else if let bundledName = BundledVisuals.assetName(for: request) {
-                Image(bundledName).resizable().scaledToFill()
+                Image(bundledName).resizable().aspectRatio(contentMode: contentMode)
                     .transition(.opacity)
             } else {
                 fallback()

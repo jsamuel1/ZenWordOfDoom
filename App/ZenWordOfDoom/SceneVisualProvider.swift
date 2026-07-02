@@ -13,9 +13,3 @@ struct VisualRequest: Hashable {
 protocol SceneVisualProvider: Sendable {
     func image(for request: VisualRequest, maxPixel: Int) async -> CGImage?
 }
-
-/// Default provider until Image Playground is wired in; always nil so callers
-/// fall back to procedural rendering.
-struct UnavailableVisualProvider: SceneVisualProvider {
-    func image(for request: VisualRequest, maxPixel: Int) async -> CGImage? { nil }
-}

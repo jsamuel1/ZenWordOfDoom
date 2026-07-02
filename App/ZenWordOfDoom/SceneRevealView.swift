@@ -1,4 +1,5 @@
 import SwiftUI
+import LevelGen
 
 /// The in-level background. Shows the bundled **scene** painting as the calm base
 /// and slowly surfaces the paired **creature** painting as `stir` rises (spec
@@ -12,6 +13,7 @@ import SwiftUI
 struct SceneRevealView: View {
     let sceneID: String
     let creatureID: String
+    let theme: Theme
     let stir: Double
     let reducedDoom: Bool
     let reducedMotion: Bool
@@ -59,9 +61,12 @@ struct SceneRevealView: View {
 
     private func realArt(_ sceneAsset: String) -> some View {
         ZStack {
-            Image(sceneAsset)
-                .resizable()
-                .scaledToFill()
+            GeneratedImageView(
+                request: VisualRequest(id: sceneID, theme: theme, kind: .scene),
+                maxPixel: 1024
+            ) {
+                Image(sceneAsset).resizable().scaledToFill()
+            }
                 .saturation(1 - intensity * 0.5)                 // color drains toward doom
                 .overlay(Color.red.opacity(intensity * 0.14))    // faint blood cast
                 .overlay(Color.black.opacity(intensity * 0.42))  // deepening gloom
@@ -69,9 +74,13 @@ struct SceneRevealView: View {
 
             if creatureAppear > 0.001,
                let creatureAsset = BundledVisuals.assetName(kind: .creature, id: creatureID) {
-                Image(creatureAsset)
-                    .resizable()
-                    .scaledToFit()
+                GeneratedImageView(
+                    request: VisualRequest(id: creatureID, theme: theme, kind: .creature),
+                    maxPixel: 768,
+                    contentMode: .fit
+                ) {
+                    Image(creatureAsset).resizable().scaledToFit()
+                }
                     .padding(36)
                     .opacity(creatureAppear * 0.92)
                     .scaleEffect(0.88 + 0.14 * creatureAppear)

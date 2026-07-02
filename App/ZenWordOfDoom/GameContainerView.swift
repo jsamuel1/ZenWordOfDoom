@@ -76,6 +76,7 @@ struct GamePlayView: View {
             SceneRevealView(
                 sceneID: model.level.sceneID,
                 creatureID: model.level.creatureID,
+                theme: levelService.theme(forID: level.id),
                 stir: model.stir,
                 reducedDoom: settings.reducedDoom,
                 reducedMotion: reduceMotion,
