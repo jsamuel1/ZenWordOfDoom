@@ -113,17 +113,33 @@ struct GamePlayView: View {
                             onMicStop: { voice.stop() }
                         )
 
-                        Text(model.lastMessage)
-                            .font(.subheadline)
-                            .foregroundStyle(model.wantsSerenityOffer ? .primary : .secondary)
-                            .underline(model.wantsSerenityOffer)
-                            .animation(.default, value: model.lastMessage)
-                            .accessibilityLiveRegion()
-                            .onTapGesture {
-                                guard model.wantsSerenityOffer else { return }
-                                showSerenitySheet = true
+                        // The tap gesture is only attached when the message is
+                        // actually interactive (a serenity offer), not merely
+                        // guarded inside its handler — an always-attached
+                        // gesture makes the single-line subheadline text a
+                        // tap target well under the 44pt hit-region floor
+                        // even while inert, which an accessibility audit
+                        // correctly flags. When it IS interactive, a matching
+                        // 44pt minimum frame + contentShape gives it a real
+                        // hit region (same pattern as HUDView's icon buttons).
+                        Group {
+                            if model.wantsSerenityOffer {
+                                Text(model.lastMessage)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                                    .underline()
+                                    .frame(minHeight: 44)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { showSerenitySheet = true }
+                                    .accessibilityAddTraits(.isButton)
+                            } else {
+                                Text(model.lastMessage)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
                             }
-                            .accessibilityAddTraits(model.wantsSerenityOffer ? .isButton : [])
+                        }
+                        .animation(.default, value: model.lastMessage)
+                        .accessibilityLiveRegion()
 
                         GridView(
                             level: model.level,
