@@ -50,6 +50,9 @@ struct GamePlayView: View {
     @State private var packBanner: Pack?
     /// Serenity top-up sheet, reachable only via the failed-hint message.
     @State private var showSerenitySheet = false
+    /// Gates the scorecard: stays false during the held creature-reveal beat so
+    /// the reveal isn't covered, then flips true once the hold completes.
+    @State private var showClear = false
 
     /// Shared audio engine, retained for start/stop/enable over the level's life.
     private let soundEngine: any SoundEngine
@@ -141,6 +144,9 @@ struct GamePlayView: View {
                 controls
             }
             .padding()
+            .opacity(model.isComplete ? 0 : 1)
+            .animation(.easeOut(duration: 0.5), value: model.isComplete)
+            .allowsHitTesting(!model.isComplete)
         }
         .overlay(alignment: .top) {
             if let pack = packBanner {
@@ -149,10 +155,12 @@ struct GamePlayView: View {
             }
         }
         .overlay {
-            if let summary = model.clearSummary {
-                LevelClearView(summary: summary, reducedMotion: reduceMotion)
-                    .padding(.horizontal, 40)
-                    .transition(.opacity)
+            if showClear, let summary = model.clearSummary {
+                LevelClearView(summary: summary, reducedMotion: reduceMotion) {
+                    router.push(.cutScene(afterLevelID: level.id))
+                }
+                .padding(.horizontal, 40)
+                .transition(.opacity)
             }
         }
         .overlay {
@@ -182,17 +190,17 @@ struct GamePlayView: View {
         .sheet(isPresented: $showSerenitySheet) {
             SerenitySheetView()
         }
-        .onChange(of: model.isComplete) { _, complete in
-            guard complete else { return }
+        .task(id: model.isComplete) {
+            guard model.isComplete else { return }
             Haptics.success()
             voice.stop()
-            // Hold on the fully revealed creature (stir is now 1) so the reveal
-            // payoff is actually seen, then move to the cut scene. Shorter when
-            // motion is reduced (a brief still reveal instead of a held beat).
-            // Hold on the reveal + clear celebration before the cut scene.
-            let hold = reduceMotion ? 0.8 : 2.2
-            DispatchQueue.main.asyncAfter(deadline: .now() + hold) {
-                router.push(.cutScene(afterLevelID: level.id))
+            // Hold on the fully revealed creature (stir is 1) with the chrome
+            // faded, so the payoff is actually seen; then bring in the scorecard.
+            let hold: UInt64 = reduceMotion ? 800_000_000 : 2_200_000_000
+            try? await Task.sleep(nanoseconds: hold)
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                showClear = true
             }
         }
     }

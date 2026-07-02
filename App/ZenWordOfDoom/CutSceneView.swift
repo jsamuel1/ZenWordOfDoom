@@ -82,7 +82,7 @@ struct CutSceneView: View {
             guard !continueLocked else { return }
             onContinue()
         }
-        .onAppear { begin() }
+        .task { await runTimeline() }
     }
 
     // MARK: - Procedural scene
@@ -277,51 +277,36 @@ struct CutSceneView: View {
 
     // MARK: - Lifecycle
 
-    private func begin() {
+    /// Single cancellable task timeline replacing the old chained
+    /// `DispatchQueue.main.asyncAfter` calls, which kept firing (including the
+    /// pop-out audio sting) even after the player navigated away. `.task`
+    /// cancels automatically on disappear, and `Task.sleep` throws on
+    /// cancellation, so each `guard` below exits cleanly instead of mutating
+    /// state or invoking callbacks on a torn-down view.
+    private func runTimeline() async {
         guard !didPopOut else { return }
         didPopOut = true
 
         if reducedMotion {
-            // Still reveal: poem fully shown, a calm static doom presence.
             poemReveal = 1
             doom = reducedDoom ? 0 : 0.35
             return
         }
 
-        // Reveal the poem gently right away.
-        withAnimation(.easeOut(duration: 1.6)) {
-            poemReveal = 1
-        }
-        withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
-            drift = 1
-        }
+        withAnimation(.easeOut(duration: 1.6)) { poemReveal = 1 }
+        withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) { drift = 1 }
 
-        // Telegraph + pop-out after popoutDelay, unless fully reduced.
         let delay = max(0.5, cutScene.popoutDelay)
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            popOut()
-        }
-    }
+        guard (try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))) != nil else { return }
 
-    private func popOut() {
-        guard !reducedMotion else { return }
+        withAnimation(.easeIn(duration: 0.9)) { doom = min(0.45, doomCap) }   // telegraph
+        guard (try? await Task.sleep(nanoseconds: 900_000_000)) != nil else { return }
 
-        // Telegraph: a slow swell, then a quick pop, hold, then recede.
-        withAnimation(.easeIn(duration: 0.9)) {
-            doom = min(0.45, doomCap)            // telegraph swell
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) {
-                doom = doomCap                   // the pop
-            }
-            onPopout()                           // audio sting at the lunge
-        }
-        // Hold, then recede to a lingering low presence.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.1) {
-            withAnimation(.easeInOut(duration: 1.4)) {
-                doom = min(0.4, doomCap)
-            }
-        }
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) { doom = doomCap }
+        onPopout()                                                            // sting at the lunge
+        guard (try? await Task.sleep(nanoseconds: 1_200_000_000)) != nil else { return }
+
+        withAnimation(.easeInOut(duration: 1.4)) { doom = min(0.4, doomCap) } // recede
     }
 }
 

@@ -14,40 +14,54 @@ struct ClearSummary: Equatable {
 struct LevelClearView: View {
     let summary: ClearSummary
     let reducedMotion: Bool
+    let onContinue: () -> Void
 
     @State private var shownScore = 0
     @State private var appeared = false
 
     var body: some View {
         VStack(spacing: 14) {
-            Text("Level Cleared")
-                .font(.title2.weight(.bold))
+            VStack(spacing: 14) {
+                Text("Level Cleared")
+                    .font(.title2.weight(.bold))
 
-            VStack(spacing: 2) {
-                Text("\(shownScore)")
-                    .font(.system(size: 44, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                Text("points")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Label("+\(summary.serenityEarned) serenity", systemImage: "leaf.fill")
-                .font(.headline)
-                .foregroundStyle(.green)
-
-            if let creature = summary.newCreatureID {
                 VStack(spacing: 2) {
-                    Text("NEW CREATURE")
-                        .font(.caption.weight(.heavy))
-                        .foregroundStyle(.red)
-                        .tracking(2)
-                    Text(prettyName(creature))
-                        .font(.title3.weight(.semibold))
+                    Text("\(shownScore)")
+                        .font(.system(size: 44, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    Text("points")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .padding(.top, 2)
+
+                Label("+\(summary.serenityEarned) serenity", systemImage: "leaf.fill")
+                    .font(.headline)
+                    .foregroundStyle(.green)
+
+                if let creature = summary.newCreatureID {
+                    VStack(spacing: 2) {
+                        Text("NEW CREATURE")
+                            .font(.caption.weight(.heavy))
+                            .foregroundStyle(.red)
+                            .tracking(2)
+                        Text(prettyName(creature))
+                            .font(.title3.weight(.semibold))
+                    }
+                    .padding(.top, 2)
+                }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(accessibilityText)
+
+            Button(action: onContinue) {
+                Text("Continue")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top, 6)
+            .accessibilityLabel("Continue")
+            .accessibilityHint("On to the breath between levels")
         }
         .padding(28)
         .background(
@@ -58,8 +72,6 @@ struct LevelClearView: View {
         .scaleEffect(appeared || reducedMotion ? 1 : 0.85)
         .opacity(appeared ? 1 : 0)
         .onAppear(perform: animateIn)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityText)
     }
 
     private func animateIn() {
@@ -90,7 +102,8 @@ struct LevelClearView: View {
         Color.black
         LevelClearView(
             summary: ClearSummary(score: 486, serenityEarned: 15, newCreatureID: "bone-wraith"),
-            reducedMotion: false
+            reducedMotion: false,
+            onContinue: {}
         )
     }
 }
