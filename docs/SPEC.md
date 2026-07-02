@@ -3,7 +3,7 @@
 - **Platform:** iPhone (iOS 26.5), Swift, portrait-first
 - **Genre:** Word puzzle (anagram + crossword hybrid) with atmospheric reveal
 - **Session length:** 2–10 minutes per level; designed for both short and long play
-- **Status:** Specification (no code yet)
+- **Status:** Living spec — implemented through v0.3 except where marked.
 
 ---
 
@@ -241,6 +241,15 @@ not a loading screen.
 - Optional **first-letter-shown** mode for casual players (toggle).
 - Hints are optional and never required to progress.
 
+**Shipped: single reveal-a-cell tier.** Only "reveal a letter" (a random
+unfilled cell in an unsolved slot, deterministically seeded per level so a
+given level reveals in a reproducible order) is implemented, at a flat cost
+in serenity. The scoped "reveal a slot's first letter" and "highlight a
+startable slot" hint tiers above are not built; the casual
+**first-letter-shown** toggle is shipped separately as a settings-driven
+assist (pre-reveals every slot's first cell for the whole level, at no
+per-hint cost) rather than a purchasable hint tier.
+
 ---
 
 ## 8. Progression & meta
@@ -255,16 +264,31 @@ not a loading screen.
   are shown but disabled.
 - **Serenity** (soft currency) earned from words, bonus words, and clears;
   spent on hints and cosmetic scene unlocks.
-- **Daily puzzle** — one fixed-seed level per day.
+
+  > **v0.3 target (planned — lands with the Economy consolidation):** +1 per
+  > bonus word, +5 per clear, +3 no-hint-clear bonus, hint cost 10.
+  > **Currently shipped:** clear-only serenity — 5 for a repeat clear / 10 for
+  > a first-time clear (skipped entirely on a doom-voided clear), plus a
+  > separate completion bonus of 10 (hint used) / 15 (no hint). Bonus words
+  > do not currently award serenity directly; hints cost a flat 5. See
+  > `ARCHITECTURE.md` §5.2 for the authoritative current numbers.
+- **Daily puzzle** — one fixed-seed level per day. **Implemented:** the same
+  puzzle globally, for every player, on a given calendar day (seed derived
+  from the date-keyed id); the streak advances on any clear, campaign or
+  daily.
 - **Streaks & stats** — words found, longest word, pangrams, creatures
   revealed ("bestiary" collection).
 - **Bestiary** — a gallery of every creature the player has surfaced.
 
 ### 8.1 Game modes
 1. **Zen mode (default):** no timer, no fail state, full assists allowed.
-2. **Doom mode (optional):** a timer; the creature reveals faster and the level
-   "fails" (soft — retry, no penalty beyond restart) if not cleared in time.
-   For players who want pressure.
+2. **Doom mode (optional):** a timer; the creature reveals faster. **As
+   implemented,** expiry does not fail or restart the level: the level's
+   points are voided (forfeit, frozen at zero) and the player continues
+   playing the same level toward the clear — no retry, and a voided clear
+   earns no serenity (see §8's economy note) though it still records
+   progress, the streak, and the bestiary. This is a change from the
+   originally specified "soft fail / retry" behavior above.
 
 ---
 

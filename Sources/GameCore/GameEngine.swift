@@ -1,6 +1,7 @@
 import Foundation
 
-/// Supplied by WordEngine. Kept here so GameCore stays UI- and data-free.
+/// Supplied by the app layer (`SystemDictionary`, backed by `UITextChecker`).
+/// Kept here as a protocol so GameCore stays UI- and data-free.
 public protocol WordValidating: Sendable {
     func isValidWord(_ word: String) -> Bool
 }

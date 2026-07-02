@@ -6,7 +6,7 @@ import GameCore
 /// same dictionary that powers system spell-check. A word is "real" when the
 /// system spell-checker finds no misspelling.
 ///
-/// This lives in the app target (not `WordEngine`) because `UITextChecker` is a
+/// This lives in the app target (not `GameCore`) because `UITextChecker` is a
 /// UIKit/iOS API; the pure-Swift cores stay platform-agnostic and headlessly
 /// testable.
 struct SystemDictionary: WordValidating {

@@ -1,285 +1,343 @@
 # Zen Word of Doom — Technical Architecture
 
-Companion to [`SPEC.md`](SPEC.md). Describes the proposed technical design:
-stack, module boundaries, data formats, and the key subsystems (word
-validation, input resolution, the reveal engine).
+Companion to [`SPEC.md`](SPEC.md). Describes the system **as shipped** through
+v0.3: stack, module boundaries, the generation pipeline, and the app layer
+that plays it. This is the actual codebase, not a plan — see §7 for the
+earlier proposal this document replaced.
 
 ---
 
-## 1. Stack & rationale
+## 1. Stack
 
 | Concern | Choice | Why |
 | --- | --- | --- |
-| Language | **Swift 5.9+** | Native, performant, first-class on iOS |
-| Min OS | **iOS 26.5** (app) | Builds against the newest SDK on the `macos-26` CI runner; the pure-Swift cores stay portable to iOS 17+ |
-| App chrome / menus / HUD | **SwiftUI** | Declarative, fast iteration, accessibility built-in |
-| Game scene (wheel, grid, trace, FX) | **SpriteKit** | 2D node graph, physics-lite, shaders, great for the wheel + reveal animations; embedded via `SpriteView` |
-| Reveal / scene FX | **SpriteKit + `SKShader` / Core Image** | Mask-based creature reveal driven by a single `stir` uniform |
-| Voice | **Speech (`SFSpeechRecognizer`)** + **AVFoundation** | On-device recognition, mic capture |
-| Dictionary | **iOS built-in (`UITextChecker`)** | System dictionary for runtime word validation — no bundled list or license needed |
-| Persistence | **SwiftData** (or Codable + files) | Progress, settings, stats; CloudKit-syncable |
-| Packaging | **Swift Package Manager** | Modular targets, no CocoaPods needed |
-| Audio | **AVAudioEngine** | Layered ambient + reactive Doom stinger bus |
-
-> SpriteKit (not full SceneKit/RealityKit/Metal) is the sweet spot: the game is
-> 2D, art-driven, and the reveal is a shader/mask effect — SpriteKit handles all
-> of it with far less complexity than a custom Metal pipeline, while SwiftUI
-> owns navigation and menus.
+| Language | **Swift 5.9+** (tools version), app deployment iOS 17+/26.5 CI | Native, performant, first-class on iOS |
+| App chrome / navigation / HUD / game surface | **SwiftUI** | Declarative, one `NavigationStack`, accessibility built-in |
+| Game rules & generation | **Two pure Swift Package Manager targets** (`GameCore`, `LevelGen`) | Headless-testable, no UIKit dependency, fast `swift test` |
+| Dictionary (runtime validation) | **iOS built-in (`UITextChecker`)** via `SystemDictionary` | System spell-checker; no bundled word list or license needed for validation |
+| Word corpus (level authoring) | **Bundled resource lists** in `LevelGen` (`GeneralWordList`, `CommonWords`, `ThemeLexicon`) | Deterministic pool for grid generation and the always-available fallback |
+| On-device word enrichment | **Foundation Models** (`FoundationModelsWordProvider`), decorating the deterministic provider | Optional; degrades to the deterministic floor everywhere it's unavailable |
+| Scene/creature art | **Image Playground** (`ImagePlaygroundVisualProvider`), decorating bundled + procedural art | Optional on-device generation; bundled art and a procedural SwiftUI fallback always render something |
+| Audio | **AVFoundation** (`AVAudioSoundEngine`, a raw `AVAudioSourceNode` render callback) | Generative drone/arpeggio bed reactive to `stir`, no external audio assets |
+| Voice | **Speech (`SFSpeechRecognizer`)** + **AVFoundation** | On-device recognition, mic capture (`VoiceInput`) |
+| Persistence | **Codable JSON file** in Application Support (`GameStore`/`SaveState`) | Simple, inspectable, no CloudKit/SwiftData dependency |
+| Monetization | **StoreKit 2** (`StoreKitStoreService`) + **Google Mobile Ads** (`AdMobAdService`) | Consumable serenity + non-consumable ad removal; native ads gated to post-grace-period cut scenes |
+| Packaging | **Swift Package Manager** for `GameCore`/`LevelGen`; an Xcode app target for the UI | Modular, headless-testable core; standard iOS app shell |
 
 ---
 
-## 2. Module layout (SPM targets)
+## 2. Module layout
 
 ```
-ZenWordOfDoom/                      # App target (SwiftUI @main, app lifecycle)
-Packages/
-  GameCore/        # Pure Swift, no UIKit: rules, models, scoring, grid gen
-  WordEngine/      # Dictionary (DAWG), validation, buildability, anagram search
-  LevelKit/        # Level data models + JSON loading + (optional) generator
-  InputKit/        # Tile-sequence resolution from swipe/tap; shared model
-  VoiceKit/        # Speech recognition wrapper, word-candidate matching
-  SceneKitFX/      # SpriteKit scenes: wheel, grid, trace overlay, reveal engine
-  Audio/           # AVAudioEngine ambient + reactive bus
-  Persistence/     # SwiftData stores: progress, settings, bestiary, stats
+ZenWordOfDoom.xcodeproj/          # App target (SwiftUI @main, app lifecycle)
+Package.swift                     # SPM package "ZenWordOfDoomKit"
+Sources/
+  GameCore/     # Pure Swift, no UIKit: rules, models, scoring, seeded RNG,
+                # FNV1a, save state, store types, cosmetics catalog, cut-scene
+                # data model, sound-engine protocol + musical-palette model
+  LevelGen/     # Procedural generation: word corpus/lexicons, wheel/scene/
+                # creature pickers, crossword layout engine, deterministic
+                # word provider, ProceduralLevelLibrary (campaign ordering),
+                # DailyPuzzle, PackCatalog (packs + capstones), Primes
+                # (theme-flip cadence), LevelGenError
+App/ZenWordOfDoom/                # SwiftUI app: navigation, views, view models,
+                                   # persistence glue, on-device AI decorators,
+                                   # StoreKit/AdMob services
+App/ZenWordOfDoomTests/           # XCTest target for the app layer (store,
+                                   # view model, bundled-visuals lookup)
+Tests/GameCoreTests/              # XCTest for GameCore
+Tests/LevelGenTests/              # XCTest for LevelGen
 ```
 
-`GameCore` and `WordEngine` are **pure, fully unit-testable** Swift with no
-Apple-UI dependencies. UI/scene/voice modules depend on them, never the
-reverse.
+`GameCore` has zero dependencies. `LevelGen` depends only on `GameCore`.
+Neither imports UIKit/SwiftUI/AVFoundation — every on-device-AI or
+platform-specific integration point is a protocol (`ThemedWordProvider`,
+`SceneVisualProvider`, `SoundEngine`, `StoreService`, `AdService`,
+`WordValidating`) implemented in the app target, which is where UIKit-only
+code like `UITextChecker` lives (`App/ZenWordOfDoom/SystemDictionary.swift`).
+
+`Package.swift` exposes `GameCore` and `LevelGen` as libraries; the Xcode
+project consumes them as local package dependencies of the app target, plus
+a separate `ZenWordOfDoomTests` Xcode test target for app-layer coverage that
+needs `@testable import` of app types (not exposed by the package).
 
 ---
 
 ## 3. Core domain model (GameCore)
 
 ```swift
-struct LetterTile: Identifiable, Equatable {
-    let id: Int          // stable per-level tile identity (handles duplicates)
-    let letter: Character
+public struct LetterTile: Identifiable, Equatable, Hashable, Codable, Sendable {
+    public let id: Int          // stable per-level tile identity (handles duplicates)
+    public let letter: Character
 }
 
-struct Wheel {
-    let tiles: [LetterTile]          // 5...9 tiles
-    var size: Int { tiles.count }    // == max word length N
+public struct Wheel: Equatable, Sendable {
+    public let tiles: [LetterTile]      // 5...9 tiles
+    public var size: Int { tiles.count } // == max word length N
+    public var multiset: LetterMultiset { ... }
 }
 
-struct GridSlot: Identifiable {
-    let id: Int
-    let answer: String               // hidden until found
-    let cells: [GridCoord]           // ordered cells this word occupies
-    let direction: Direction         // .across / .down
+public struct GridSlot: Identifiable, Equatable, Sendable {
+    public let id: Int
+    public let answer: String            // hidden until found
+    public let origin: GridCoord
+    public let direction: Direction      // .across / .down
+    public var cells: [GridCoord] { ... } // derived
 }
 
-struct GridCell {
-    let coord: GridCoord
-    var filledLetter: Character?     // nil until a crossing word fills it
+public enum LevelFormat: Equatable, Sendable {
+    case crossword                       // fill every grid slot (default)
+    case pangramHunt(target: Int)        // pack-capstone boss: no grid — find
+                                          // the pangram plus `target` total words
 }
 
-struct Level {
-    let id: String
-    let wheel: Wheel
-    let grid: [GridSlot]
-    let cells: [GridCoord: GridCell]
-    let sceneID: String
-    let creatureID: String
-    let band: DifficultyBand         // derived from wheel.size
+public struct Level: Identifiable, Sendable {
+    public let id: String
+    public let wheel: Wheel
+    public let slots: [GridSlot]
+    public let sceneID: String
+    public let creatureID: String
+    public let format: LevelFormat
+    public var band: DifficultyBand { DifficultyBand(wheelSize: wheel.size) }
 }
 
-enum SubmissionResult {
-    case filledSlots([GridSlot.ID])  // matched one+ grid answers
-    case bonusWord(String)           // valid, not in grid
-    case invalid(reason: InvalidReason)
-}
-```
-
-### 3.1 Word submission pipeline
-
-```
-Tile sequence ([LetterTile.id])
-  → resolve to word string (InputKit)
-  → length 3...N ?                         (GameCore rule)
-  → buildable from wheel multiset ?         (always true for swipe/tap;
-                                             re-checked for voice)
-  → valid dictionary word ?                 (WordEngine)
-  → matches an unfilled grid answer ?       (GameCore)
-        yes → SubmissionResult.filledSlots  → fill cells, bump stir
-        no  → SubmissionResult.bonusWord    → reward, bump stir (less)
-  → else SubmissionResult.invalid
-```
-
-The **same pipeline** serves all three input methods. Swipe/tap deliver tile
-IDs directly. Voice delivers a *string*, which `VoiceKit` maps back to a tile
-sequence by greedily matching against the wheel multiset before entering the
-pipeline.
-
----
-
-## 4. WordEngine
-
-- **Runtime validation ("is this a real word"):** uses **iOS's built-in
-  dictionary** via `UITextChecker` (the system spell-checker). No bundled word
-  list or license is needed for validation. Because `UITextChecker` is a UIKit
-  API, the `WordValidating` conformance (`SystemDictionary`) lives in the **app
-  target**, keeping the pure-Swift cores platform-agnostic. (Gotcha: lowercase
-  the word first — `UITextChecker` skips all-uppercase tokens as acronyms.)
-- **Curated word list:** `WordEngine` still ships a small word list
-  (`SampleWords`) used for **level authoring / content validation and tests** —
-  not for runtime validation.
-- **Buildability:** `canBuild(word, from: multiset) -> Bool` via letter-count
-  subtraction; cheap and independent of any dictionary.
-- **Anagram/sub-anagram search** (for generation & "all bonus words" stats):
-  constrained by the available letter multiset over the curated list.
-
-```swift
-protocol WordValidating {            // GameCore
-    func isValidWord(_ word: String) -> Bool
+public enum SubmissionResult: Equatable, Sendable {
+    case filledSlots([Int])              // matched grid slot ids
+    case bonusWord(String)               // valid, not in grid
+    case invalid(InvalidReason)
 }
 ```
 
-Runtime validation is satisfied by the system dictionary, so the bundled-word-list
-license question (SPEC §13) no longer blocks validation — it only affects authored
-content.
+### 3.1 Word submission pipeline (`GameEngine.submit`)
 
----
-
-## 5. InputKit — unifying the three inputs
-
-A single state machine produces an ordered tile selection; the rendering layer
-(SpriteKit) feeds it raw gestures.
-
-```swift
-enum TileInputEvent {
-    case begin(tileID: Int)      // touch-down on a tile (swipe) or tap
-    case extend(tileID: Int)     // drag entered a tile / next tap
-    case backtrack               // drag retreated / deselect last
-    case submit                  // finger lifted / submit tapped
-    case cancel                  // clear
-}
-
-final class WordBuilder {
-    private(set) var selection: [Int] = []   // tile IDs, in order
-    func apply(_ event: TileInputEvent) -> [Int]? // returns sequence on .submit
-}
+```
+Word string (from tap/swipe builder or voice)
+  → uppercase, length 3...N ?
+  → buildable from wheel multiset ?
+  → already found this level ?
+  → matches an unsolved grid slot's answer ?
+        yes → fill cells, score, bump stir       → .filledSlots
+        no  → run WordValidating (SystemDictionary)
+                valid   → bonus word, smaller score, bump stir → .bonusWord
+                invalid →                                       .invalid
 ```
 
-- **Swipe** and **tap** differ only in how gestures map to `extend`/`submit`.
-- **Voice** bypasses gestures: `VoiceKit` yields a candidate tile sequence that
-  is injected as if typed, then `.submit`.
+A word matching a grid answer fills the slot **without** consulting the
+runtime dictionary: the level generator already guaranteed grid answers are
+real, buildable words drawn from `LevelGen`'s corpus, and `UITextChecker`'s
+word list can disagree with that corpus. Only bonus words (anything not in
+the grid) are gated by `SystemDictionary`.
+
+`WordBuilder` is the single state machine (`begin`/`extend`/`backtrack`/
+`submit`/`cancel`) that both tap and swipe drive identically; voice
+(`GameViewModel.submitSpoken`) greedily maps recognized letters onto unused
+wheel tiles and then calls the same `submit()` path.
+
+### 3.2 Stir (the reveal meter) and Doom mode
+
+`GameEngine.stir` (0…1) is **progress-derived, not increment-only**: it
+tracks `0.85 × completionFraction` (grid slots solved, or the pangram/word
+mix for boss levels) plus small additive nudges for bonus words and hints,
+capped at 0.95 until the clear snaps it to 1. This makes the reveal
+proportional across every grid size instead of needing per-word tuning.
+
+Doom mode (`GameMode.doom(timeLimit:)`) races a timer. On expiry
+(`GameViewModel.handleDoomExpiry` → `GameEngine.voidScore()`): the level's
+score is forfeit and frozen at zero, words still land and slots still fill
+(stir and completion are unaffected), there is **no retry** — the player
+dismisses a "continue without points" overlay and keeps playing the same
+level toward the clear. A doom-voided clear still records progress, streak,
+and bestiary, but is excluded from serenity rewards (`GameStore.recordClear`
+`voided:` parameter; see §5.2 for the current economy numbers).
 
 ---
 
-## 6. VoiceKit
+## 4. Level generation (LevelGen)
 
-```swift
-final class VoiceInput {
-    func authorize() async -> Bool                  // mic + speech permission
-    func recognizeOnce() async throws -> [String]   // ranked candidate strings
-}
+Levels are **generated at runtime**, not loaded from bundled JSON per level.
+`ProceduralGenerator.level(for: LevelSeed) async throws -> Level` runs a
+deterministic pipeline, seeded end-to-end so the same seed always produces
+the same level:
+
+```
+LevelSeed (theme, band, index)
+  → scene + creature picked (SceneCreaturePicker, seeded)
+  → wheel picked: a real N-letter word from the theme lexicon, scene-coupled
+    (WheelPicker) — guarantees a pangram exists
+  → [pack capstone?] → Pangram-Hunt boss, no grid (LevelFormat.pangramHunt)
+  → word pool requested from a ThemedWordProvider, buildable from the wheel
+  → pool filtered to "interesting" words (on-theme or common) with a fallback
+    to the full pool if that filter starves the grid
+  → CrosswordLayoutEngine lays out an interlocking grid (seeded)
+  → Level
 ```
 
-- Uses `SFSpeechRecognizer` with `requiresOnDeviceRecognition = true` when
-  `supportsOnDeviceRecognition`. Falls back gracefully (or stays disabled) if
-  unsupported.
-- Captures a short utterance via `AVAudioEngine`, returns ranked transcriptions.
-- **Candidate resolution:** for each transcription, normalize → check
-  `canBuild` + `contains`; pick the highest-ranked candidate that is buildable
-  and valid (preferring grid answers). Map it to tile IDs and submit.
-- Privacy: on-device only by default; nothing persisted or transmitted.
+Failure is a typed `LevelGenError` (`noAnchorWord`, `emptyGrid`), not a
+crash — every seed in the shipped libraries is covered by
+`SolvabilitySweepTests`, so these exist to degrade a genuinely bad seed to a
+retry screen rather than a `precondition` trap.
+
+### 4.1 Ordering, packs, and the daily puzzle
+
+- **`ProceduralLevelLibrary`** maps a play order to a stable `LevelSeed`.
+  Band escalates every `packSize` (10) levels; theme starts `.zen` and
+  permanently flips each time a prime-numbered level (1-indexed) is crossed,
+  so a pack can contain a mix of themes.
+- **`PackCatalog`** overlays named packs on that order and marks each pack's
+  last level as a capstone (a `pangramHunt` boss revealing a signature
+  creature).
+- **`DailyPuzzle`** (`daily-yyyy-MM-dd` ids) derives a `LevelSeed` from
+  `FNV1a.hash(id)` — **the same puzzle globally, for every player, on a given
+  calendar day** — rotated through the mid-game bands (medium/hard/expert)
+  with the theme flipping on the hash. `LevelService` re-keys the generated
+  level by the daily id so progress and the streak land on that day. The
+  streak advances on **any** clear (campaign or daily), not merely on
+  opening the app.
+- **`Primes`** provides the prime-count helper driving the theme-flip
+  cadence above.
+
+### 4.2 On-device AI as decorators, never a hard dependency
+
+Both AI integration points follow the same shape: **wrap a deterministic
+provider, only replace its output when generation actually succeeds and
+passes a hard validation filter, and always have a working floor.**
+
+- **Words** (`FoundationModelsWordProvider`, app target): checks
+  `SystemLanguageModel.default.availability`; when unavailable (every
+  simulator, every device without Apple Intelligence, CI) it returns the
+  `DeterministicWordProvider` floor untouched. When available, model
+  candidates are raced against a 20s timeout and merged with
+  `WordPoolBuilder.merge`, which re-validates every candidate word against
+  the wheel and the dictionary before it's allowed to displace a
+  deterministic-floor word. Results are cached per wheel+theme
+  (`WordPoolCache`).
+- **Art** (`ImagePlaygroundVisualProvider`, app target): tries
+  `ImageCreator()`; on any failure or a 30s timeout it returns `nil`, and
+  `GeneratedImageView` falls back to bundled pre-rendered art
+  (`BundledVisuals`) for the slug, and finally to a fully procedural SwiftUI
+  reveal (`RevealBackgroundView`) if no bundled art exists either. Simulator
+  and CI runs always land on the bundled/procedural fallback — no on-device
+  model is invoked or required for the game to be playable/testable there.
 
 ---
 
-## 7. The reveal engine (SceneKitFX)
+## 5. App layer
 
-The Zen scene and its hidden creature are rendered as layered `SKSpriteNode`s
-with a shared **`stir` uniform** (0…1) driving a fragment shader / Core Image
-chain:
+- **`AppRouter`** — a single `@Published var path: [Screen]` driving one
+  `NavigationStack` rooted at `MenuView` (`ContentView` maps each `Screen`
+  case to its destination view). No secondary navigation controllers.
+- **`LevelService`** — resolves a level id to a `Level` **asynchronously**
+  and **memoizes** the result in an in-memory `[String: Level]` cache so
+  revisiting a level (e.g. after a cut scene) doesn't regenerate it. Detects
+  daily ids and routes them through `DailyPuzzle.seed(forID:)` instead of the
+  campaign library; a generation failure (`LevelGenError`) resolves to `nil`
+  and the container view shows a retry state rather than stranding the
+  player on a mislabeled level.
+- **`GameStore`** — owns the persisted `SaveState` (serenity, per-level
+  progress, lifetime stats, bestiary, premium entitlement mirror, owned/
+  equipped cosmetics, processed StoreKit transaction ids), serialized as
+  **Codable JSON to a file in Application Support** (or an injectable URL for
+  tests). Every mutation persists immediately; `Codable` decoding defaults
+  every field so older saves missing newer keys (e.g. pre-monetization
+  saves) load intact.
+- **`GameViewModel`** — bridges the pure `GameEngine` to SwiftUI: owns tap/
+  swipe/voice input, the hint flow (seeded deterministic reveal order via
+  `FNV1a` + reveal count), the doom timer, and completion (recording the
+  clear into `GameStore`, computing the serenity delta, and driving the
+  clear-summary overlay).
+- **Art chain** — `SceneRevealView` picks bundled real art
+  (`BundledVisuals`) or the procedural fallback for the base scene, then
+  layers the creature in via `GeneratedImageView` (which itself races live
+  generation against the bundled/procedural fallback, per §4.2), applying a
+  stir-driven desaturate/red-cast/vignette treatment and the equipped Shrine
+  palette's hue/tint.
+- **`AVAudioSoundEngine`** — a single `AVAudioSourceNode` render callback
+  synthesizes a continuous drone + slow arpeggio from a `MusicalPalette`
+  (crossfaded toward the "doom" palette as `stir` rises — the reactive doom
+  bus) plus short one-shot cues, entirely generative (no audio assets, not
+  verifiable in CI/simulator, so it's best-effort and fully guarded).
 
-- **Zen base layer** — always visible painterly scene.
-- **Creature mask layer** — the creature painted into the scene; its alpha /
-  contrast / glow ramps with `stir`.
-- **Atmosphere** — desaturation→red shift, vignette, shadow deepening, subtle
-  domain-warp near the creature, all parameterized by `stir`.
+### 5.1 Monetization & cosmetics (added v0.3)
 
-```swift
-final class RevealController {
-    private(set) var stir: Double = 0     // 0 calm ... 1 fully revealed
-    func registerWord(scoreWeight: Double)        // small increment
-    func completeLevel()                          // ramp to 1 for ~1.5s, then ease back
-    var reducedDoom: Bool                         // caps stir, mutes stingers
-}
-```
+- **`StoreKitStoreService`** (StoreKit 2): loads products, runs purchases
+  with on-device signed verification (no backend), listens for
+  `Transaction.updates` (Ask to Buy, refunds, cross-device purchases,
+  replayed unfinished transactions), and reports deliveries via closures so
+  `GameStore` stays the single writer of persisted state.
+  `SaveState.markTransactionProcessed` dedupes replayed consumable
+  transactions by id (bounded history of the last 50).
+- **`AdMobAdService`** (Google Mobile Ads): starts the SDK lazily (premium
+  players never pay the startup cost), requests App Tracking Transparency
+  in context before the first ad, and serves non-personalized ads unless
+  both the user's setting and ATT authorization allow personalization.
+  Native ads only — the seam (`AdService`) falls back to a timed house card
+  on no-fill/timeout, never leaving the player without a "continue" path.
+- **`AdPolicy`** (GameCore): pack 1 (play orders `0..<10`, `adFreeLevelCount`)
+  is an ad-free grace period, including the breath after its capstone;
+  premium removes ads entirely; ads never appear anywhere else in the app.
+- **`ShrineView` + `CosmeticsCatalog`** (GameCore): a fixed catalog of scene
+  palettes and cut-scene poem sets, purchased with serenity and equipped
+  (never re-purchased). This is the serenity sink — the reason the currency
+  is worth accumulating beyond hints.
 
-- `registerWord` nudges `stir` up; `completeLevel` drives the held reveal then
-  the calming exhale.
-- **Reduced-motion / Reduced-Doom** clamps the max `stir` and swaps reactive
-  audio for ambient-only.
+### 5.2 Serenity economy (as shipped)
 
-Audio mirrors this: `Audio` exposes an ambient bus (always) and a reactive bus
-(low growl/heartbeat) whose gain tracks `stir`.
+Two independent awards on a clear, both skipped on a doom-voided clear:
 
----
+1. `GameStore.recordClear` — **5** serenity for a repeat clear, **10** for a
+   first-time clear of that level.
+2. `GameViewModel.completeLevel` — a separate completion bonus: **15** if no
+   hint was used this level, **10** if one was.
 
-## 8. Level data format (LevelKit)
+Hints cost a flat **5** serenity per reveal (`GameViewModel.hintCost`),
+refunded if nothing was left to reveal. Bonus words score points but do not
+currently award serenity directly. The v0.3 design target (+1 serenity per
+bonus word, +5 clear, +3 no-hint bonus, hint cost 10 — see `SPEC.md` §8) is
+**not yet implemented**; it lands with the economy-consolidation work that
+follows the store branch. Treat the numbers in this section, not the SPEC
+targets, as current shipped behavior.
 
-Levels are **data, not code** — authored or generated, loaded from bundled
-JSON. Example:
+### 5.3 Hashing
 
-```json
-{
-  "id": "garden-003",
-  "band": "medium",
-  "wheel": ["S", "T", "O", "N", "E", "D"],
-  "scene": "sand-garden",
-  "creature": "rock-oni",
-  "grid": {
-    "size": [7, 7],
-    "slots": [
-      { "id": 0, "answer": "STONE",  "row": 1, "col": 1, "dir": "across" },
-      { "id": 1, "answer": "NODE",   "row": 1, "col": 5, "dir": "down" },
-      { "id": 2, "answer": "DOTS",   "row": 3, "col": 1, "dir": "across" }
-    ]
-  }
-}
-```
-
-- The loader validates: every answer is buildable from `wheel`; wheel multiset
-  equals the union of answers; grid is connected; at least one pangram word for
-  bands 7+.
-- A **generator** (optional, offline tool target) can produce candidate levels:
-  pick a seed word set from the DAWG, lay out an interlocking grid, derive the
-  wheel, validate. Generation runs offline; the app ships static validated
-  levels plus daily seeds.
-
----
-
-## 9. Persistence (Persistence)
-
-SwiftData models (CloudKit-syncable):
-
-- `PlayerProfile` — serenity currency, settings (reduced doom, first-letter
-  hints, voice enabled), unlocked scenes.
-- `LevelProgress` — per level: cleared, best score, bonus words found, no-hint
-  flag, stir peak.
-- `BestiaryEntry` — creatures revealed.
-- `Stats` — streaks, longest word, pangrams, totals.
-
----
-
-## 10. Testing strategy
-
-- **GameCore / WordEngine:** pure unit tests — submission pipeline, buildability,
-  scoring, grid-fill, dictionary membership, generator validity invariants.
-- **LevelKit:** every bundled level passes the validation invariants (a test
-  iterates all level files).
-- **InputKit:** state-machine tests for swipe/tap/backtrack/submit sequences.
-- **VoiceKit:** candidate-resolution logic tested against fixed transcription
-  fixtures (no live mic in tests).
-- **UI / Scene:** snapshot tests for key states; reveal engine driven by
-  setting `stir` directly.
+`FNV1a` (GameCore) is the project's single hash: wheel display order, the
+per-launch hint-reveal seed, and daily-puzzle seeding all derive from it.
+Its offset basis (`1_469_598_103_934_665_603`) is **intentionally** the
+project's legacy, non-standard value — one digit short of the textbook
+FNV-1a-64 basis — because shipped level generation already depends on the
+exact seed values it produces. Do not "fix" it to the textbook constant.
 
 ---
 
-## 11. Suggested build order
+## 6. Testing strategy
 
-See [`ROADMAP.md`](ROADMAP.md). In short: prove the word-game core (wheel +
-grid + swipe/tap + dictionary) headless-testable first, then layer scene/reveal,
-then voice, then meta/progression.
+- **`Tests/GameCoreTests`** — pure unit tests for the submission pipeline,
+  scoring, stir curve, doom voiding, first-letter hints, wheel display order,
+  the save-state/store model, cosmetics, and `FNV1a`.
+- **`Tests/LevelGenTests`** — the corpus/lexicons, wheel/scene/creature
+  pickers, the crossword layout engine, `PackCatalog`, `Primes`,
+  `DailyPuzzle`, `LevelGenError`, and a **solvability sweep**
+  (`SolvabilitySweepTests`) that generates the first 50 campaign levels and
+  asserts every grid slot is buildable from its wheel and every shared cell
+  agrees across intersecting words.
+- **`App/ZenWordOfDoomTests`** (Xcode app test target, `ZenWordOfDoomTests`)
+  — app-layer coverage that needs `@testable import` of app types:
+  `GameStore` persistence/economy behavior, `GameViewModel` flows, and
+  bundled-visual asset lookup.
+
+`swift test` runs the two package suites (152 tests as of this writing) and
+needs no simulator; the app test target requires `xcodebuild test` against a
+scheme/simulator.
+
+---
+
+## 7. History
+
+This document originally proposed a SpriteKit-rendered scene layer, eight
+SPM packages (`GameCore`, `WordEngine`, `LevelKit`, `InputKit`, `VoiceKit`,
+`SceneKitFX`, `Audio`, `Persistence`), a DAWG-backed dictionary, and
+SwiftData persistence. None of that shipped. The system that was actually
+built is entirely SwiftUI (no SpriteKit), two SPM packages instead of eight,
+`UITextChecker` for runtime validation with no bundled DAWG, and Codable
+JSON persistence instead of SwiftData. The original proposal is preserved in
+git history (see the pre-v0.2 commits) for anyone curious about the road not
+taken; it should not be read as a description of the current app.

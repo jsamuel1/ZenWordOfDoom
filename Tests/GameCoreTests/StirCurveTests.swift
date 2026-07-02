@@ -1,8 +1,8 @@
 import XCTest
 @testable import GameCore
 
-/// Same stub style as GameEngineTests: a fixed dictionary independent of
-/// WordEngine.
+/// Same stub style as GameEngineTests: a fixed dictionary independent of the
+/// real dictionary validator (`SystemDictionary`/`UITextChecker`).
 private struct StubValidator: WordValidating {
     let valid: Set<String>
     func isValidWord(_ word: String) -> Bool { valid.contains(word.uppercased()) }

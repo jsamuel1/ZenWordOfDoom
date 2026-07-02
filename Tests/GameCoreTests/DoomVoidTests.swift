@@ -1,7 +1,8 @@
 import XCTest
 @testable import GameCore
 
-/// Minimal validator so GameCore tests stay independent of WordEngine.
+/// Minimal validator so GameCore tests stay independent of the real dictionary
+/// validator (`SystemDictionary`/`UITextChecker`).
 private struct StubValidator: WordValidating {
     let valid: Set<String>
     func isValidWord(_ word: String) -> Bool { valid.contains(word.uppercased()) }
