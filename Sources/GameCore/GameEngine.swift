@@ -34,6 +34,10 @@ public final class GameEngine {
     /// Accumulated score for this level (driven by `Scoring`).
     public private(set) var score: Int = 0
 
+    /// True once the doom timer expired: the level's points are forfeit.
+    /// Words still land, slots still fill, stir still rises — only score stops.
+    public private(set) var scoreVoided = false
+
     /// Number of pangrams found this level.
     public private(set) var pangramCount: Int = 0
 
@@ -108,6 +112,14 @@ public final class GameEngine {
         return w.count == level.wheel.size && level.wheel.multiset.canBuild(w)
     }
 
+    /// Forfeit this level's points (doom-mode timer expiry). Doom-only; a no-op
+    /// in zen mode, where there is no clock to lose to.
+    public func voidScore() {
+        guard case .doom = mode else { return }
+        scoreVoided = true
+        score = 0
+    }
+
     /// Submit a word string (already resolved from tiles or speech).
     @discardableResult
     public func submit(_ rawWord: String) -> SubmissionResult {
@@ -143,11 +155,11 @@ public final class GameEngine {
             case .crossword:
                 // Bonus words stay smaller than grid words so the grid is the
                 // main path.
-                score += Scoring.bonusScore(length: word.count)
+                if !scoreVoided { score += Scoring.bonusScore(length: word.count) }
             case .pangramHunt:
                 // In a boss every collected word is the main path; the pangram
                 // earns its full bonus.
-                score += Scoring.wordScore(length: word.count, isPangram: pangram)
+                if !scoreVoided { score += Scoring.wordScore(length: word.count, isPangram: pangram) }
             }
             bonusStirExtra += 0.02
             refreshStir()
@@ -165,7 +177,7 @@ public final class GameEngine {
                 filledCells[coord] = ch
             }
         }
-        score += Scoring.wordScore(length: word.count, isPangram: pangram)
+        if !scoreVoided { score += Scoring.wordScore(length: word.count, isPangram: pangram) }
         refreshStir()
         return .filledSlots(matches.map(\.id))
     }
