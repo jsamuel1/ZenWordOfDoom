@@ -19,6 +19,8 @@ struct LevelClearView: View {
     @State private var shownScore = 0
     @State private var appeared = false
 
+    @ScaledMetric(relativeTo: .largeTitle) private var scoreSize: CGFloat = 44
+
     var body: some View {
         VStack(spacing: 14) {
             VStack(spacing: 14) {
@@ -27,7 +29,7 @@ struct LevelClearView: View {
 
                 VStack(spacing: 2) {
                     Text("\(shownScore)")
-                        .font(.system(size: 44, weight: .heavy, design: .rounded))
+                        .font(.system(size: scoreSize, weight: .heavy, design: .rounded))
                         .monospacedDigit()
                         .contentTransition(.numericText())
                     Text("points")

@@ -66,7 +66,8 @@ struct GridView: View {
                         Text(String(letter))
                             .font(.system(.title3, design: .rounded).weight(.bold))
                             .foregroundStyle(solved ? AccessibilityPalette.gridSolvedText : AccessibilityPalette.gridFilledText)
-                            .minimumScaleFactor(0.5)
+                            .minimumScaleFactor(0.8)
+                            .lineLimit(1)
                     }
                 }
                 // Rendered exactly as the palette constant — no extra opacity —

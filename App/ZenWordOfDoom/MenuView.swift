@@ -35,99 +35,98 @@ struct MenuView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 32) {
-                Spacer()
+            ScrollView {
+                VStack(spacing: 32) {
+                    VStack(spacing: 8) {
+                        Text("Zen Word")
+                            .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                        Text("of Doom")
+                            .font(.system(.title, design: .rounded).weight(.semibold))
+                            .foregroundStyle(.red.opacity(0.85))
+                    }
+                    .multilineTextAlignment(.center)
+                    .shadow(radius: 4)
 
-                VStack(spacing: 8) {
-                    Text("Zen Word")
-                        .font(.system(size: 44, weight: .heavy, design: .rounded))
-                    Text("of Doom")
-                        .font(.system(size: 32, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.red.opacity(0.85))
-                }
-                .multilineTextAlignment(.center)
-                .shadow(radius: 4)
-
-                Button {
-                    showSerenitySheet = true
-                } label: {
-                    Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("Get more serenity")
-
-                Spacer()
-
-                dailyCard
-
-                VStack(spacing: 16) {
                     Button {
-                        // Drop straight into the next level to play; if every
-                        // level is cleared there's nothing new, so show the list.
-                        if let next = store.nextUnclearedLevelID {
-                            router.push(.game(levelID: next))
-                        } else {
-                            router.push(.levelSelect)
+                        showSerenitySheet = true
+                    } label: {
+                        Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Get more serenity")
+
+                    dailyCard
+
+                    VStack(spacing: 16) {
+                        Button {
+                            // Drop straight into the next level to play; if every
+                            // level is cleared there's nothing new, so show the list.
+                            if let next = store.nextUnclearedLevelID {
+                                router.push(.game(levelID: next))
+                            } else {
+                                router.push(.levelSelect)
+                            }
+                        } label: {
+                            Label("Play", systemImage: "leaf.fill")
+                                .frame(maxWidth: .infinity)
                         }
-                    } label: {
-                        Label("Play", systemImage: "leaf.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
 
-                    Button {
-                        router.push(.levelSelect)
-                    } label: {
-                        Label("Select Level", systemImage: "square.grid.2x2.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                        Button {
+                            router.push(.levelSelect)
+                        } label: {
+                            Label("Select Level", systemImage: "square.grid.2x2.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
 
-                    Button {
-                        router.push(.bestiary)
-                    } label: {
-                        Label("Bestiary", systemImage: "pawprint.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                        Button {
+                            router.push(.bestiary)
+                        } label: {
+                            Label("Bestiary", systemImage: "pawprint.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
 
-                    Button {
-                        router.push(.shrine)
-                    } label: {
-                        Label("Shrine", systemImage: "sparkles")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                        Button {
+                            router.push(.shrine)
+                        } label: {
+                            Label("Shrine", systemImage: "sparkles")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
 
-                    Button {
-                        router.push(.stats)
-                    } label: {
-                        Label("Stats", systemImage: "chart.bar.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                        Button {
+                            router.push(.stats)
+                        } label: {
+                            Label("Stats", systemImage: "chart.bar.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
 
-                    Button {
-                        router.push(.settings)
-                    } label: {
-                        Label("Settings", systemImage: "gearshape.fill")
-                            .frame(maxWidth: .infinity)
+                        Button {
+                            router.push(.settings)
+                        } label: {
+                            Label("Settings", systemImage: "gearshape.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                    .padding(.horizontal, 40)
                 }
-                .padding(.horizontal, 40)
-
-                Spacer()
+                .padding()
+                .padding(.top, 48)
+                .padding(.bottom, 48)
             }
-            .padding()
+            .scrollBounceBehavior(.basedOnSize)
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)

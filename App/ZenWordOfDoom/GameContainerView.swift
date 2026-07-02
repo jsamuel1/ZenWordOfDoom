@@ -96,70 +96,73 @@ struct GamePlayView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 14) {
-                HUDView(
-                    score: model.score,
-                    scoreVoided: model.doomExpired,
-                    serenity: model.serenity,
-                    hintCost: model.hintCost,
-                    timeRemaining: model.timeRemaining,
-                    isListening: voice.isListening,
-                    voiceEnabled: settings.voiceEnabled,
-                    onHint: {
-                        Haptics.reveal()
-                        model.useHintRevealCell()
-                    },
-                    onMicStart: { startListening() },
-                    onMicStop: { voice.stop() }
-                )
+            ScrollView {
+                VStack(spacing: 14) {
+                    HUDView(
+                        score: model.score,
+                        scoreVoided: model.doomExpired,
+                        serenity: model.serenity,
+                        hintCost: model.hintCost,
+                        timeRemaining: model.timeRemaining,
+                        isListening: voice.isListening,
+                        voiceEnabled: settings.voiceEnabled,
+                        onHint: {
+                            Haptics.reveal()
+                            model.useHintRevealCell()
+                        },
+                        onMicStart: { startListening() },
+                        onMicStop: { voice.stop() }
+                    )
 
-                Text(model.lastMessage)
-                    .font(.subheadline)
-                    .foregroundStyle(model.wantsSerenityOffer ? .primary : .secondary)
-                    .underline(model.wantsSerenityOffer)
-                    .animation(.default, value: model.lastMessage)
-                    .accessibilityLiveRegion()
-                    .onTapGesture {
-                        guard model.wantsSerenityOffer else { return }
-                        showSerenitySheet = true
-                    }
-                    .accessibilityAddTraits(model.wantsSerenityOffer ? .isButton : [])
+                    Text(model.lastMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(model.wantsSerenityOffer ? .primary : .secondary)
+                        .underline(model.wantsSerenityOffer)
+                        .animation(.default, value: model.lastMessage)
+                        .accessibilityLiveRegion()
+                        .onTapGesture {
+                            guard model.wantsSerenityOffer else { return }
+                            showSerenitySheet = true
+                        }
+                        .accessibilityAddTraits(model.wantsSerenityOffer ? .isButton : [])
 
-                GridView(
-                    level: model.level,
-                    filledCells: model.filledCells,
-                    solvedSlotIDs: model.solvedSlotIDs
-                )
-                .frame(maxHeight: 380)
+                    GridView(
+                        level: model.level,
+                        filledCells: model.filledCells,
+                        solvedSlotIDs: model.solvedSlotIDs
+                    )
+                    .frame(maxHeight: 380)
 
-                Spacer(minLength: 0)
+                    FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords)
+                        .padding(.vertical, 8)
 
-                FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords)
+                    WordRibbonView(word: model.currentWord)
 
-                WordRibbonView(word: model.currentWord)
+                    WheelView(
+                        tiles: model.level.wheel.tiles,
+                        displayOrder: model.displayOrder,
+                        selection: model.selection,
+                        onTap: { id in
+                            Haptics.tap()
+                            model.tap(tileID: id)
+                        },
+                        onSwipeBegin: { id in
+                            Haptics.tap()
+                            model.swipeBegin(tileID: id)
+                        },
+                        onSwipeExtend: { id in model.swipeExtend(tileID: id) },
+                        onSwipeEnd: { model.swipeEnd() }
+                    )
 
-                WheelView(
-                    tiles: model.level.wheel.tiles,
-                    displayOrder: model.displayOrder,
-                    selection: model.selection,
-                    onTap: { id in
-                        Haptics.tap()
-                        model.tap(tileID: id)
-                    },
-                    onSwipeBegin: { id in
-                        Haptics.tap()
-                        model.swipeBegin(tileID: id)
-                    },
-                    onSwipeExtend: { id in model.swipeExtend(tileID: id) },
-                    onSwipeEnd: { model.swipeEnd() }
-                )
-
-                controls
+                    controls
+                }
+                .padding()
+                // Task 4 hooks here
+                .opacity(model.isComplete ? 0 : 1)
+                .animation(.easeOut(duration: 0.5), value: model.isComplete)
+                .allowsHitTesting(!model.isComplete)
             }
-            .padding()
-            .opacity(model.isComplete ? 0 : 1)
-            .animation(.easeOut(duration: 0.5), value: model.isComplete)
-            .allowsHitTesting(!model.isComplete)
+            .scrollBounceBehavior(.basedOnSize)
         }
         .overlay(alignment: .top) {
             if let pack = packBanner {
