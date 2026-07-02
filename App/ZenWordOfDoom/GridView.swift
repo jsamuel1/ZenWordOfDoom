@@ -50,8 +50,34 @@ struct GridView: View {
         }
         .padding(8)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Crossword grid")
+        // `.contain` (not `.ignore`) so the container label below coexists with
+        // the per-slot elements supplied via `.accessibilityChildren` — `.ignore`
+        // collapses the subtree and swallows those synthesized children too.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Crossword grid, \(solvedSlotIDs.count) of \(level.slots.count) words solved")
+        .accessibilityChildren {
+            ForEach(level.slots, id: \.id) { slot in
+                Text(slotDescription(slot))
+            }
+        }
+    }
+
+    /// A VoiceOver-friendly summary of one slot's current reveal state.
+    /// Direction is read straight off the slot (it's already derived from the
+    /// same row/column relationship that defines `cells`).
+    func slotDescription(_ slot: GridSlot) -> String {
+        let prefix = "\(slot.answer.count)-letter word, \(slot.direction.rawValue) — "
+        if solvedSlotIDs.contains(slot.id) {
+            return prefix + "solved: \(slot.answer)"
+        }
+        let revealed = slot.cells.map { filledCells[$0] }
+        if revealed.allSatisfy({ $0 == nil }) {
+            return prefix + "no letters revealed"
+        }
+        let letters = revealed
+            .map { $0.map(String.init) ?? "blank" }
+            .joined(separator: ", ")
+        return prefix + letters
     }
 
     @ViewBuilder
