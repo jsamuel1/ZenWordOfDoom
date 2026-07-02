@@ -3,9 +3,9 @@ import AppTrackingTransparency
 import GoogleMobileAds
 
 enum AdConfig {
-    /// Native ad unit. Google's published TEST id until the real AdMob account
-    /// exists — swap this and `GADApplicationIdentifier` in Info.plist together.
-    static let nativeAdUnitID = "ca-app-pub-3940256099942544/3986624511"
+    /// Native ad unit for the "Cut Scene Native" unit in the wtf.sauhsoj AdMob
+    /// account, paired with `GADApplicationIdentifier` in Info.plist.
+    static let nativeAdUnitID = "ca-app-pub-1432255004144063/7615125506"
     /// How long to wait for a fill before falling back to the house card.
     static let loadTimeout: TimeInterval = 4
 }
