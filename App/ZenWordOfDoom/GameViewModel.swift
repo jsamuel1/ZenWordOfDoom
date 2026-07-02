@@ -35,6 +35,10 @@ final class GameViewModel: ObservableObject {
     /// message becomes a tappable path to the top-up sheet (the only in-play
     /// store surface; never a popup).
     @Published private(set) var wantsSerenityOffer = false
+    /// Doom timer ran out: the level's points are forfeit (engine score voided).
+    @Published private(set) var doomExpired = false
+    /// Drives the full-screen "continue without points" overlay.
+    @Published private(set) var showDoomOverlay = false
 
     /// True once the player has used at least one hint reveal this level.
     private var usedHint = false
@@ -287,12 +291,25 @@ final class GameViewModel: ObservableObject {
         if remaining <= 0 {
             timeRemaining = 0
             stopTimer()
-            if !engine.isComplete {
-                lastMessage = "The doom timer ran out\u{2026}"
-            }
+            if !engine.isComplete { handleDoomExpiry() }
         } else {
             timeRemaining = remaining
         }
+    }
+
+    /// The doom timer ran out: void the score and raise the overlay.
+    func handleDoomExpiry() {
+        guard !doomExpired, !engine.isComplete else { return }
+        engine.voidScore()
+        doomExpired = true
+        showDoomOverlay = true
+        lastMessage = "The doom has claimed this hour"
+        sync()
+    }
+
+    /// Dismiss the expiry overlay and keep playing, pointless but unbowed.
+    func continueWithoutPoints() {
+        showDoomOverlay = false
     }
 
     private func stopTimer() {
@@ -321,7 +338,10 @@ final class GameViewModel: ObservableObject {
             creatureRevealed: !alreadyRevealed
         )
         // Reward serenity for clearing; a no-hint clear earns a little extra.
-        store.addSerenity(usedHint ? 10 : 15)
+        // A doom-voided clear earns progression but no serenity.
+        if !doomExpired {
+            store.addSerenity(usedHint ? 10 : 15)
+        }
         // A creature is "new" only if it wasn't already in the bestiary and the
         // clear actually catalogued it (Doom levels only — the store enforces this).
         let newCreature = (!alreadyRevealed && store.state.bestiary[engine.level.creatureID] != nil)

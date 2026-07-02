@@ -5,6 +5,9 @@ import SwiftUI
 /// it holds no reference to the game view model.
 struct HUDView: View {
     let score: Int
+    /// True when the doom timer expired and the level's points are forfeit;
+    /// the score renders as an em dash instead of a number.
+    let scoreVoided: Bool
     let serenity: Int
     let hintCost: Int
     /// Seconds remaining in doom mode, or `nil` in zen mode (timer hidden).
@@ -22,7 +25,7 @@ struct HUDView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            stat(title: "Score", value: "\(score)", systemImage: "star.fill")
+            stat(title: "Score", value: scoreVoided ? "\u{2014}" : "\(score)", systemImage: "star.fill")
             stat(title: "Serenity", value: "\(serenity)", systemImage: "leaf.fill")
 
             if let timeRemaining {
@@ -114,6 +117,7 @@ struct HUDView: View {
     VStack {
         HUDView(
             score: 320,
+            scoreVoided: false,
             serenity: 25,
             hintCost: 5,
             timeRemaining: 92,
@@ -125,6 +129,7 @@ struct HUDView: View {
         )
         HUDView(
             score: 0,
+            scoreVoided: true,
             serenity: 2,
             hintCost: 5,
             timeRemaining: nil,

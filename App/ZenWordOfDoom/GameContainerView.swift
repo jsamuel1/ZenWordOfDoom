@@ -83,6 +83,7 @@ struct GamePlayView: View {
             VStack(spacing: 14) {
                 HUDView(
                     score: model.score,
+                    scoreVoided: model.doomExpired,
                     serenity: model.serenity,
                     hintCost: model.hintCost,
                     timeRemaining: model.timeRemaining,
@@ -152,6 +153,13 @@ struct GamePlayView: View {
                 LevelClearView(summary: summary, reducedMotion: reduceMotion)
                     .padding(.horizontal, 40)
                     .transition(.opacity)
+            }
+        }
+        .overlay {
+            if model.showDoomOverlay {
+                DoomExpiredOverlay(reducedDoom: settings.reducedDoom) {
+                    model.continueWithoutPoints()
+                }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -261,5 +269,34 @@ private extension View {
     @ViewBuilder
     func accessibilityLiveRegion() -> some View {
         self.accessibilityAddTraits(.updatesFrequently)
+    }
+}
+
+/// Full-screen pause when the doom timer expires: dims the scene (gentler with
+/// Reduced Doom), announces the forfeit, and lets the player continue unscored.
+private struct DoomExpiredOverlay: View {
+    let reducedDoom: Bool
+    let onContinue: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(reducedDoom ? 0.35 : 0.55)
+                .ignoresSafeArea()
+            VStack(spacing: 16) {
+                Text("The doom has claimed this hour")
+                    .font(.title3.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text("The words remain. The points do not.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button("Continue without points", action: onContinue)
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding(28)
+            .background(RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.ultraThinMaterial))
+            .padding(.horizontal, 32)
+        }
+        .transition(.opacity)
     }
 }

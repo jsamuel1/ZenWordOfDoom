@@ -53,7 +53,7 @@ struct SettingsView: View {
 
             Section("Mode") {
                 Toggle("Doom Mode", isOn: $settings.doomMode)
-                Text("Doom mode adds a ticking time limit. Zen mode is untimed.")
+                Text("Race the clock. If the doom outlasts you, the level still opens the path — but its points are forfeit. Zen mode is untimed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
