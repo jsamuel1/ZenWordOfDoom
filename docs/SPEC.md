@@ -265,13 +265,11 @@ per-hint cost) rather than a purchasable hint tier.
 - **Serenity** (soft currency) earned from words, bonus words, and clears;
   spent on hints and cosmetic scene unlocks.
 
-  > **v0.3 target (planned — lands with the Economy consolidation):** +1 per
-  > bonus word, +5 per clear, +3 no-hint-clear bonus, hint cost 10.
-  > **Currently shipped:** clear-only serenity — 5 for a repeat clear / 10 for
-  > a first-time clear (skipped entirely on a doom-voided clear), plus a
-  > separate completion bonus of 10 (hint used) / 15 (no hint). Bonus words
-  > do not currently award serenity directly; hints cost a flat 5. See
-  > `ARCHITECTURE.md` §5.2 for the authoritative current numbers.
+  > **Shipped (Economy consolidation):** +1 per bonus word; a first-time,
+  > non-voided clear pays +5 (or +8 with the no-hint bonus); repeat clears
+  > and doom-voided clears pay nothing; hints cost a flat 10. One price
+  > list (`GameCore.Economy`) is the single source for all of these — see
+  > `ARCHITECTURE.md` §5.2 for the authoritative numbers.
 - **Daily puzzle** — one fixed-seed level per day. **Implemented:** the same
   puzzle globally, for every player, on a given calendar day (seed derived
   from the date-keyed id); the streak advances on any clear, campaign or

@@ -102,7 +102,7 @@ final class GameViewModel: ObservableObject {
     var serenity: Int { store.state.serenity }
 
     /// Cost of one hint reveal in serenity.
-    var hintCost: Int { 5 }
+    var hintCost: Int { Economy.hintCost }
 
     /// Whether doom mode (and therefore the timer) is active.
     var isDoom: Bool {
@@ -341,11 +341,6 @@ final class GameViewModel: ObservableObject {
             creatureRevealed: !alreadyRevealed,
             voided: doomExpired
         )
-        // Reward serenity for clearing; a no-hint clear earns a little extra.
-        // A doom-voided clear earns progression but no serenity.
-        if !doomExpired {
-            store.addSerenity(usedHint ? 10 : 15)
-        }
         // A creature is "new" only if it wasn't already in the bestiary and the
         // clear actually catalogued it (Doom levels only — the store enforces this).
         let newCreature = (!alreadyRevealed && store.state.bestiary[engine.level.creatureID] != nil)

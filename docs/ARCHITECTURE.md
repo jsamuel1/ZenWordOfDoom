@@ -282,20 +282,20 @@ passes a hard validation filter, and always have a working floor.**
 
 ### 5.2 Serenity economy (as shipped)
 
-Two independent awards on a clear, both skipped on a doom-voided clear:
+`GameCore.Economy` is the single price list; every serenity faucet and sink
+in the app reads from it — no other file hardcodes an amount:
 
-1. `GameStore.recordClear` — **5** serenity for a repeat clear, **10** for a
-   first-time clear of that level.
-2. `GameViewModel.completeLevel` — a separate completion bonus: **15** if no
-   hint was used this level, **10** if one was.
+1. `GameStore.recordClear` — `Economy.clearReward(firstClear:usedHint:voided:)`.
+   Only a first-time, non-voided clear pays anything: **8** with no hint used,
+   **5** if a hint was used. Repeat clears and doom-voided clears pay nothing.
+2. `GameStore.recordWord` — `Economy.bonusWordReward` (**1**) on every bonus
+   word (found beyond the grid); grid words pay nothing directly, since their
+   reward is folded into the clear payout above.
 
-Hints cost a flat **5** serenity per reveal (`GameViewModel.hintCost`),
-refunded if nothing was left to reveal. Bonus words score points but do not
-currently award serenity directly. The v0.3 design target (+1 serenity per
-bonus word, +5 clear, +3 no-hint bonus, hint cost 10 — see `SPEC.md` §8) is
-**not yet implemented**; it lands with the economy-consolidation work that
-follows the store branch. Treat the numbers in this section, not the SPEC
-targets, as current shipped behavior.
+Hints cost a flat `Economy.hintCost` (**10**) serenity per reveal
+(`GameViewModel.hintCost`), refunded if nothing was left to reveal. These
+numbers are tuned against the serenity IAP sizes in `Store.swift` (10/25/50)
+so a purchase buys roughly 2-3 earned hints without becoming pay-to-win.
 
 ### 5.3 Hashing
 

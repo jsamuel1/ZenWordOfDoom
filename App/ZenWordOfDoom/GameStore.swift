@@ -80,20 +80,22 @@ final class GameStore: ObservableObject {
             state.stats.creaturesRevealed = state.bestiary.count
         }
 
-        // Serenity reward: base for a clear, more for a first-time clear.
-        // Nothing for a doom-voided clear — progression only (spec: a voided
-        // clear records no serenity).
-        if !voided {
-            addSerenity(wasCleared ? 5 : 10)
-        }
+        // Serenity reward: the single Economy price list. Only a first-time,
+        // non-voided clear pays anything (see Economy.clearReward).
+        addSerenity(Economy.clearReward(firstClear: !wasCleared, usedHint: usedHint, voided: voided))
 
         save()
     }
 
     /// Record a single found word into lifetime stats (longest word, pangrams,
     /// totals). Called per submission; `recordClear` handles the clear tally.
+    /// Bonus words (found beyond the grid) pay a small serenity reward; grid
+    /// words pay nothing directly (their reward is folded into the clear).
     func recordWord(_ word: String, isBonus: Bool, isPangram: Bool) {
         state.stats.recordWord(word, isBonus: isBonus, isPangram: isPangram)
+        if isBonus {
+            addSerenity(Economy.bonusWordReward)
+        }
         save()
     }
 

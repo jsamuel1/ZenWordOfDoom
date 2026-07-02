@@ -25,6 +25,8 @@ final class GameStoreTests: XCTestCase {
         XCTAssertEqual(p.bestScore, 100)          // never regresses
         XCTAssertEqual(p.bonusWordsFound, 2)
         XCTAssertTrue(p.noHint)                   // once clean, stays clean
+        // First clear (no hint) pays 8; the replay clear pays nothing.
+        XCTAssertEqual(store.state.serenity, 8)
     }
 
     func testStreakAdvancesOnClearNotOnLoad() {
@@ -52,6 +54,14 @@ final class GameStoreTests: XCTestCase {
         XCTAssertEqual(store.state.serenity, 0)                // no reward when voided
         XCTAssertTrue(store.state.progress[level.id]!.cleared) // path still opens
         XCTAssertEqual(store.state.stats.currentStreak, 1)     // streak still advances
+    }
+
+    func testBonusWordPaysSerenityGridWordDoesNot() {
+        let store = makeStore()
+        store.recordWord("ZEN", isBonus: false, isPangram: false)
+        XCTAssertEqual(store.state.serenity, 0)   // grid words pay nothing directly
+        store.recordWord("GARDEN", isBonus: true, isPangram: false)
+        XCTAssertEqual(store.state.serenity, 1)   // bonus words pay Economy.bonusWordReward
     }
 
     func testSpendSerenityGuards() {
