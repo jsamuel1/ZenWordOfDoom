@@ -42,10 +42,6 @@ public enum WheelPicker {
 
     /// Stable FNV-1a seed for a (theme, band, index) triple.
     static func seed(theme: Theme, band: DifficultyBand, index: Int) -> UInt64 {
-        var h: UInt64 = 1469598103934665603
-        for s in [theme.rawValue, band.rawValue, "\(index)"] {
-            for b in s.utf8 { h = (h ^ UInt64(b)) &* 1099511628211 }
-        }
-        return h
+        FNV1a.hash(theme.rawValue + band.rawValue + "\(index)")
     }
 }

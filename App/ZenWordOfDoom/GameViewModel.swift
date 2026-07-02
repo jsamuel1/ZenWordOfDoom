@@ -82,9 +82,7 @@ final class GameViewModel: ObservableObject {
     /// Stable FNV-1a seed from the level id so the initial wheel order is
     /// shuffled (not canonical) yet reproducible across launches.
     private static func wheelSeed(for id: String) -> UInt64 {
-        var h: UInt64 = 1469598103934665603
-        for b in id.utf8 { h = (h ^ UInt64(b)) &* 1099511628211 }
-        return h
+        FNV1a.hash(id)
     }
 
     // MARK: Derived
@@ -259,8 +257,7 @@ final class GameViewModel: ObservableObject {
     }
 
     private func seedForHint() -> UInt64 {
-        let base = UInt64(bitPattern: Int64(engine.level.id.hashValue))
-        return base &+ UInt64(revealCount) &* 0x9E3779B97F4A7C15
+        FNV1a.hash(engine.level.id) &+ UInt64(revealCount) &* 0x9E3779B97F4A7C15
     }
 
     // MARK: Doom timer

@@ -23,4 +23,17 @@ final class WheelPickerTests: XCTestCase {
         XCTAssertEqual(letters.count, 7)
         XCTAssertTrue(ThemeLexicon.shared.contains(letters, theme: .zen))
     }
+
+    /// v0.3 consolidated WheelPicker's inline FNV-1a with GameCore.FNV1a. The seeds
+    /// drive every generated level, so they must be byte-identical forever.
+    func testSeedUnchangedByFNV1aConsolidation() {
+        func expectedSeed(theme: Theme, band: DifficultyBand, index: Int) -> UInt64 {
+            FNV1a.hash(theme.rawValue + band.rawValue + "\(index)")
+        }
+        for (theme, band, index) in [(Theme.zen, DifficultyBand.easy, 0),
+                                     (.doom, .master, 41), (.zen, .expert, 999)] {
+            XCTAssertEqual(WheelPicker.seed(theme: theme, band: band, index: index),
+                           expectedSeed(theme: theme, band: band, index: index))
+        }
+    }
 }
