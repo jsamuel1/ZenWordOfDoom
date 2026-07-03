@@ -16,8 +16,8 @@ Day just fixed for bundled art.
 
 | File | Current source | New source |
 |---|---|---|
-| `words.txt` (general corpus) | ENABLE, ~105k words | ESDB size 60, American, 3-9 letters (~74.3k words, real count) |
-| `common-words.txt` (familiar-word bias) | Google top-10k | ESDB size 35, American, 3-9 letters (~32.8k words, real count) |
+| `words.txt` (general corpus) | ENABLE, ~105k words | ESDB size 60, American, 3-9 letters (~61.7k words, real count) |
+| `common-words.txt` (familiar-word bias) | Google top-10k | ESDB size 35, American, 3-9 letters (~29.6k words, real count) |
 | `seed-zen.txt` / `seed-doom.txt` (theme lexicons) | 85/86 hand-picked words each | Grown as large as good topical candidates allow, each validated against the new general corpus |
 
 The ESDB toolchain (Python + SQLite) is built and available permanently at
