@@ -103,4 +103,14 @@ final class WheelLayoutTests: XCTestCase {
         let bottomStraightMidY = (b0.y + b1.y) / 2
         XCTAssertLessThan(bottomControl.y, bottomStraightMidY, "bottom-row arc should bulge toward the center gap (up)")
     }
+
+    func testStadiumTileSizeNeverGoesBelowAccessibilityFloor() {
+        // A container small enough that widthCap/heightCap alone would want
+        // to shrink below 44pt -- the floor must win instead.
+        let tiny = CGSize(width: 150, height: 100)
+        for count in 8...10 {
+            let layout = WheelLayout.make(size: tiny, count: count, scaledTileSize: 80)
+            XCTAssertGreaterThanOrEqual(layout.tileSize, 44, "count \(count) tile size below the 44pt accessibility floor")
+        }
+    }
 }

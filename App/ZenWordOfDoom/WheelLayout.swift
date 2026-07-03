@@ -48,7 +48,7 @@ struct WheelLayout: Equatable {
             // grows beyond what Dynamic Type asked for.
             let widthCap = size.width / (CGFloat(rowCount) + 0.2)
             let heightCap = size.height / 2.5
-            let tile = max(min(requested, widthCap, heightCap), 0)
+            let tile = max(min(requested, widthCap, heightCap), 44)
             let rowSpan = max(size.width / 2 - tile * 0.6, 0)
             return WheelLayout(center: center, radius: 0, count: count, shape: .stadium,
                                tileSize: tile, rowSpan: rowSpan, rowGap: tile * 1.5, curveDepth: tile * 0.2)
