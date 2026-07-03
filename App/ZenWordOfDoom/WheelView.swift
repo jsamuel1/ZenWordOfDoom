@@ -31,19 +31,18 @@ struct WheelView: View {
     let onSwipeEnd: () -> Void
 
     /// Diameter of a single tile, scaled with Dynamic Type (clamped so the
-    /// touch target never shrinks below 44pt; the 80pt cap is load-bearing —
-    /// see `wheelHeight` below, which caps at a height chosen specifically so
-    /// a 9-tile (Master band) wheel never overlaps at this tile size).
+    /// touch target never shrinks below 44pt). Fed into `WheelLayout.make`,
+    /// which applies its own shape-dependent cap (80pt for `.circle`, under
+    /// 8 tiles; 64pt for `.stadium`, 8+ tiles) and shrink-to-fit logic — see
+    /// `WheelLayout.swift`.
     @ScaledMetric(relativeTo: .title) private var scaledTileSize: CGFloat = 56
-    private var tileSize: CGFloat { min(max(scaledTileSize, 44), 80) }
     /// Height of the wheel's frame, scaled with Dynamic Type (never smaller
-    /// than the original fixed size). The 350pt cap is derived, not arbitrary:
-    /// with `tileSize` capped at 80 and the layout inset of `tileSize * 0.64`
-    /// (see `layout(in:count:)`), 9 evenly-spaced tiles need a radius of at
-    /// least `tileSize / (2 * sin(π/9)) ≈ 116.95pt` to avoid touching circles
-    /// overlapping. A 320pt cap only yields a 108.8pt radius (overlap); 350pt
-    /// yields 123.8pt — about a 6% margin. If either the tile-size cap or the
-    /// inset formula changes, re-derive this cap for the worst case (9 tiles).
+    /// than the original fixed size). The 350pt cap was originally derived
+    /// from the worst case of 9 evenly-spaced tiles on a `.circle` layout;
+    /// those tiles now use the `.stadium` layout instead, which fits itself
+    /// to the available height via its own width/height caps (see
+    /// `WheelLayout.make`). If tiles overlap at extreme accessibility sizes,
+    /// re-derive this cap or `WheelLayout`'s stadium tile-size cap.
     @ScaledMetric(relativeTo: .title) private var scaledWheelHeight: CGFloat = 240
     private var wheelHeight: CGFloat { min(max(scaledWheelHeight, 240), 350) }
     /// The tile id currently under the dragging finger (nil when not dragging).
@@ -64,12 +63,14 @@ struct WheelView: View {
     var body: some View {
         let ordered = orderedTiles
         return GeometryReader { geo in
-            let layout = self.layout(in: geo.size, count: ordered.count)
+            let layout = WheelLayout.make(size: geo.size, count: ordered.count, scaledTileSize: scaledTileSize)
             ZStack {
-                Circle()
-                    .stroke(.white.opacity(0.25), lineWidth: 1)
-                    .frame(width: layout.radius * 2, height: layout.radius * 2)
-                    .position(layout.center)
+                if layout.shape == .circle {
+                    Circle()
+                        .stroke(.white.opacity(0.25), lineWidth: 1)
+                        .frame(width: layout.radius * 2, height: layout.radius * 2)
+                        .position(layout.center)
+                }
 
                 // The selection trail, drawn under the tiles so it threads
                 // through them.
@@ -85,7 +86,7 @@ struct WheelView: View {
                         letter: tile.letter,
                         order: selectionOrder(of: tile.id),
                         isSelected: selection.contains(tile.id),
-                        size: tileSize
+                        size: layout.tileSize
                     )
                     .position(layout.position(for: index))
                     .onTapGesture { onTap(tile.id) }
@@ -114,27 +115,6 @@ struct WheelView: View {
 
     // MARK: - Layout
 
-    private struct WheelLayout {
-        let center: CGPoint
-        let radius: CGFloat
-        let count: Int
-
-        func position(for index: Int) -> CGPoint {
-            guard count > 0 else { return center }
-            let angle = Double(index) / Double(count) * 2 * .pi - .pi / 2
-            return CGPoint(
-                x: center.x + radius * CGFloat(cos(angle)),
-                y: center.y + radius * CGFloat(sin(angle))
-            )
-        }
-    }
-
-    private func layout(in size: CGSize, count: Int) -> WheelLayout {
-        let radius = min(size.width, size.height) / 2 - tileSize * 0.64
-        let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        return WheelLayout(center: center, radius: max(radius, 0), count: count)
-    }
-
     private func selectionOrder(of id: Int) -> Int? {
         selection.firstIndex(of: id).map { $0 + 1 }
     }
@@ -142,20 +122,25 @@ struct WheelView: View {
     // MARK: - Selection trail
 
     /// A polyline through the centers of the selected tiles, in selection order,
-    /// continuing to the finger while a drag is in progress.
+    /// continuing to the finger while a drag is in progress. On a stadium wheel,
+    /// a segment between two tiles in the *same* row curves inward toward the
+    /// gap between rows (§4.3); every other segment (cross-row, or any segment
+    /// on a circle wheel) stays a straight line, as before.
     private func trailPath(ordered: [LetterTile], layout: WheelLayout) -> Path {
         Path { path in
-            let points = selection.compactMap { position(ofTileID: $0, ordered: ordered, layout: layout) }
-            guard let first = points.first else { return }
-            path.move(to: first)
-            for point in points.dropFirst() { path.addLine(to: point) }
+            let indices = selection.compactMap { id in ordered.firstIndex(where: { $0.id == id }) }
+            guard let first = indices.first else { return }
+            path.move(to: layout.position(for: first))
+            for (prev, curr) in zip(indices, indices.dropFirst()) {
+                let point = layout.position(for: curr)
+                if layout.shape == .stadium, layout.row(for: prev) == layout.row(for: curr) {
+                    path.addQuadCurve(to: point, control: layout.arcControlPoint(from: prev, to: curr))
+                } else {
+                    path.addLine(to: point)
+                }
+            }
             if isSwiping, let drag = dragLocation { path.addLine(to: drag) }
         }
-    }
-
-    private func position(ofTileID id: Int, ordered: [LetterTile], layout: WheelLayout) -> CGPoint? {
-        guard let index = ordered.firstIndex(where: { $0.id == id }) else { return nil }
-        return layout.position(for: index)
     }
 
     // MARK: - Swipe hit-testing
@@ -198,7 +183,7 @@ struct WheelView: View {
 
     /// Returns the id of the tile whose circular hit area contains `point`.
     private func tile(at point: CGPoint, ordered: [LetterTile], layout: WheelLayout) -> Int? {
-        let hitRadius = tileSize / 2
+        let hitRadius = layout.tileSize / 2
         for (index, tile) in ordered.enumerated() {
             let pos = layout.position(for: index)
             let dx = point.x - pos.x
