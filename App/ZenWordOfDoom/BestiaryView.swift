@@ -25,8 +25,15 @@ struct BestiaryView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Bestiary")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Bestiary")
+                    .font(BrandFont.doom(size: 22, relativeTo: .headline))
+                    .accessibilityLabel("Bestiary")
+            }
+        }
     }
 
     @ViewBuilder
