@@ -70,17 +70,29 @@ jobs:
           # for this scheme's deployment target, so we skip simulators on
           # older runtimes and don't hardcode a device name that shifts
           # between Xcode versions.
-          UDID=$(xcodebuild \
+          #
+          # `-showdestinations` also triggers SPM package resolution (network
+          # fetch of GoogleMobileAds/GoogleUserMessagingPlatform), so capture
+          # its stderr instead of discarding it — a resolution failure there
+          # otherwise aborts this script (bash -e + pipefail) silently, with
+          # no clue in the log why.
+          DESTINATIONS_LOG=$(mktemp)
+          if ! xcodebuild \
             -project ZenWordOfDoom.xcodeproj \
             -scheme "$SCHEME" \
-            -showdestinations 2>/dev/null \
-            | grep 'platform:iOS Simulator' \
+            -showdestinations > "$DESTINATIONS_LOG" 2>&1; then
+            echo "::error::xcodebuild -showdestinations failed:"
+            cat "$DESTINATIONS_LOG"
+            exit 1
+          fi
+          UDID=$(grep 'platform:iOS Simulator' "$DESTINATIONS_LOG" \
             | grep 'name:iPhone' \
             | grep -v placeholder \
             | grep -oE 'id:[0-9A-Fa-f-]+' \
             | head -1 | cut -d: -f2)
           if [ -z "$UDID" ]; then
             echo "::error::No eligible iPhone simulator for the ZenWordOfDoom scheme."
+            cat "$DESTINATIONS_LOG"
             exit 1
           fi
           echo "Using simulator UDID: $UDID"
