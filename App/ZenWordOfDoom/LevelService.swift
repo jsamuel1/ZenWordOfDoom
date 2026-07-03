@@ -23,16 +23,15 @@ final class LevelService: ObservableObject {
     func level(id: String) async -> Level? {
         if let hit = cache[id] { return hit }
         if DailyPuzzle.isDailyID(id) {
-            guard let seed = DailyPuzzle.seed(forID: id) else { return nil }
-            do {
-                let raw = try await generator.level(for: seed)
-                // Re-key by date so progress/streak records land on the day.
-                let level = Level(id: id, wheel: raw.wheel, slots: raw.slots,
-                                  sceneID: raw.sceneID, creatureID: raw.creatureID,
-                                  format: raw.format)
-                cache[id] = level
-                return level
-            } catch { return nil }
+            guard let seed = DailyPuzzle.seed(forID: id),
+                  let wordOfTheDay = DailyPuzzle.wordOfTheDay(forID: id) else { return nil }
+            let raw = generator.dailyLevel(for: seed, word: wordOfTheDay.word)
+            // Re-key by date so progress/streak records land on the day.
+            let level = Level(id: id, wheel: raw.wheel, slots: raw.slots,
+                              sceneID: raw.sceneID, creatureID: raw.creatureID,
+                              format: raw.format)
+            cache[id] = level
+            return level
         }
         guard let seed = library.seed(forID: id) else { return nil }
         do {
