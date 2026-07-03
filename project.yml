@@ -37,8 +37,8 @@ targets:
         # Bump per release with scripts/bump-version.sh [patch|minor|major]
         # (defaults to patch). CURRENT_PROJECT_VERSION is the build number and
         # is incremented on every release — TestFlight rejects re-used builds.
-        MARKETING_VERSION: "0.4.0"
-        CURRENT_PROJECT_VERSION: "9"
+        MARKETING_VERSION: "0.4.1"
+        CURRENT_PROJECT_VERSION: "10"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/ZenWordOfDoom/Info.plist
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.word-games"
