@@ -75,4 +75,29 @@ public struct ProceduralGenerator: Sendable {
             creatureID: visual.creatureID
         )
     }
+
+    /// The Word-of-the-Day bonus level: always a grid-less Pangram-Hunt whose
+    /// wheel is the curated word's own letters (so it's always a completable
+    /// pangram), with the word's own illustration slug as the scene (see
+    /// `WordOfTheDayImages`) and a creature still drawn from the theme's
+    /// normal pool. Synchronous — like pack-capstone Pangram-Hunt levels,
+    /// this never touches the async `wordProvider`.
+    ///
+    /// The target word-count is derived from the word's *actual* length
+    /// (`DifficultyBand(wheelSize:)`), not `seed.band` — `DailyPuzzle` picks
+    /// `seed.band` assuming the old theme-lexicon wheel-length flow, which
+    /// this bypasses; using the real wheel size keeps the word-count target
+    /// scaled to what's actually achievable.
+    public func dailyLevel(for seed: LevelSeed, word: String) -> Level {
+        let creatureID = SceneCreaturePicker(pools: pools).pick(theme: seed.theme, index: seed.index).creatureID
+        let band = DifficultyBand(wheelSize: word.count)
+        return Level(
+            id: seed.id,
+            wheel: Wheel(letters: word),
+            slots: [],
+            sceneID: WordOfTheDayImages.slug(forWord: word, theme: seed.theme),
+            creatureID: creatureID,
+            format: .pangramHunt(target: PackCatalog.pangramTarget(for: band))
+        )
+    }
 }

@@ -47,4 +47,45 @@ final class ProceduralGeneratorCapstoneTests: XCTestCase {
         XCTAssertEqual(a.wheel.tiles.map(\.letter), b.wheel.tiles.map(\.letter))
         XCTAssertEqual(a.creatureID, b.creatureID)
     }
+
+    func testDailyLevelIsPangramHuntBuiltFromTheWord() {
+        let seed = LevelSeed(theme: .zen, band: .medium, index: 1_234_567)
+        let level = gen().dailyLevel(for: seed, word: "SERENITY")
+
+        XCTAssertEqual(level.wheel.tiles.map(\.letter).map(String.init).joined(), "SERENITY")
+        XCTAssertTrue(level.slots.isEmpty, "daily bonus level has no grid")
+        guard case .pangramHunt(let target) = level.format else {
+            return XCTFail("expected pangramHunt, got \(level.format)")
+        }
+        // SERENITY is 8 letters -> DifficultyBand.expert -> target 7.
+        XCTAssertEqual(target, 7)
+    }
+
+    func testDailyLevelSceneIsTheWordsSlugAndCreatureIsFromThemePool() {
+        let seed = LevelSeed(theme: .doom, band: .medium, index: 42)
+        let level = gen().dailyLevel(for: seed, word: "NIGHTMARE")
+
+        XCTAssertEqual(level.sceneID, WordOfTheDayImages.slug(forWord: "NIGHTMARE", theme: .doom))
+        XCTAssertTrue((ThemePools.zenDoom.creatures[.doom] ?? []).contains(level.creatureID))
+    }
+
+    func testDailyLevelBandComesFromWordLengthNotSeedBand() {
+        // Seed says .medium (implying a 6-letter wheel), but the actual word
+        // is 10 letters -> the daily level's target must reflect the word's
+        // real length, not the seed's nominal band.
+        let seed = LevelSeed(theme: .zen, band: .medium, index: 7)
+        let level = gen().dailyLevel(for: seed, word: "WELLSPRING")
+        guard case .pangramHunt(let target) = level.format else {
+            return XCTFail("expected pangramHunt")
+        }
+        XCTAssertEqual(target, PackCatalog.pangramTarget(for: .master))
+    }
+
+    func testDailyLevelIsDeterministic() {
+        let seed = LevelSeed(theme: .zen, band: .hard, index: 99)
+        let a = gen().dailyLevel(for: seed, word: "SANCTUARY")
+        let b = gen().dailyLevel(for: seed, word: "SANCTUARY")
+        XCTAssertEqual(a.creatureID, b.creatureID)
+        XCTAssertEqual(a.sceneID, b.sceneID)
+    }
 }
