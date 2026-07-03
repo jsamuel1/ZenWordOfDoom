@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "cursed-hollow.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
