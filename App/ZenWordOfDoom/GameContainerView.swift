@@ -224,7 +224,7 @@ struct GamePlayView: View {
                 ZStack {
                     Color.black.opacity(0.4)
                         .ignoresSafeArea()
-                    LevelClearView(summary: summary, reducedMotion: reduceMotion) {
+                    LevelClearView(summary: summary, theme: levelService.theme(forID: level.id), reducedMotion: reduceMotion) {
                         router.push(.cutScene(afterLevelID: level.id, sceneID: level.sceneID, creatureID: level.creatureID))
                     }
                     .padding(.horizontal, 40)
