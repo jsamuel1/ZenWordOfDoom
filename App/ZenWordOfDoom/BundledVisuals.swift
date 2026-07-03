@@ -36,5 +36,13 @@ enum BundledVisuals {
         // Doom creatures
         "creature-deep-tentacle", "creature-gloom-eye", "creature-bone-wraith",
         "creature-mask-fiend", "creature-thorn-revenant", "creature-ash-maw",
+        // Word-of-the-Day slugs (Zen)
+        "scene-dawn-glow", "scene-moonlit-hush", "scene-still-water", "scene-quiet-garden",
+        "scene-lantern-calm", "scene-gentle-breath", "scene-drifting-ease", "scene-warm-heart",
+        "scene-nurtured-soul", "scene-calm-balance", "scene-soft-whisper", "scene-graceful-harmony",
+        // Word-of-the-Day slugs (Doom)
+        "scene-ashen-ruin", "scene-black-crypt", "scene-cursed-hollow", "scene-gravebound",
+        "scene-festering-dark", "scene-shrieking-night", "scene-monstrous-thing", "scene-forsaken-tomb",
+        "scene-venomous-rite", "scene-spectral-dread", "scene-ravaged-earth", "scene-malevolent-omen",
     ]
 }

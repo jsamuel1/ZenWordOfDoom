@@ -48,4 +48,17 @@ final class BundledVisualsTests: XCTestCase {
             }
         }
     }
+
+    /// Same invariant as `testEveryZenDoomSlugHasBundledAsset`, but for the
+    /// Word-of-the-Day illustration slugs (a separate pool from the regular
+    /// scene/creature pools, but the same `.scene` kind and naming scheme).
+    func testEveryWordOfTheDaySlugHasBundledAsset() {
+        for theme in Theme.allCases {
+            for slug in WordOfTheDayImages.slugs(for: theme) {
+                XCTAssertTrue(BundledVisuals.knownAssets.contains("scene-\(slug)"),
+                              "word-of-the-day slug '\(slug)' (\(theme)) has no bundled asset")
+                XCTAssertEqual(BundledVisuals.assetName(kind: .scene, id: slug), "scene-\(slug)")
+            }
+        }
+    }
 }
