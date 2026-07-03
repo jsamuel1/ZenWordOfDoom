@@ -426,6 +426,7 @@ SUNRISE
 SUNSET
 SWAN
 SWIRL
+SYMPHONY
 TENDER
 TERRACE
 THISTLE
@@ -465,15 +466,17 @@ YAWN
 
 - [ ] **Step 2: Write the failing test for corpus-membership**
 
-Add to `Tests/LevelGenTests/ThemeLexiconTests.swift`:
+Add to `Tests/LevelGenTests/ThemeLexiconTests.swift`. Scoped to zen only —
+the doom lexicon isn't grown until Task 3, and (discovered while executing
+this plan) the *old* 86-word doom lexicon actually contains two words
+(`SEPULCHRE`, `SIGIL`) that aren't present in the regenerated corpus, so a
+`Theme.allCases`-spanning version of this test would fail here for reasons
+Task 3 fixes, not this task:
 
 ```swift
-    func test_everyLexiconWordIsInTheGeneralCorpus() {
-        for theme in Theme.allCases {
-            for word in ThemeLexicon.shared.words(for: theme) {
-                XCTAssertTrue(GeneralWordList.shared.contains(word),
-                              "\(word) (\(theme)) not in the general corpus")
-            }
+    func test_everyZenLexiconWordIsInTheGeneralCorpus() {
+        for word in ThemeLexicon.shared.words(for: .zen) {
+            XCTAssertTrue(GeneralWordList.shared.contains(word), "\(word) (zen) not in the general corpus")
         }
     }
 ```
@@ -481,7 +484,7 @@ Add to `Tests/LevelGenTests/ThemeLexiconTests.swift`:
 - [ ] **Step 3: Run the tests**
 
 Run: `swift test --filter ThemeLexiconTests`
-Expected: PASS (all existing tests plus the new one — every zen word was validated against the corpus during this plan's research; the doom lexicon isn't grown yet, but its current 86 words were already valid before this plan started)
+Expected: PASS (all existing tests plus the new one — every zen word was validated against the corpus during this plan's research)
 
 - [ ] **Step 4: Commit**
 
