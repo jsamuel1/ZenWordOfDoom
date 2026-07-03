@@ -40,4 +40,40 @@ final class WordOfTheDayTests: XCTestCase {
             }
         }
     }
+
+    func testWordIsDeterministicForSameThemeAndDay() {
+        let a = WordOfTheDay.word(forTheme: .zen, dayNumber: 100)
+        let b = WordOfTheDay.word(forTheme: .zen, dayNumber: 100)
+        XCTAssertEqual(a, b)
+    }
+
+    func testWordVariesAcrossDifferentDays() {
+        let a = WordOfTheDay.word(forTheme: .zen, dayNumber: 0)
+        let b = WordOfTheDay.word(forTheme: .zen, dayNumber: 1)
+        XCTAssertNotEqual(a, b)
+    }
+
+    func testNoRepeatWithinACycle() {
+        for theme in Theme.allCases {
+            let cycleLength = WordOfTheDay.words(for: theme).count
+            let words = (0..<cycleLength).map { WordOfTheDay.word(forTheme: theme, dayNumber: $0) }
+            XCTAssertEqual(Set(words).count, cycleLength, "\(theme) repeated a word within one cycle")
+        }
+    }
+
+    func testReshufflesDifferentlyAcrossCycles() {
+        let cycleLength = WordOfTheDay.words(for: .zen).count
+        let firstCycle = (0..<cycleLength).map { WordOfTheDay.word(forTheme: .zen, dayNumber: $0) }
+        let secondCycle = (0..<cycleLength).map { WordOfTheDay.word(forTheme: .zen, dayNumber: cycleLength + $0) }
+        XCTAssertNotEqual(firstCycle, secondCycle, "second cycle used the same order as the first")
+        // Still the same *set* of words, just reordered.
+        XCTAssertEqual(Set(firstCycle), Set(secondCycle))
+    }
+
+    func testEveryReturnedWordIsFromTheThemesList() {
+        let zenSet = Set(WordOfTheDay.words(for: .zen))
+        for day in 0..<200 {
+            XCTAssertTrue(zenSet.contains(WordOfTheDay.word(forTheme: .zen, dayNumber: day)))
+        }
+    }
 }

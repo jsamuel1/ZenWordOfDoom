@@ -1,15 +1,45 @@
 import Foundation
+import GameCore
 
 /// The curated Word of the Day: a hand-picked list of evocative 8-10 letter
-/// Zen/Doom words, bundled per theme (`Resources/daily-<theme>.txt`). This
-/// file only loads and exposes the lists; day-based selection lives here too
-/// (added in Task 2) so the whole "which word for which day" concern stays
-/// in one small, pure, headlessly-testable type.
+/// Zen/Doom words, bundled per theme (`Resources/daily-<theme>.txt`), plus
+/// deterministic per-day selection so every player sees the same word.
+///
+/// Selection uses a per-cycle Fisher-Yates shuffle (our own `SeededRandom`,
+/// never the standard library's `shuffled(using:)` — its algorithm isn't a
+/// documented, version-stable contract, and this needs to produce the exact
+/// same word on the exact same day forever, the same way `FNV1a`'s offset
+/// basis is pinned rather than "corrected"). A day-number-modulo-cycle-length
+/// pick guarantees a theme's list never repeats a word until every word in
+/// it has been used once; the cycle number reseeds the shuffle so the next
+/// pass through the list uses a different order, not the same one again.
 public enum WordOfTheDay {
-    /// The curated list for a theme, in a fixed, well-defined base order
-    /// (alphabetical) — the order Task 2's per-cycle shuffle starts from.
     public static func words(for theme: Theme) -> [String] {
         byTheme[theme] ?? []
+    }
+
+    /// The word for a given theme and day number (days since a fixed epoch —
+    /// see `DailyPuzzle.daysFromCivil`, Task 3). Always the same word for the
+    /// same (theme, dayNumber) pair, on every device, forever.
+    public static func word(forTheme theme: Theme, dayNumber: Int) -> String {
+        let list = words(for: theme)
+        precondition(!list.isEmpty, "no Word-of-the-Day list for \(theme)")
+        let cycleLength = list.count
+        let cycleIndex = dayNumber % cycleLength
+        let cycleNumber = dayNumber / cycleLength
+        let seed = FNV1a.hash("wotd-\(theme.rawValue)-\(cycleNumber)")
+        return fisherYatesShuffle(list, seed: seed)[cycleIndex]
+    }
+
+    private static func fisherYatesShuffle(_ items: [String], seed: UInt64) -> [String] {
+        var rng = SeededRandom(seed: seed)
+        var array = items
+        guard array.count > 1 else { return array }
+        for i in stride(from: array.count - 1, to: 0, by: -1) {
+            let j = Int(rng.next() % UInt64(i + 1))
+            array.swapAt(i, j)
+        }
+        return array
     }
 
     private static let byTheme: [Theme: [String]] = {
