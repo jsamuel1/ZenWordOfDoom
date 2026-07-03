@@ -19,9 +19,27 @@ RESOURCES="Sources/LevelGen/Resources"
 
 extract() {
   # $1 = ESDB size, $2 = output file
+  #
+  # Order matters: normalize diacritics to their plain-ASCII equivalent
+  # BEFORE uppercasing -- macOS's iconv doesn't support //TRANSLIT
+  # transliteration reliably, so this uses Python's Unicode NFKD
+  # decomposition + ASCII-encode-and-drop instead (e.g. CAFÉ -> CAFE).
+  # Without this step, ESDB's few accented entries (loanwords like café,
+  # résumé, café, olé) survive as non-ASCII and silently shadow/replace the
+  # plain-ASCII spelling a player's letter tiles would actually produce.
+  #
+  # The final `grep -E '^[A-Z]{3,9}$'` (replacing a plain length check)
+  # additionally rejects anything that isn't purely A-Z after the above --
+  # this is what drops ESDB's ~11k/~3k possessive entries (ABE'S, ABBOTT'S)
+  # per size tier, since an apostrophe never matches `[A-Z]`.
   ( cd "$ESDB_DIR" && ./scowl --db scowl.db word-list "$1" A 1 ) \
+    | python3 -c '
+import sys, unicodedata
+for line in sys.stdin:
+    print(unicodedata.normalize("NFKD", line.rstrip(chr(10))).encode("ascii", "ignore").decode())
+' \
     | tr 'a-z' 'A-Z' \
-    | awk 'length($0) >= 3 && length($0) <= 9' \
+    | grep -E '^[A-Z]{3,9}$' \
     | sort -u > "$RESOURCES/$2"
 }
 
