@@ -45,4 +45,36 @@ final class DailyPuzzleTests: XCTestCase {
             _ = try await gen.level(for: seed)
         }
     }
+
+    func testWordOfTheDayIsDeterministicAndDateSensitive() {
+        let a = DailyPuzzle.wordOfTheDay(forID: "daily-2026-07-02")
+        let b = DailyPuzzle.wordOfTheDay(forID: "daily-2026-07-02")
+        let c = DailyPuzzle.wordOfTheDay(forID: "daily-2026-07-03")
+        XCTAssertNotNil(a)
+        XCTAssertEqual(a?.word, b?.word)
+        XCTAssertEqual(a?.theme, b?.theme)
+        XCTAssertNotEqual(a?.word, c?.word)
+    }
+
+    func testWordOfTheDayThemeMatchesSeedTheme() {
+        for day in 1...28 {
+            let id = String(format: "daily-2026-07-%02d", day)
+            let seed = DailyPuzzle.seed(forID: id)!
+            let wotd = DailyPuzzle.wordOfTheDay(forID: id)!
+            XCTAssertEqual(seed.theme, wotd.theme)
+        }
+    }
+
+    func testWordOfTheDayWordIsEightToTenLetters() {
+        for day in 1...28 {
+            let id = String(format: "daily-2026-07-%02d", day)
+            let word = DailyPuzzle.wordOfTheDay(forID: id)!.word
+            XCTAssertTrue((8...10).contains(word.count), "\(word) is \(word.count) letters")
+        }
+    }
+
+    func testWordOfTheDayRejectsGarbage() {
+        XCTAssertNil(DailyPuzzle.wordOfTheDay(forID: "daily-not-a-date"))
+        XCTAssertNil(DailyPuzzle.wordOfTheDay(forID: "zen-easy-0"))
+    }
 }
