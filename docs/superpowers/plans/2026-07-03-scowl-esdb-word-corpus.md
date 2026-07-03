@@ -499,6 +499,7 @@ git commit -m "feat(levelgen): grow the Zen theme lexicon (85 -> 331 words)"
 
 **Files:**
 - Modify: `Sources/LevelGen/Resources/seed-doom.txt` (replace content)
+- Modify: `Tests/LevelGenTests/ThemeLexiconTests.swift`
 
 **Interfaces:**
 - Consumes: `Sources/LevelGen/Resources/words.txt` (Task 1) — every word below was validated present in the regenerated corpus during this plan's research.
@@ -809,12 +810,24 @@ WRETCHED
 ZOMBIE
 ```
 
-- [ ] **Step 2: Run the tests**
+- [ ] **Step 2: Write the failing test for corpus-membership**
+
+Add to `Tests/LevelGenTests/ThemeLexiconTests.swift` (the doom-side counterpart to Task 2's `test_everyZenLexiconWordIsInTheGeneralCorpus`, which is scoped to zen only for the same reason this one is scoped to doom only — each task's test covers only the theme it touched):
+
+```swift
+    func test_everyDoomLexiconWordIsInTheGeneralCorpus() {
+        for word in ThemeLexicon.shared.words(for: .doom) {
+            XCTAssertTrue(GeneralWordList.shared.contains(word), "\(word) (doom) not in the general corpus")
+        }
+    }
+```
+
+- [ ] **Step 3: Run the tests**
 
 Run: `swift test --filter ThemeLexiconTests`
-Expected: PASS (all tests, including `test_everyLexiconWordIsInTheGeneralCorpus` from Task 2, now covering both themes)
+Expected: PASS (all tests, including `test_everyZenLexiconWordIsInTheGeneralCorpus` from Task 2 and the new `test_everyDoomLexiconWordIsInTheGeneralCorpus` — both themes are now covered, one test per theme)
 
-- [ ] **Step 3: Verify no cross-theme overlap**
+- [ ] **Step 4: Verify no cross-theme overlap**
 
 Run this one-off check (not a permanent test — the existing lists are static resource files, and this is a content-authoring invariant, not runtime behavior):
 
@@ -824,10 +837,10 @@ comm -12 Sources/LevelGen/Resources/seed-zen.txt Sources/LevelGen/Resources/seed
 
 Expected: no output (empty — confirms zero words appear in both files, matching the existing invariant the previous 85/86-word lists already held).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/LevelGen/Resources/seed-doom.txt
+git add Sources/LevelGen/Resources/seed-doom.txt Tests/LevelGenTests/ThemeLexiconTests.swift
 git commit -m "feat(levelgen): grow the Doom theme lexicon (86 -> 298 words)"
 ```
 
