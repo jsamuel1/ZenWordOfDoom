@@ -1,4 +1,5 @@
 import SwiftUI
+import LevelGen
 
 /// The game's two bundled brand faces — mirrors the type used on
 /// zenofdoom.sauhsoj.wtf. Both are SIL Open Font License, registered via
@@ -23,5 +24,11 @@ enum BrandFont {
     /// down for legibility — for Doom-themed type. Scales with Dynamic Type.
     static func doom(size: CGFloat, relativeTo textStyle: Font.TextStyle = .title) -> Font {
         .custom("GrenzeGotisch-Bold", size: size, relativeTo: textStyle)
+    }
+
+    /// Picks .zen or .doom by the given Theme -- the single place this
+    /// mapping is written, so call sites never duplicate the ternary.
+    static func themed(_ theme: Theme, size: CGFloat, relativeTo textStyle: Font.TextStyle) -> Font {
+        theme == .doom ? doom(size: size, relativeTo: textStyle) : zen(size: size, relativeTo: textStyle)
     }
 }

@@ -36,9 +36,14 @@ struct ShrineView: View {
                 Section { Text(message).font(.footnote).foregroundStyle(.secondary) }
             }
         }
-        .navigationTitle("Shrine")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Shrine")
+                    .font(BrandFont.zen(size: 22, relativeTo: .headline))
+                    .accessibilityLabel("Shrine")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showSerenitySheet = true

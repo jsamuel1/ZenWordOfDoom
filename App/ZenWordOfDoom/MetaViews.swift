@@ -40,11 +40,12 @@ struct FoundWordsTray: View {
 /// A brief banner announcing a new pack on entering its first level.
 struct PackBannerView: View {
     let pack: Pack
+    let theme: Theme
 
     var body: some View {
         VStack(spacing: 4) {
             Text(pack.name)
-                .font(.title3.weight(.bold))
+                .font(BrandFont.themed(theme, size: 20, relativeTo: .title3))
             if !pack.flavor.isEmpty {
                 Text(pack.flavor)
                     .font(.caption)

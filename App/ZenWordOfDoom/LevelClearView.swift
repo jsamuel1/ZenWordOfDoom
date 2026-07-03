@@ -1,4 +1,5 @@
 import SwiftUI
+import LevelGen
 
 /// The payoff shown when a level is cleared: the score counts up, serenity earned
 /// is celebrated, and a newly revealed Doom creature gets a fanfare line. Appears
@@ -13,6 +14,7 @@ struct ClearSummary: Equatable {
 
 struct LevelClearView: View {
     let summary: ClearSummary
+    let theme: Theme
     let reducedMotion: Bool
     let onContinue: () -> Void
 
@@ -26,7 +28,7 @@ struct LevelClearView: View {
         VStack(spacing: 14) {
             VStack(spacing: 14) {
                 Text("Level Cleared")
-                    .font(.title2.weight(.bold))
+                    .font(BrandFont.themed(theme, size: 24, relativeTo: .title2))
 
                 VStack(spacing: 2) {
                     Text("\(shownScore)")
@@ -106,6 +108,7 @@ struct LevelClearView: View {
         Color.black
         LevelClearView(
             summary: ClearSummary(score: 486, serenityEarned: 15, newCreatureID: "bone-wraith"),
+            theme: .doom,
             reducedMotion: false,
             onContinue: {}
         )
