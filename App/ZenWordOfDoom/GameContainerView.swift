@@ -211,7 +211,7 @@ struct GamePlayView: View {
         }
         .overlay(alignment: .top) {
             if let pack = packBanner {
-                PackBannerView(pack: pack)
+                PackBannerView(pack: pack, theme: levelService.theme(forID: level.id))
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
