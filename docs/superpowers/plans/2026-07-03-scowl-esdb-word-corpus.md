@@ -10,8 +10,8 @@
 
 ## Global Constraints
 
-- ESDB size **60**, American English (`A`), variant-level 1 for the general corpus (`words.txt`) — real count at 3-9 letters: **74,302 words**.
-- ESDB size **35**, American English (`A`), variant-level 1 for `common-words.txt` — real count at 3-9 letters: **32,806 words**.
+- ESDB size **60**, American English (`A`), variant-level 1 for the general corpus (`words.txt`) — real count at 3-9 letters: **61,719 words**.
+- ESDB size **35**, American English (`A`), variant-level 1 for `common-words.txt` — real count at 3-9 letters: **29,624 words**.
 - Every word in every resource file is uppercase, 3-9 letters, one per line, sorted, deduplicated.
 - The ESDB toolchain lives at `~/src/esdb-wordlist` (already cloned and built, `make` run successfully) — external to this repo, read from an environment variable so the script is portable, never vendored.
 - Theme lexicon words (`seed-zen.txt`/`seed-doom.txt`) must each be present in the regenerated `words.txt` — same "every word is real and buildable" discipline the rest of the codebase already enforces.
@@ -56,9 +56,27 @@ RESOURCES="Sources/LevelGen/Resources"
 
 extract() {
   # $1 = ESDB size, $2 = output file
+  #
+  # Order matters: normalize diacritics to their plain-ASCII equivalent
+  # BEFORE uppercasing -- macOS's iconv doesn't support //TRANSLIT
+  # transliteration reliably, so this uses Python's Unicode NFKD
+  # decomposition + ASCII-encode-and-drop instead (e.g. CAFÉ -> CAFE).
+  # Without this step, ESDB's few accented entries (loanwords like café,
+  # résumé, café, olé) survive as non-ASCII and silently shadow/replace the
+  # plain-ASCII spelling a player's letter tiles would actually produce.
+  #
+  # The final `grep -E '^[A-Z]{3,9}$'` (replacing a plain length check)
+  # additionally rejects anything that isn't purely A-Z after the above --
+  # this is what drops ESDB's ~11k/~3k possessive entries (ABE'S, ABBOTT'S)
+  # per size tier, since an apostrophe never matches `[A-Z]`.
   ( cd "$ESDB_DIR" && ./scowl --db scowl.db word-list "$1" A 1 ) \
+    | python3 -c '
+import sys, unicodedata
+for line in sys.stdin:
+    print(unicodedata.normalize("NFKD", line.rstrip(chr(10))).encode("ascii", "ignore").decode())
+' \
     | tr 'a-z' 'A-Z' \
-    | awk 'length($0) >= 3 && length($0) <= 9' \
+    | grep -E '^[A-Z]{3,9}$' \
     | sort -u > "$RESOURCES/$2"
 }
 
@@ -77,17 +95,17 @@ Run: `./scripts/generate-word-corpus.sh`
 
 Expected output:
 ```
-words.txt: 74302 words
-common-words.txt: 32806 words
+words.txt: 61719 words
+common-words.txt: 29624 words
 ```
 
 - [ ] **Step 3: Run the existing corpus tests to verify they still pass against the new content**
 
 Run: `swift test --filter GeneralWordListTests`
-Expected: PASS (all 4 tests — `test_loadsLargeCorpus` passes trivially at 74,302 > 50,000; `GARDEN`/`RANGE`/`MOONLIGHT` are all present in the new size-60 corpus, confirmed during research)
+Expected: PASS (all 4 tests — `test_loadsLargeCorpus` passes trivially at 61,719 > 50,000; `GARDEN`/`RANGE`/`MOONLIGHT` are all present in the new size-60 corpus, confirmed during research)
 
 Run: `swift test --filter CommonWordsTests`
-Expected: PASS (both tests — `test_loadsManyWords` passes trivially at 32,806 > 1,000; `LIST`/`STILL`/`STONE` are present and `LITS`/`TILS` are absent from the new size-35 corpus, confirmed during research)
+Expected: PASS (both tests — `test_loadsManyWords` passes trivially at 29,624 > 1,000; `LIST`/`STILL`/`STONE` are present and `LITS`/`TILS` are absent from the new size-35 corpus, confirmed during research)
 
 - [ ] **Step 4: Commit**
 

@@ -67,7 +67,7 @@ current resources already work.
 
 1. **ESDB size 60** (American, `A` spelling, variant-level 1) for the
    general corpus — ESDB's own "medium-large, default spell-checking
-   dictionary" tier. Real count at 3-9 letters: **74,302 words**.
+   dictionary" tier. Real count at 3-9 letters: **61,719 words**.
 2. **ESDB size 35** (American, variant-level 1) for `common-words.txt` —
    ESDB's smallest/strictest tier ("recommended small size"). This is a
    *threshold*, not a frequency rank like the current Google-10000 source,
