@@ -21,4 +21,10 @@ final class ThemeLexiconTests: XCTestCase {
             XCTAssertTrue(GeneralWordList.shared.contains(word), "\(word) (zen) not in the general corpus")
         }
     }
+
+    func test_everyDoomLexiconWordIsInTheGeneralCorpus() {
+        for word in ThemeLexicon.shared.words(for: .doom) {
+            XCTAssertTrue(GeneralWordList.shared.contains(word), "\(word) (doom) not in the general corpus")
+        }
+    }
 }
