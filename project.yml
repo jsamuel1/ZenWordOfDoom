@@ -13,6 +13,8 @@ options:
     iOS: "26.5"
   createIntermediateGroups: true
 
+# Whenever a package here is added/changed, update ci_scripts/Package.resolved
+# to match (see ci_scripts/ci_post_clone.sh for why it's hand-maintained).
 packages:
   ZenWordOfDoomKit:
     path: .

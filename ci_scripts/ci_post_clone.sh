@@ -22,12 +22,21 @@ xcodegen generate
 
 echo "Generated $(ls -d *.xcodeproj) with $(xcodebuild -version | tr '\n' ' ')"
 
-# Resolve Swift Package dependencies now, before the build. The generated
-# .xcodeproj is not committed, so its Package.resolved doesn't exist yet; Xcode
-# Cloud runs the archive with automatic package resolution DISABLED and fails
-# if that file is missing (e.g. GoogleMobileAds / GoogleUserMessagingPlatform).
-# Resolving explicitly here writes Package.resolved into the workspace so the
-# archive step finds it.
+# Seed Package.resolved before resolving. The generated .xcodeproj is not
+# committed, so it never carries a resolved file into a fresh clone; Xcode
+# Cloud archives with automatic package resolution DISABLED and fails outright
+# if that file is missing or stale (e.g. after adding GoogleUserMessagingPlatform,
+# a plain `-resolvePackageDependencies` here has been seen failing against Xcode
+# Cloud's cached dependency state with "a resolved file is required when
+# automatic dependency resolution is disabled"). Copying in a known-good,
+# hand-maintained resolved file makes resolution deterministic instead of
+# depending on that cache. Bump ci_scripts/Package.resolved's pins whenever a
+# `packages:` entry in project.yml changes.
+echo "Seeding Package.resolved…"
+mkdir -p ZenWordOfDoom.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+cp ci_scripts/Package.resolved \
+  ZenWordOfDoom.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
 echo "Resolving Swift Package dependencies…"
 xcodebuild -resolvePackageDependencies \
   -project ZenWordOfDoom.xcodeproj \
