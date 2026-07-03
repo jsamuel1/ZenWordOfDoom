@@ -87,6 +87,19 @@
 		<dict><key>SKAdNetworkIdentifier</key><string>97r2b46745.skadnetwork</string></dict>
 		<dict><key>SKAdNetworkIdentifier</key><string>3qcr597p9d.skadnetwork</string></dict>
 	</array>
+	<!-- Bundled brand type: Buda (Zen half) and Grenze Gotisch (Doom half),
+	     both SIL Open Font License (free to embed) — mirrors the fonts used
+	     on zenofdoom.sauhsoj.wtf. Paths are bare filenames, not "Fonts/...":
+	     Xcode's Copy Bundle Resources phase flattens loose (non-folder-
+	     reference) files into the bundle root regardless of their source
+	     group structure, so the on-disk Fonts/ subfolder in this project
+	     does not exist in the built app. PostScript names in BrandFont.swift
+	     are the exact Font.custom(_:) lookup keys, not the family names. -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>Buda-Light.ttf</string>
+		<string>GrenzeGotisch-Bold.ttf</string>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Zen Word of Doom can listen so you can speak the words you find. Audio is processed on your device and never recorded or uploaded.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

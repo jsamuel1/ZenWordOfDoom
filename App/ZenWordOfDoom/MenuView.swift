@@ -39,10 +39,10 @@ struct MenuView: View {
                         VStack(spacing: 24) {
                             VStack(spacing: 8) {
                                 Text("Zen Word")
-                                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                                    .font(BrandFont.zen(size: 44))
                                     .foregroundStyle(.white)
                                 Text("of Doom")
-                                    .font(.system(.title, design: .rounded).weight(.semibold))
+                                    .font(BrandFont.doom(size: 34))
                                     .foregroundStyle(.red.opacity(0.85))
                             }
                             .multilineTextAlignment(.center)
