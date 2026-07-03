@@ -34,7 +34,10 @@ struct WheelLayout: Equatable {
     static func make(size: CGSize, count: Int, scaledTileSize: CGFloat) -> WheelLayout {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         if count >= 8 {
-            let requested = min(max(scaledTileSize, 44), 64)
+            // Capped tighter than .circle's 80pt so adjacent tiles keep a
+            // visible gap (a 64pt cap read as touching/overlapping to a
+            // player at 8+ tiles' tighter row spacing).
+            let requested = min(max(scaledTileSize, 44), 56)
             let topCount = count / 2
             let bottomCount = count - topCount
             let rowCount = max(topCount, bottomCount)

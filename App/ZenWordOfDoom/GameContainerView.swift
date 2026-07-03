@@ -97,14 +97,21 @@ struct GamePlayView: View {
             GeometryReader { proxy in
                 ScrollView {
                     VStack(spacing: 14) {
+                        // Its own row above the HUD, between the nav title and
+                        // the Score/Serenity/hint/mic bar, so the timer doesn't
+                        // eat into that bar's horizontal space.
+                        if let timeRemaining = model.timeRemaining {
+                            DoomTimerView(timeRemaining: timeRemaining)
+                        }
+
                         HUDView(
                             score: model.score,
                             scoreVoided: model.doomExpired,
                             serenity: model.serenity,
                             hintCost: model.hintCost,
-                            timeRemaining: model.timeRemaining,
                             isListening: voice.isListening,
                             voiceEnabled: settings.voiceEnabled,
+                            hintsEnabled: model.hintsAvailable,
                             onHint: {
                                 Haptics.reveal()
                                 model.useHintRevealCell()
@@ -141,12 +148,17 @@ struct GamePlayView: View {
                         .animation(.default, value: model.lastMessage)
                         .accessibilityLiveRegion()
 
-                        GridView(
-                            level: model.level,
-                            filledCells: model.filledCells,
-                            solvedSlotIDs: model.solvedSlotIDs
-                        )
-                        .frame(maxHeight: gridMaxHeight(viewport: proxy.size.height, rows: gridRowCount))
+                        // `.pangramHunt` levels (boss capstones, Word of the
+                        // Day) have no grid slots at all — GridView would
+                        // just draw an empty 1x1 card, so skip it entirely.
+                        if case .crossword = model.level.format {
+                            GridView(
+                                level: model.level,
+                                filledCells: model.filledCells,
+                                solvedSlotIDs: model.solvedSlotIDs
+                            )
+                            .frame(maxHeight: gridMaxHeight(viewport: proxy.size.height, rows: gridRowCount))
+                        }
 
                         Spacer(minLength: 0)
 

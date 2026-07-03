@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// The play-screen heads-up display: score, serenity, a hint button, an optional
-/// doom timer, and a mic toggle. Pure view driven by value inputs and closures;
-/// it holds no reference to the game view model.
+/// The play-screen heads-up display: score, serenity, a hint button, and a mic
+/// toggle. Pure view driven by value inputs and closures; it holds no
+/// reference to the game view model. The doom timer is a separate
+/// `DoomTimerView`, shown above this bar rather than inside it — see that
+/// type's doc comment.
 struct HUDView: View {
     let score: Int
     /// True when the doom timer expired and the level's points are forfeit;
@@ -10,12 +12,13 @@ struct HUDView: View {
     let scoreVoided: Bool
     let serenity: Int
     let hintCost: Int
-    /// Seconds remaining in doom mode, or `nil` in zen mode (timer hidden).
-    let timeRemaining: TimeInterval?
     /// Whether the mic is currently listening (toggles the button appearance).
     let isListening: Bool
     /// Whether voice input is available/enabled at all (hides the mic when false).
     let voiceEnabled: Bool
+    /// Whether this level format has anything for a hint to reveal (hides the
+    /// button when false — e.g. `.pangramHunt` levels have no grid slots).
+    let hintsEnabled: Bool
 
     let onHint: () -> Void
     let onMicStart: () -> Void
@@ -38,13 +41,11 @@ struct HUDView: View {
             stat(title: "Score", value: scoreVoided ? "\u{2014}" : "\(score)", systemImage: "star.fill")
             stat(title: "Serenity", value: "\(serenity)", systemImage: "leaf.fill")
 
-            if let timeRemaining {
-                timerView(timeRemaining)
-            }
-
             Spacer(minLength: 0)
 
-            hintButton
+            if hintsEnabled {
+                hintButton
+            }
             if voiceEnabled {
                 micButton
             }
@@ -75,22 +76,6 @@ struct HUDView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title) \(value)")
-    }
-
-    private func timerView(_ remaining: TimeInterval) -> some View {
-        let secs = max(0, Int(remaining.rounded()))
-        let mm = secs / 60
-        let ss = secs % 60
-        let urgent = remaining <= 15
-        return HStack(spacing: 4) {
-            Image(systemName: "hourglass")
-                .font(.caption)
-            Text(String(format: "%d:%02d", mm, ss))
-                .font(.system(.subheadline, design: .rounded).weight(.bold))
-                .monospacedDigit()
-        }
-        .foregroundStyle(urgent ? Color.red : Color.primary)
-        .accessibilityLabel("Time remaining \(mm) minutes \(ss) seconds")
     }
 
     private var hintButton: some View {
@@ -136,16 +121,46 @@ struct HUDView: View {
     }
 }
 
+/// Standalone doom-timer readout. Shown between the navigation title and
+/// `HUDView` — rather than inside the HUD's own stat row — so a doom level's
+/// timer doesn't compete with Score/Serenity/hint/mic for horizontal space
+/// in that bar; zen levels simply omit this view.
+struct DoomTimerView: View {
+    let timeRemaining: TimeInterval
+
+    var body: some View {
+        let secs = max(0, Int(timeRemaining.rounded()))
+        let mm = secs / 60
+        let ss = secs % 60
+        let urgent = timeRemaining <= 15
+        HStack(spacing: 4) {
+            Image(systemName: "hourglass")
+                .font(.caption)
+            Text(String(format: "%d:%02d", mm, ss))
+                .font(.system(.subheadline, design: .rounded).weight(.bold))
+                .monospacedDigit()
+        }
+        .foregroundStyle(urgent ? Color.red : Color.primary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .a11yCardBackground(cornerRadius: .infinity)
+        .background(Capsule().fill(Color.black.opacity(0.25)))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Time remaining \(mm) minutes \(ss) seconds")
+    }
+}
+
 #Preview {
     VStack {
+        DoomTimerView(timeRemaining: 92)
         HUDView(
             score: 320,
             scoreVoided: false,
             serenity: 25,
             hintCost: 5,
-            timeRemaining: 92,
             isListening: false,
             voiceEnabled: true,
+            hintsEnabled: true,
             onHint: {},
             onMicStart: {},
             onMicStop: {}
@@ -155,9 +170,9 @@ struct HUDView: View {
             scoreVoided: true,
             serenity: 2,
             hintCost: 5,
-            timeRemaining: nil,
             isListening: true,
             voiceEnabled: true,
+            hintsEnabled: true,
             onHint: {},
             onMicStart: {},
             onMicStop: {}

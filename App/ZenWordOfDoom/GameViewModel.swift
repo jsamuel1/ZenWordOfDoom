@@ -84,6 +84,16 @@ final class GameViewModel: ObservableObject {
         displayOrder = level.wheel.displayOrder(seed: Self.wheelSeed(for: level.id))
     }
 
+    /// Whether the hint button has anything to do. Hints reveal a crossword
+    /// slot's letter; `.pangramHunt` levels (boss capstones and Word of the
+    /// Day) have no slots, so the button would be a dead affordance.
+    var hintsAvailable: Bool {
+        switch engine.level.format {
+        case .crossword: return true
+        case .pangramHunt: return false
+        }
+    }
+
     /// Progress toward finishing the level, for the found-words tray.
     /// Crossword: grid slots solved. Boss: words found toward the target.
     var progressLabel: String {

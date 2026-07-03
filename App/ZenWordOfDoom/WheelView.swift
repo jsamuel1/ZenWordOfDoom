@@ -33,7 +33,8 @@ struct WheelView: View {
     /// Diameter of a single tile, scaled with Dynamic Type (clamped so the
     /// touch target never shrinks below 44pt). Fed into `WheelLayout.make`,
     /// which applies its own shape-dependent cap (80pt for `.circle`, under
-    /// 8 tiles; 64pt for `.stadium`, 8+ tiles) and shrink-to-fit logic — see
+    /// 8 tiles; 56pt for `.stadium`, 8+ tiles — kept smaller than circle's so
+    /// adjacent tiles keep a visible gap) and shrink-to-fit logic — see
     /// `WheelLayout.swift`.
     @ScaledMetric(relativeTo: .title) private var scaledTileSize: CGFloat = 56
     /// Height of the wheel's frame, scaled with Dynamic Type (never smaller
