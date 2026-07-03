@@ -56,9 +56,10 @@ like the existing scene/creature `BundledVisuals` system. This image
 4. **Word list size/cadence:** ~50-100 words per theme, deterministically
    shuffled per full cycle (no repeat until the list is exhausted, then
    reshuffles differently).
-5. **Word length:** 8-10 letters. This requires extending the wheel UI's
-   circular layout (currently tuned for a 9-tile max) to also support a
-   10-tile worst case.
+5. **Word length:** 8-10 letters. The existing single-circle wheel layout is
+   tuned for a 9-tile max, so it can't just be stretched to 10 — instead,
+   wheels of 8+ tiles (Expert, Master, and the new 10-letter case) switch to
+   a new **two-row stadium shape** (§4.3), not just the 10-letter case.
 6. **Images:** ~20-30 bundled illustration slugs shared across words (many
    words per slug), generated offline via the `agy` CLI, replacing the
    puzzle's normal reveal art for the daily slot only.
@@ -114,13 +115,34 @@ public func dailyLevel(for seed: LevelSeed, word: String) -> Level {
 switches to this path instead of the generic `generator.level(for:)` call.
 Caching/re-keying by date is unchanged.
 
-### 4.3 Wheel UI (10-tile support)
+### 4.3 Wheel UI (two-row stadium shape for 8+ tiles)
 
-`WheelView`'s circular layout radius (tuned today for a 9-tile worst case,
-per its inline comments/derivation) is re-derived to also cover 10 tiles
-without overlap, at the same tile size. Needs a visual sanity check in the
-simulator in addition to the math, since tile crowding is a visual judgment,
-not purely numeric.
+Wheels of 8 or more tiles (Expert=8, Master=9, and the new 10-letter
+Word-of-the-Day case) drop the single-circle layout in favor of a **two-row
+stadium shape**, confirmed via mockup review:
+
+- **Row split:** even split, remainder on the bottom row — 8→4+4, 9→4+5,
+  10→5+5.
+- **Tile placement:** each row is itself a shallow arc rather than a flat
+  line — the top row sags gently downward at its ends, the bottom row
+  rises gently upward at its ends, so the two rows curve toward each other,
+  giving the wheel a lens/stadium silhouette that echoes the original
+  circle rather than reading as two flat bars.
+- **Same-row drag trail:** when the player drags between two tiles in the
+  *same* row, the connecting trail curves **inward** — toward the gap
+  between the two rows — rather than following the row's own outward bow or
+  bulging away from it.
+- **Cross-row drag trail:** dragging between a top-row and bottom-row tile
+  uses a straight line, as today (only same-row segments get the arc
+  treatment). Flag this as an assumption to confirm during implementation if
+  it feels wrong in practice.
+
+Wheels under 8 tiles (Easy/Medium/Hard) keep today's single-circle layout
+unchanged. This is new layout code in `WheelView` (or a sibling type), not a
+tweak to the existing circular radius formula — needs both a geometry pass
+(row curvature, tile spacing so nothing overlaps) and a simulator visual
+check, since the curvature amount is an aesthetic judgment, not purely
+numeric.
 
 ### 4.4 Word → image mapping & bundled art
 
@@ -180,9 +202,12 @@ throttled run can simply be resumed later.
 - **Word→slug curation is manual** — grouping ~100-200 curated words into
   ~20-30 thematically coherent image buckets is a judgment call, done by
   hand during implementation.
-- **10-tile wheel layout** — re-deriving the circular radius formula is
-  small but touches shared rendering code (`WheelView`); needs a simulator
-  visual check beyond just the math.
+- **Two-row stadium wheel layout** — new layout code for 8+ tile wheels
+  (curved rows, inward-arcing same-row trail) touches shared rendering code
+  (`WheelView`) used by Expert/Master levels too, not just the new daily
+  case; needs a simulator visual check beyond the geometry, and the
+  cross-row-drag-stays-straight assumption should be confirmed during
+  implementation.
 - **Curated word solvability** — every curated word must still yield a
   sensible Pangram-Hunt (enough valid sub-words buildable from its letters
   via the general corpus) — validated by a new test sweep akin to
