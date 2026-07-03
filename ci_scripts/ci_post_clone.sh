@@ -21,3 +21,14 @@ cd "$CI_PRIMARY_REPOSITORY_PATH"
 xcodegen generate
 
 echo "Generated $(ls -d *.xcodeproj) with $(xcodebuild -version | tr '\n' ' ')"
+
+# Resolve Swift Package dependencies now, before the build. The generated
+# .xcodeproj is not committed, so its Package.resolved doesn't exist yet; Xcode
+# Cloud runs the archive with automatic package resolution DISABLED and fails
+# if that file is missing (e.g. GoogleMobileAds / GoogleUserMessagingPlatform).
+# Resolving explicitly here writes Package.resolved into the workspace so the
+# archive step finds it.
+echo "Resolving Swift Package dependencies…"
+xcodebuild -resolvePackageDependencies \
+  -project ZenWordOfDoom.xcodeproj \
+  -scheme ZenWordOfDoom
