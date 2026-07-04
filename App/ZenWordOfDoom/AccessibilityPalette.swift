@@ -44,10 +44,10 @@ enum AccessibilityPalette {
 
     // MARK: - Parchment chrome (frame textures + scrim, see ParchmentChrome.swift)
 
-    static let parchmentScrimZen = Color(.sRGB, red: 0.95, green: 0.90, blue: 0.78, opacity: 0.9)
-    static let parchmentInkZen = Color(.sRGB, red: 0.16, green: 0.11, blue: 0.07, opacity: 1)
-    static let parchmentScrimDoom = Color(.sRGB, red: 0.14, green: 0.10, blue: 0.08, opacity: 0.9)
-    static let parchmentInkDoom = Color(.sRGB, red: 0.93, green: 0.84, blue: 0.64, opacity: 1)
+    static let parchmentScrimZen = Color(.sRGB, red: 0.95, green: 0.90, blue: 0.78, opacity: 0.65)
+    static let parchmentInkZen = Color(.sRGB, red: 0.10, green: 0.06, blue: 0.03, opacity: 1)
+    static let parchmentScrimDoom = Color(.sRGB, red: 0.14, green: 0.10, blue: 0.08, opacity: 0.65)
+    static let parchmentInkDoom = Color(.sRGB, red: 1.0, green: 0.97, blue: 0.87, opacity: 1)
 
     /// Text/icon color to draw over parchment chrome for the given theme —
     /// always paired with `parchmentScrim(for:)`, never the raw texture.

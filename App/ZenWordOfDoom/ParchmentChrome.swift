@@ -73,14 +73,29 @@ struct ParchmentButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
             .padding(.horizontal, shape == .icon ? 8 : 16)
-            .padding(.vertical, shape == .icon ? 8 : 10)
-            .frame(minWidth: 44, minHeight: 44)
+            // Vertical padding is generous on purpose: the button's total
+            // height has to fit the capInsets' fixed top+bottom border AND a
+            // comfortable clear middle for the label — a tight ~44pt button
+            // left almost no clear middle at all once the border ate its
+            // ~42pt share, so text/icons spilled into the torn-edge art
+            // above and below instead of sitting inside the clean parchment.
+            .padding(.vertical, shape == .icon ? 8 : 30)
+            .frame(minWidth: shape == .icon ? 64 : 44, minHeight: shape == .icon ? 64 : 44)
             .background {
                 // Scrim and image are ZStack siblings INSIDE .background — both
                 // must render behind the label. An `.overlay` here instead
                 // would paint on top of everything including the text (overlay
                 // always draws in front of the view it modifies), washing out
                 // dark ink under the translucent scrim.
+                //
+                // The scrim spans the full clear-middle region (not just the
+                // text's own width) — a tighter, text-hugging scrim was tried
+                // but fighting it through Button/ButtonStyle's layout
+                // boundaries (several call sites put `.frame(maxWidth:
+                // .infinity)` on their own label) kept reintroducing the
+                // exact oversizing bugs this file's other comments describe.
+                // The lower opacity below does the "blend in, less jarring"
+                // job instead.
                 ZStack {
                     Image(ParchmentShape.assetName(theme: theme, shape: shape))
                         .resizable(capInsets: insets, resizingMode: .stretch)

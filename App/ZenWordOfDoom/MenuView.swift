@@ -42,7 +42,7 @@ struct MenuView: View {
                                     .font(BrandFont.zen(size: 44))
                                     .foregroundStyle(.white)
                                 Text("of Doom")
-                                    .font(BrandFont.doom(size: 34))
+                                    .font(BrandFont.doom(size: 44))
                                     .foregroundStyle(.red.opacity(0.85))
                             }
                             .multilineTextAlignment(.center)
@@ -82,7 +82,11 @@ struct MenuView: View {
 
                         Spacer()
 
-                        VStack(spacing: 16) {
+                        // Tighter than the pre-parchment 16pt: buttons got
+                        // noticeably taller to give the parchment border and
+                        // label room to coexist, so spacing between them
+                        // shrinks to help the menu still fit reasonably.
+                        VStack(spacing: 8) {
                             Button {
                                 // Drop straight into the next level to play; if every
                                 // level is cleared there's nothing new, so show the list.
