@@ -326,10 +326,10 @@ struct GamePlayView: View {
     }
 
     private var controls: some View {
-        HStack {
+        let theme = levelService.theme(forID: level.id)
+        return HStack {
             Button("Clear", role: .destructive) { model.clear() }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .wide))
 
             Spacer()
 
@@ -340,8 +340,7 @@ struct GamePlayView: View {
                 Label("Shuffle", systemImage: "shuffle")
                     .labelStyle(.iconOnly)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .icon))
             .accessibilityLabel("Shuffle letters")
 
             Spacer()
@@ -350,8 +349,7 @@ struct GamePlayView: View {
                 Haptics.tap()
                 model.submit()
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .wide))
             .disabled(model.selection.count < GameEngine.minWordLength)
         }
     }
