@@ -118,7 +118,7 @@ struct GamePlayView: View {
                                 model.useHintRevealCell()
                             },
                             onMicStart: { startListening() },
-                            onMicStop: { voice.stop() }
+                            onMicStop: { stopListening() }
                         )
 
                         // The tap gesture is only attached when the message is
@@ -271,7 +271,7 @@ struct GamePlayView: View {
         // The doom overlay blocks all play input; the mic must not keep
         // listening (and submitting words) underneath it.
         .onChange(of: model.showDoomOverlay) { _, shown in
-            if shown { voice.stop() }
+            if shown { stopListening() }
         }
         .sheet(isPresented: $showSerenitySheet) {
             SerenitySheetView()
@@ -282,7 +282,7 @@ struct GamePlayView: View {
             // still true, and the celebration must not replay.
             guard model.isComplete, !showClear else { return }
             Haptics.success()
-            voice.stop()
+            stopListening()
             // Hold on the fully revealed creature (stir is 1) with the chrome
             // faded, so the payoff is actually seen; then bring in the scorecard.
             let hold: UInt64 = reduceMotion ? 800_000_000 : 2_200_000_000
@@ -370,10 +370,22 @@ struct GamePlayView: View {
             guard ok else {
                 return
             }
+            // `VoiceInput` puts the shared `AVAudioSession` into the exclusive
+            // `.record` category. The background music engine runs its own
+            // `AVAudioEngine` attached to that same session; leaving it
+            // rendering while the session is yanked into `.record` crashes
+            // the audio thread. Stop it for the duration of listening and
+            // restart it in `stopListening()`.
+            soundEngine.stop()
             voice.start(onResult: { transcript in
                 model.submitSpoken(transcript)
             })
         }
+    }
+
+    private func stopListening() {
+        voice.stop()
+        soundEngine.start()
     }
 }
 

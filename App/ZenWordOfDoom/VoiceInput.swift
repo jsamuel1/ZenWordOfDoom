@@ -94,6 +94,21 @@ final class VoiceInput: ObservableObject {
         guard SFSpeechRecognizer.authorizationStatus() == .authorized else { return }
         guard let recognizer, recognizer.isAvailable else { return }
 
+        // Configure the session for recording *before* touching
+        // `audioEngine.inputNode` (including inside `resetEngine`, below):
+        // querying/resetting the input node while the session is still in a
+        // playback-only category latches a stale, recording-incapable format
+        // onto the node that survives the category switch and crashes the
+        // process when the tap is installed or the engine is started.
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            cleanup()
+            return
+        }
+
         // Tear down any lingering state before starting fresh.
         resetEngine()
 
@@ -104,15 +119,6 @@ final class VoiceInput: ObservableObject {
             request.requiresOnDeviceRecognition = true
         }
         self.request = request
-
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            cleanup()
-            return
-        }
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
