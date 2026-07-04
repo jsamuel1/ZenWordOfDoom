@@ -70,6 +70,14 @@ struct GamePlayView: View {
     /// steal the trace (belt-and-braces alongside the wheel's
     /// .highPriorityGesture).
     @State private var wheelDragging = false
+    /// Dismiss timer for the pack banner; cancelled on disappear so a stale
+    /// fire can't touch `packBanner` after the view is gone.
+    @State private var packBannerDismissTask: Task<Void, Never>?
+    /// The in-flight permission request + listen kickoff started by the mic
+    /// button; cancelled on disappear so a request answered after the player
+    /// has already left the screen can't stop/restart the (now some other
+    /// screen's) shared sound engine or audio session out from under it.
+    @State private var listenTask: Task<Void, Never>?
 
     /// Shared audio engine, retained for start/stop/enable over the level's life.
     private let soundEngine: any SoundEngine
@@ -262,6 +270,8 @@ struct GamePlayView: View {
         }
         .onDisappear {
             model.invalidate()
+            listenTask?.cancel()
+            packBannerDismissTask?.cancel()
             voice.stop()
             soundEngine.stop()
         }
@@ -359,17 +369,24 @@ struct GamePlayView: View {
         guard packBanner == nil, levelService.isPackStart(level.id),
               let pack = levelService.pack(forID: level.id) else { return }
         withAnimation(.easeOut(duration: 0.4)) { packBanner = pack }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        packBannerDismissTask?.cancel()
+        packBannerDismissTask = Task {
+            guard (try? await Task.sleep(nanoseconds: 3_000_000_000)) != nil else { return }
+            guard !Task.isCancelled else { return }
             withAnimation(.easeIn(duration: 0.5)) { packBanner = nil }
         }
     }
 
     private func startListening() {
-        Task {
+        listenTask?.cancel()
+        listenTask = Task {
             let ok = await voice.requestAuthorization()
-            guard ok else {
-                return
-            }
+            // The permission dialog can sit unanswered indefinitely; if the
+            // player has already backed out of this level by the time it
+            // resolves, touching the (shared, screen-agnostic) sound engine
+            // or audio session here would race whatever the next screen is
+            // doing to them.
+            guard ok, !Task.isCancelled else { return }
             // `VoiceInput` puts the shared `AVAudioSession` into the exclusive
             // `.record` category. The background music engine runs its own
             // `AVAudioEngine` attached to that same session; leaving it
