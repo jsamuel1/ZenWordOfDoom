@@ -95,8 +95,7 @@ struct MenuView: View {
                                 Label("Play", systemImage: "leaf.fill")
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
+                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
 
                             Button {
                                 router.push(.levelSelect)
@@ -104,8 +103,7 @@ struct MenuView: View {
                                 Label("Select Level", systemImage: "square.grid.2x2.fill")
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
+                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
 
                             Button {
                                 router.push(.bestiary)
@@ -113,8 +111,7 @@ struct MenuView: View {
                                 Label("Bestiary", systemImage: "pawprint.fill")
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
+                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
 
                             Button {
                                 router.push(.shrine)
@@ -122,8 +119,7 @@ struct MenuView: View {
                                 Label("Shrine", systemImage: "sparkles")
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
+                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
 
                             Button {
                                 router.push(.stats)
@@ -131,8 +127,7 @@ struct MenuView: View {
                                 Label("Stats", systemImage: "chart.bar.fill")
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
+                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
 
                             Button {
                                 router.push(.settings)
@@ -140,8 +135,7 @@ struct MenuView: View {
                                 Label("Settings", systemImage: "gearshape.fill")
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
+                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
                         }
                         .padding(.horizontal, 40)
 
@@ -208,18 +202,8 @@ struct MenuView: View {
                         .accessibilityLabel("\(streak) day streak")
                 }
             }
-            .padding(14)
-            .a11yCardBackground(cornerRadius: 16)
-            // Button-shape affordance (audit 6.3): plain-styled tappable row,
-            // not inside a List. Corner radius matches `a11yCardBackground`
-            // above (16, not the brief's literal 12) so the stroke traces
-            // the card's own rounded fill instead of cutting across it.
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.primary.opacity(0.15), lineWidth: 1)
-            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
         .padding(.horizontal, 40)
     }
 }
