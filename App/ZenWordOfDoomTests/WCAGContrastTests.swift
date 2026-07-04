@@ -24,6 +24,13 @@ final class WCAGContrastTests: XCTestCase {
                                           AccessibilityPalette.gridUnfilledFill), 3.0)
     }
 
+    func testParchmentPairsMeetAA() {
+        XCTAssertGreaterThanOrEqual(ratio(AccessibilityPalette.parchmentInkZen,
+                                          AccessibilityPalette.parchmentScrimZen), 4.5)
+        XCTAssertGreaterThanOrEqual(ratio(AccessibilityPalette.parchmentInkDoom,
+                                          AccessibilityPalette.parchmentScrimDoom), 4.5)
+    }
+
     func testKnownRatioSanity() {
         XCTAssertEqual(ratio(.black, .white), 21.0, accuracy: 0.1)
         XCTAssertEqual(ratio(.white, .white), 1.0, accuracy: 0.05)
