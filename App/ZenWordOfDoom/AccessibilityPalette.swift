@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import LevelGen
 
 /// Fixed, scheme-independent color pairs with WCAG-verified contrast.
 ///
@@ -40,6 +41,26 @@ enum AccessibilityPalette {
     /// (see `GridView`). Darker and more opaque than `gridCellStroke` for a
     /// stronger boundary; not pinned by `WCAGContrastTests`.
     static let gridCellStrokeIncreased = Color(.sRGB, white: 0.15, opacity: 0.85)
+
+    // MARK: - Parchment chrome (frame textures + scrim, see ParchmentChrome.swift)
+
+    static let parchmentScrimZen = Color(.sRGB, red: 0.95, green: 0.90, blue: 0.78, opacity: 0.9)
+    static let parchmentInkZen = Color(.sRGB, red: 0.16, green: 0.11, blue: 0.07, opacity: 1)
+    static let parchmentScrimDoom = Color(.sRGB, red: 0.14, green: 0.10, blue: 0.08, opacity: 0.9)
+    static let parchmentInkDoom = Color(.sRGB, red: 0.93, green: 0.84, blue: 0.64, opacity: 1)
+
+    /// Text/icon color to draw over parchment chrome for the given theme —
+    /// always paired with `parchmentScrim(for:)`, never the raw texture.
+    static func parchmentInk(for theme: Theme) -> Color {
+        theme == .doom ? parchmentInkDoom : parchmentInkZen
+    }
+
+    /// Scrim color composited between the parchment texture and its content
+    /// (text/icons), so contrast stays WCAG-AA regardless of the generated
+    /// texture's exact pixels. See `ParchmentChrome.swift`.
+    static func parchmentScrim(for theme: Theme) -> Color {
+        theme == .doom ? parchmentScrimDoom : parchmentScrimZen
+    }
 
     // MARK: - WCAG math
 

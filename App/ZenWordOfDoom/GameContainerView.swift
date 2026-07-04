@@ -101,7 +101,7 @@ struct GamePlayView: View {
                         // the Score/Serenity/hint/mic bar, so the timer doesn't
                         // eat into that bar's horizontal space.
                         if let timeRemaining = model.timeRemaining {
-                            DoomTimerView(timeRemaining: timeRemaining)
+                            DoomTimerView(timeRemaining: timeRemaining, theme: levelService.theme(forID: level.id))
                         }
 
                         HUDView(
@@ -112,6 +112,7 @@ struct GamePlayView: View {
                             isListening: voice.isListening,
                             voiceEnabled: settings.voiceEnabled,
                             hintsEnabled: model.hintsAvailable,
+                            theme: levelService.theme(forID: level.id),
                             onHint: {
                                 Haptics.reveal()
                                 model.useHintRevealCell()
@@ -162,9 +163,9 @@ struct GamePlayView: View {
 
                         Spacer(minLength: 0)
 
-                        FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords)
+                        FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords, theme: levelService.theme(forID: level.id))
 
-                        WordRibbonView(word: model.currentWord)
+                        WordRibbonView(word: model.currentWord, theme: levelService.theme(forID: level.id))
 
                         WheelView(
                             tiles: model.level.wheel.tiles,
@@ -326,10 +327,10 @@ struct GamePlayView: View {
     }
 
     private var controls: some View {
-        HStack {
+        let theme = levelService.theme(forID: level.id)
+        return HStack {
             Button("Clear", role: .destructive) { model.clear() }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .wide))
 
             Spacer()
 
@@ -340,8 +341,7 @@ struct GamePlayView: View {
                 Label("Shuffle", systemImage: "shuffle")
                     .labelStyle(.iconOnly)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .icon))
             .accessibilityLabel("Shuffle letters")
 
             Spacer()
@@ -350,8 +350,7 @@ struct GamePlayView: View {
                 Haptics.tap()
                 model.submit()
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .wide))
             .disabled(model.selection.count < GameEngine.minWordLength)
         }
     }

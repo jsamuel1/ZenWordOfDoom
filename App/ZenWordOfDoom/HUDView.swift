@@ -1,4 +1,5 @@
 import SwiftUI
+import LevelGen
 
 /// The play-screen heads-up display: score, serenity, a hint button, and a mic
 /// toggle. Pure view driven by value inputs and closures; it holds no
@@ -19,22 +20,17 @@ struct HUDView: View {
     /// Whether this level format has anything for a hint to reveal (hides the
     /// button when false — e.g. `.pangramHunt` levels have no grid slots).
     let hintsEnabled: Bool
+    let theme: Theme
 
     let onHint: () -> Void
     let onMicStart: () -> Void
     let onMicStop: () -> Void
 
-    @Environment(\.colorSchemeContrast) private var contrast
     /// Reduce Motion (audit 5.3): the mic's pulse symbol effect is purely
     /// decorative, so it's suppressed rather than replaced.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var canAffordHint: Bool { serenity >= hintCost }
-
-    /// Increase Contrast (audit 6.2): the caption labels default to
-    /// `.secondary`, which can thin out over busy scene art; bump to
-    /// `.primary` when the setting is on.
-    private var labelStyle: Color { contrast == .increased ? .primary : .secondary }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -50,30 +46,21 @@ struct HUDView: View {
                 micButton
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        // Constant dark backing sits beneath the material (audit 3.5) so
-        // `.secondary` labels hold contrast over bright/light scene art;
-        // `a11yCardBackground` layers on top and goes opaque under Reduce
-        // Transparency.
-        .a11yCardBackground(cornerRadius: .infinity)
-        .background(Capsule().fill(Color.black.opacity(0.25)))
     }
 
     private func stat(title: String, value: String, systemImage: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: systemImage)
                 .font(.caption)
-                .foregroundStyle(labelStyle)
             VStack(alignment: .leading, spacing: 0) {
                 Text(value)
                     .font(.system(.subheadline, design: .rounded).weight(.bold))
                     .monospacedDigit()
                 Text(title)
                     .font(.caption2)
-                    .foregroundStyle(labelStyle)
             }
         }
+        .parchmentReadout(theme: theme)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title) \(value)")
     }
@@ -83,18 +70,8 @@ struct HUDView: View {
             Label("Hint", systemImage: "lightbulb.fill")
                 .labelStyle(.iconOnly)
                 .font(.title3)
-                .padding(8)
-                .background(
-                    Circle().fill(canAffordHint
-                        ? Color.accentColor.opacity(0.85)
-                        : Color.gray.opacity(0.4))
-                )
-                .foregroundStyle(.white)
-                // 44pt touch-target floor (audit 4.1): enlarges the tappable
-                // area only — the visible circle above stays its original size.
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
         }
+        .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .icon))
         .disabled(!canAffordHint)
         .accessibilityLabel("Reveal a hint for \(hintCost) serenity")
         .accessibilityHint(canAffordHint ? "" : "Not enough serenity")
@@ -104,19 +81,9 @@ struct HUDView: View {
         Button(action: { isListening ? onMicStop() : onMicStart() }) {
             Image(systemName: isListening ? "mic.fill" : "mic")
                 .font(.title3)
-                .padding(8)
-                .background(
-                    Circle().fill(isListening
-                        ? Color.red.opacity(0.85)
-                        : Color.secondary.opacity(0.25))
-                )
-                .foregroundStyle(isListening ? .white : .primary)
                 .symbolEffect(.pulse, isActive: isListening && !reduceMotion)
-                // 44pt touch-target floor (audit 4.1): enlarges the tappable
-                // area only — the visible circle above stays its original size.
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
         }
+        .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .icon))
         .accessibilityLabel(isListening ? "Stop listening" : "Speak a word")
     }
 }
@@ -127,6 +94,7 @@ struct HUDView: View {
 /// in that bar; zen levels simply omit this view.
 struct DoomTimerView: View {
     let timeRemaining: TimeInterval
+    let theme: Theme
 
     var body: some View {
         let secs = max(0, Int(timeRemaining.rounded()))
@@ -141,10 +109,7 @@ struct DoomTimerView: View {
                 .monospacedDigit()
         }
         .foregroundStyle(urgent ? Color.red : Color.primary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-        .a11yCardBackground(cornerRadius: .infinity)
-        .background(Capsule().fill(Color.black.opacity(0.25)))
+        .parchmentReadout(theme: theme)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Time remaining \(mm) minutes \(ss) seconds")
     }
@@ -152,7 +117,7 @@ struct DoomTimerView: View {
 
 #Preview {
     VStack {
-        DoomTimerView(timeRemaining: 92)
+        DoomTimerView(timeRemaining: 92, theme: .zen)
         HUDView(
             score: 320,
             scoreVoided: false,
@@ -161,6 +126,7 @@ struct DoomTimerView: View {
             isListening: false,
             voiceEnabled: true,
             hintsEnabled: true,
+            theme: .zen,
             onHint: {},
             onMicStart: {},
             onMicStop: {}
@@ -173,6 +139,7 @@ struct DoomTimerView: View {
             isListening: true,
             voiceEnabled: true,
             hintsEnabled: true,
+            theme: .zen,
             onHint: {},
             onMicStart: {},
             onMicStop: {}
