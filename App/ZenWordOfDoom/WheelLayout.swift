@@ -50,11 +50,15 @@ struct WheelLayout: Equatable {
             // fit rather than let tiles overlap; only ever shrinks, never
             // grows beyond what Dynamic Type asked for.
             let widthCap = size.width / (CGFloat(rowCount) + 0.2)
-            let heightCap = size.height / 2.5
+            // rowGap is 1.75x tile (was 1.5x) so a drag between rows has more
+            // clearance before it clips a neighbouring letter; heightCap's
+            // divisor tracks the same ratio (rowGap + tile) so the two rows
+            // still fit the container instead of overflowing vertically.
+            let heightCap = size.height / 2.75
             let tile = max(min(requested, widthCap, heightCap), 44)
             let rowSpan = max(size.width / 2 - tile * 0.6, 0)
             return WheelLayout(center: center, radius: 0, count: count, shape: .stadium,
-                               tileSize: tile, rowSpan: rowSpan, rowGap: tile * 1.5, curveDepth: tile * 0.2)
+                               tileSize: tile, rowSpan: rowSpan, rowGap: tile * 1.75, curveDepth: tile * 0.2)
         } else {
             let tile = min(max(scaledTileSize, 44), 80)
             let radius = max(min(size.width, size.height) / 2 - tile * 0.64, 0)

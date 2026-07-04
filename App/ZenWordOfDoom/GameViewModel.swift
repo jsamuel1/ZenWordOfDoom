@@ -101,8 +101,11 @@ final class GameViewModel: ObservableObject {
         case .crossword:
             return "\(solvedSlotIDs.count) / \(engine.level.slots.count) words"
         case .pangramHunt(let target):
+            // Every word beyond `target` is a true bonus find (shown in the
+            // tray below), not further progress — don't let the numerator
+            // exceed the denominator once the target's been met.
             let pangramMark = engine.pangramCount > 0 ? " ✦" : ""
-            return "\(bonusWords.count) / \(target) words\(pangramMark)"
+            return "\(min(bonusWords.count, target)) / \(target) words\(pangramMark)"
         }
     }
 
