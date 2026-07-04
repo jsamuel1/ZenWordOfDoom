@@ -163,9 +163,9 @@ struct GamePlayView: View {
 
                         Spacer(minLength: 0)
 
-                        FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords)
+                        FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords, theme: levelService.theme(forID: level.id))
 
-                        WordRibbonView(word: model.currentWord)
+                        WordRibbonView(word: model.currentWord, theme: levelService.theme(forID: level.id))
 
                         WheelView(
                             tiles: model.level.wheel.tiles,

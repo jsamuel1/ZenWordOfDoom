@@ -6,6 +6,7 @@ import LevelGen
 struct FoundWordsTray: View {
     let progress: String
     let bonusWords: [String]
+    let theme: Theme
 
     var body: some View {
         VStack(spacing: 6) {
@@ -23,9 +24,7 @@ struct FoundWordsTray: View {
                         ForEach(bonusWords.reversed(), id: \.self) { word in
                             Text(word)
                                 .font(.caption2.weight(.medium))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .a11yCardBackground(cornerRadius: .infinity)
+                                .parchmentReadout(theme: theme)
                         }
                     }
                     .padding(.horizontal, 2)

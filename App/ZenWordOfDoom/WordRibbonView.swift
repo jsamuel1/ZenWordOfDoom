@@ -1,4 +1,5 @@
 import SwiftUI
+import LevelGen
 
 /// A calm ribbon showing the word currently being assembled from the wheel.
 ///
@@ -7,6 +8,7 @@ import SwiftUI
 /// view driven only by its single `word` parameter.
 struct WordRibbonView: View {
     let word: String
+    let theme: Theme
 
     @ScaledMetric(relativeTo: .title2) private var tileSide: CGFloat = 38
     @ScaledMetric(relativeTo: .title2) private var ribbonHeight: CGFloat = 44
@@ -38,29 +40,21 @@ struct WordRibbonView: View {
             .font(.system(.title2, design: .rounded).weight(.bold))
             .lineLimit(1)
             .minimumScaleFactor(0.7)
-            .foregroundStyle(.white)
             .frame(width: tileSide, height: tileSide)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.accentColor.opacity(0.85))
-            )
-            .shadow(radius: 1)
+            .parchmentReadout(theme: theme)
     }
 
     private var placeholder: some View {
         Text("Trace a word")
             .font(.system(.subheadline, design: .rounded))
-            .foregroundStyle(.white.opacity(0.85))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(Color.black.opacity(0.3)))
+            .parchmentReadout(theme: theme)
     }
 }
 
 #Preview {
     VStack(spacing: 16) {
-        WordRibbonView(word: "")
-        WordRibbonView(word: "STONE")
+        WordRibbonView(word: "", theme: .zen)
+        WordRibbonView(word: "STONE", theme: .zen)
     }
     .padding()
     .background(Color.black)
