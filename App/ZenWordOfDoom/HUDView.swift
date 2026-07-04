@@ -101,14 +101,24 @@ struct DoomTimerView: View {
         let mm = secs / 60
         let ss = secs % 60
         let urgent = timeRemaining <= 15
+        // Color applied directly on each leaf, not on the HStack: a
+        // container-level .foregroundStyle set here would sit closer to
+        // these Image/Text leaves than parchmentReadout's own internal ink
+        // color (applied further out, wrapping this whole HStack), so it
+        // would always win — silently discarding the theme's ink color and
+        // rendering as near-black on the dark Doom scrim. Setting the color
+        // on the leaves themselves is unambiguously the closest/most
+        // specific setting, so it's the one that actually applies.
+        let timerColor = urgent ? Color.red : AccessibilityPalette.parchmentInk(for: theme)
         HStack(spacing: 4) {
             Image(systemName: "hourglass")
                 .font(.caption)
+                .foregroundStyle(timerColor)
             Text(String(format: "%d:%02d", mm, ss))
                 .font(.system(.subheadline, design: .rounded).weight(.bold))
                 .monospacedDigit()
+                .foregroundStyle(timerColor)
         }
-        .foregroundStyle(urgent ? Color.red : Color.primary)
         .parchmentReadout(theme: theme)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Time remaining \(mm) minutes \(ss) seconds")

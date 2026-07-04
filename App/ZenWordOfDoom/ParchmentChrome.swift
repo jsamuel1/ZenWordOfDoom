@@ -13,11 +13,25 @@ enum ParchmentShape {
     /// Fixed border margin (in the texture's own point space) that must not
     /// stretch — the torn-edge/corner-ornament detail lives here. Only the
     /// region inside these insets stretches when the view resizes.
+    ///
+    /// `Image.resizable(capInsets:)` enforces a HARD MINIMUM size equal to
+    /// the sum of the insets on each axis — below that, it refuses to shrink
+    /// further, no matter what size its container proposes. `.background()`
+    /// never lets a background's size affect the primary view it's attached
+    /// to, so when these values were much larger (70/110pt, implying a
+    /// 140x220pt floor), a single-line button whose real content was only
+    /// ~55pt tall still got a ~140pt-tall background rendered underneath —
+    /// visually overflowing into the next control while the VStack kept
+    /// spacing everything based on the button's true (small) height. Every
+    /// value here must stay comfortably under 44 (the accessibility minimum
+    /// touch target every shape already enforces via
+    /// `.frame(minWidth: 44, minHeight: 44)`), so the enforced floor can
+    /// never exceed a button's real minimum size.
     var capInsets: EdgeInsets {
         switch self {
-        case .wide: EdgeInsets(top: 70, leading: 110, bottom: 70, trailing: 110)
-        case .icon: EdgeInsets(top: 90, leading: 90, bottom: 90, trailing: 90)
-        case .strip: EdgeInsets(top: 35, leading: 100, bottom: 35, trailing: 100)
+        case .wide: EdgeInsets(top: 16, leading: 40, bottom: 16, trailing: 40)
+        case .icon: EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14)
+        case .strip: EdgeInsets(top: 12, leading: 30, bottom: 12, trailing: 30)
         }
     }
 
@@ -53,7 +67,12 @@ struct ParchmentButtonStyle: ButtonStyle {
             .padding(.horizontal, shape == .icon ? 8 : 16)
             .padding(.vertical, shape == .icon ? 8 : 10)
             .frame(minWidth: 44, minHeight: 44)
-            .background(
+            .background {
+                // Scrim and image are ZStack siblings INSIDE .background — both
+                // must render behind the label. An `.overlay` here instead
+                // would paint on top of everything including the text (overlay
+                // always draws in front of the view it modifies), washing out
+                // dark ink under the translucent scrim.
                 ZStack {
                     Image(ParchmentShape.assetName(theme: theme, shape: shape))
                         .resizable(capInsets: insets, resizingMode: .stretch)
@@ -62,7 +81,7 @@ struct ParchmentButtonStyle: ButtonStyle {
                         .clipShape(RoundedRectangle(cornerRadius: shape == .icon ? 18 : 12, style: .continuous))
                         .padding(insets)
                 }
-            )
+            }
             .brightness(configuration.isPressed ? -0.08 : 0)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)
             .saturation(isEnabled ? 1 : 0)
@@ -80,7 +99,7 @@ private struct ParchmentReadoutModifier: ViewModifier {
             .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(
+            .background {
                 ZStack {
                     Image(ParchmentShape.assetName(theme: theme, shape: .strip))
                         .resizable(capInsets: insets, resizingMode: .stretch)
@@ -89,7 +108,7 @@ private struct ParchmentReadoutModifier: ViewModifier {
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .padding(insets)
                 }
-            )
+            }
     }
 }
 
