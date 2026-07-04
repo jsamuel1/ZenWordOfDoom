@@ -101,7 +101,7 @@ struct GamePlayView: View {
                         // the Score/Serenity/hint/mic bar, so the timer doesn't
                         // eat into that bar's horizontal space.
                         if let timeRemaining = model.timeRemaining {
-                            DoomTimerView(timeRemaining: timeRemaining)
+                            DoomTimerView(timeRemaining: timeRemaining, theme: levelService.theme(forID: level.id))
                         }
 
                         HUDView(
@@ -112,6 +112,7 @@ struct GamePlayView: View {
                             isListening: voice.isListening,
                             voiceEnabled: settings.voiceEnabled,
                             hintsEnabled: model.hintsAvailable,
+                            theme: levelService.theme(forID: level.id),
                             onHint: {
                                 Haptics.reveal()
                                 model.useHintRevealCell()
