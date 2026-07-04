@@ -71,6 +71,38 @@ struct ParchmentButtonStyle: ButtonStyle {
     }
 }
 
+private struct ParchmentReadoutModifier: ViewModifier {
+    let theme: Theme
+
+    func body(content: Content) -> some View {
+        let insets = ParchmentShape.strip.capInsets
+        content
+            .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                ZStack {
+                    Image(ParchmentShape.assetName(theme: theme, shape: .strip))
+                        .resizable(capInsets: insets, resizingMode: .stretch)
+                        .accessibilityHidden(true)
+                    AccessibilityPalette.parchmentScrim(for: theme)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .padding(insets)
+                }
+            )
+    }
+}
+
+extension View {
+    /// Non-button parchment chrome (HUD pills, doom timer, word ribbon,
+    /// found-words tags) — the readout equivalent of `ParchmentButtonStyle`.
+    /// Stands in for `.a11yCardBackground(...)` only at these specific call
+    /// sites; `a11yCardBackground` itself is untouched.
+    func parchmentReadout(theme: Theme) -> some View {
+        modifier(ParchmentReadoutModifier(theme: theme))
+    }
+}
+
 #Preview("ParchmentButtonStyle") {
     VStack(spacing: 16) {
         Button("Play") {}
@@ -86,6 +118,11 @@ struct ParchmentButtonStyle: ButtonStyle {
         Button("Disabled") {}
             .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
             .disabled(true)
+        HStack(spacing: 4) {
+            Image(systemName: "star.fill").font(.caption)
+            Text("320").font(.subheadline.weight(.bold))
+        }
+        .parchmentReadout(theme: .zen)
     }
     .padding()
     .background(Color.gray.opacity(0.3))
