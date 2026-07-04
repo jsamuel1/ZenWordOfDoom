@@ -1080,17 +1080,11 @@ Expected: **TEST SUCCEEDED**, including `WCAGContrastTests.testParchmentPairsMee
 Run: `xcodebuild test -project ZenWordOfDoom.xcodeproj -scheme ZenWordOfDoom -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:ZenWordOfDoomUITests/AccessibilityAuditTests`
 Expected: **TEST SUCCEEDED** for all four tests (menu, level select, play screen, settings — settings is untouched by this plan and should be unaffected).
 
-- [ ] **Step 3: Manual on-device/simulator visual check**
+- [ ] **Step 3: Manual on-device/simulator visual check — SKIPPED**
 
-Launch the app (`xcrun simctl launch` or run from Xcode) and check, at both default and an accessibility (e.g. AX3) Dynamic Type size:
-- Menu: Play/Select Level/Bestiary/Shrine/Stats/Settings buttons and the "Today's Doom" row show the Zen parchment texture, text is legible, corners/edges don't look stretched or warped at the larger accessibility text size.
-- A Zen-themed level: Score/Serenity pills, hint/mic icon buttons, Clear/Shuffle/Submit, the word ribbon, and any found bonus-word tags all show the Zen texture; press each button and confirm the darken/scale feedback; confirm Submit visibly desaturates when disabled (empty selection).
-- A Doom-themed level with Doom Mode on (Settings toggle): same checks, Doom (charred) texture, plus the `DoomTimerView` pill above the HUD.
-- Toggle Reduce Motion on: press feedback should still darken but not scale.
+Deferred by explicit user decision: visual verification (parchment texture rendering, Dynamic Type behavior, press/disabled states, Reduce Motion) will be done via a real TestFlight build instead of in-session simulator screenshots. Do not attempt simulator screenshots/launches for this step — move straight to Step 4.
 
-If anything looks visually broken (warped corners, illegible text, a texture that reads as a hard rectangle instead of blending into its surroundings), fix it in the relevant task's file before considering this plan done — do not defer known-broken visuals to "later."
-
-- [ ] **Step 4: Final commit (if Step 3 required fixes)**
+- [ ] **Step 4: Final commit (skip — nothing to commit since Step 3 was skipped)**
 
 ```bash
 git add -A
