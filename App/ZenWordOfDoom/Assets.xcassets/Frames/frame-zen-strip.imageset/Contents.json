@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "frame-zen-strip.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
