@@ -27,10 +27,18 @@ enum ParchmentShape {
     /// touch target every shape already enforces via
     /// `.frame(minWidth: 44, minHeight: 44)`), so the enforced floor can
     /// never exceed a button's real minimum size.
+    /// Also asymmetric top-vs-bottom on purpose: the generated `.wide`/`.icon`
+    /// textures have a wider transparent margin below the torn edge than
+    /// above it (measured directly from the PNGs' alpha channel — e.g.
+    /// `frame-zen-button` has a ~6pt top margin but a ~19pt bottom margin
+    /// before hitting the actual paper). A symmetric inset sized for the top
+    /// left the bottom cap capturing mostly empty transparency instead of
+    /// the torn edge, rendering as a visible top border with no matching
+    /// bottom border.
     var capInsets: EdgeInsets {
         switch self {
-        case .wide: EdgeInsets(top: 16, leading: 40, bottom: 16, trailing: 40)
-        case .icon: EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14)
+        case .wide: EdgeInsets(top: 18, leading: 40, bottom: 24, trailing: 40)
+        case .icon: EdgeInsets(top: 18, leading: 18, bottom: 18, trailing: 18)
         case .strip: EdgeInsets(top: 12, leading: 30, bottom: 12, trailing: 30)
         }
     }
