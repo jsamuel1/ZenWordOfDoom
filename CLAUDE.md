@@ -44,8 +44,11 @@ pull request for the release.
    git push origin vX.Y.Z
    ```
 
-Note for remote (Claude Code on the web) sessions: push credentials are
-often scoped to the session's designated feature branch — pushes to
-`main` or `refs/tags/*` may be rejected with HTTP 403. If that happens,
-push the release commit to the feature branch and ask the user to run
-steps 4-5 locally (or merge via the GitHub API if the user asks).
+Note for remote (Claude Code on the web) sessions: branch pushes work
+(including `main`, when the user has authorized it) but pushes to
+`refs/tags/*` are rejected with HTTP 403. For step 5, trigger the
+`Tag Release` workflow (`.github/workflows/tag-release.yml`) instead —
+via the GitHub MCP `actions_run_trigger` tool or
+`gh workflow run tag-release.yml` — passing `tag: vX.Y.Z` and `ref:` the
+full SHA of the `Release vX.Y.Z` commit on `main`. Verify afterwards with
+`git ls-remote origin refs/tags/vX.Y.Z`.
