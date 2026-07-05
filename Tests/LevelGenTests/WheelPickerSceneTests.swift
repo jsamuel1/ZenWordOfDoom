@@ -3,18 +3,18 @@ import XCTest
 import GameCore
 
 final class WheelPickerSceneTests: XCTestCase {
-    func testSceneAnchorUsesSceneWordWhenAvailable() throws {
-        // still-pond has length-6 words; medium band => N=6.
+    func testSceneWheelComesFromTheKnownGoodPool() throws {
         let wheel = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .medium, index: 0)
         XCTAssertEqual(wheel.size, 6)
-        let letters = String(wheel.tiles.map(\.letter)).sorted()
-        let sceneWords6 = SceneLexicon.shared.words(for: "still-pond").filter { $0.count == 6 }
-        XCTAssertTrue(sceneWords6.contains { $0.sorted() == letters },
-                      "wheel letters should match a length-6 scene word")
+        let signature = String(wheel.tiles.map(\.letter)).sorted()
+        let poolSignatures = AnchorPools.shared.anchors(ofLength: 6).map { $0.sorted() }
+        XCTAssertTrue(poolSignatures.contains(signature),
+                      "wheel letters must be a known-good length-6 anchor")
     }
 
-    func testFallsBackToThemeAnchorForUnknownScene() throws {
-        // No lexicon words => must still yield a valid N-letter wheel.
+    func testUnknownSceneStillYieldsAValidWheel() throws {
+        // Affinity handles any slug (letter overlap), so even an unmapped
+        // scene draws a quality-gated wheel of the right size.
         let wheel = try WheelPicker.wheel(sceneID: "no-such-scene", theme: .zen, band: .medium, index: 3)
         XCTAssertEqual(wheel.size, 6)
     }
@@ -23,5 +23,27 @@ final class WheelPickerSceneTests: XCTestCase {
         let a = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .hard, index: 7)
         let b = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .hard, index: 7)
         XCTAssertEqual(String(a.tiles.map(\.letter)), String(b.tiles.map(\.letter)))
+    }
+
+    func testConsecutiveIndexesNeverRepeatAWheel() throws {
+        // The scene cycles through `affinityCandidates` distinct anchors, so
+        // same-scene same-band levels at adjacent orders always differ.
+        for index in 0..<30 {
+            let a = try WheelPicker.wheel(sceneID: "moss-garden", theme: .zen, band: .master, index: index)
+            let b = try WheelPicker.wheel(sceneID: "moss-garden", theme: .zen, band: .master, index: index + 1)
+            XCTAssertNotEqual(String(a.tiles.map(\.letter)).sorted(),
+                              String(b.tiles.map(\.letter)).sorted(),
+                              "indexes \(index)/\(index + 1) repeated a wheel")
+        }
+    }
+
+    func testSceneCyclesThroughManyDistinctWheels() throws {
+        var signatures = Set<String>()
+        for index in 0..<WheelPicker.affinityCandidates {
+            let wheel = try WheelPicker.wheel(sceneID: "ember-catacomb", theme: .doom, band: .master, index: index)
+            signatures.insert(String(String(wheel.tiles.map(\.letter)).sorted()))
+        }
+        XCTAssertEqual(signatures.count, WheelPicker.affinityCandidates,
+                       "one full cycle should visit every candidate exactly once")
     }
 }

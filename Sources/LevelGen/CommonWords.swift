@@ -1,9 +1,10 @@
 import Foundation
 
-/// Common English words (bundled `common-words.txt`, derived from the public-
-/// domain google-10000-english list, filtered to 3–9 letters). Used to bias
-/// level generation toward familiar, real dictionary words over obscure corpus
-/// entries — common words are by definition recognizable and in the dictionary.
+/// Common English words (bundled `common-words.txt`, the ESDB/SCOWL
+/// "familiar" size tier filtered to 3–9 letters — regenerate via
+/// `scripts/generate-word-corpus.sh`). Used to bias level generation toward
+/// familiar, real dictionary words over obscure corpus entries, and as the
+/// recognizability gate for the pre-selected anchor pools.
 public struct CommonWords: Sendable {
     public static let shared = CommonWords()
 

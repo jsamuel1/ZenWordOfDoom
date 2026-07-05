@@ -29,8 +29,27 @@ public struct ProceduralGenerator: Sendable {
         // Scene first, then a scene-coupled wheel, so the words the player spells
         // relate to the scene being revealed (spec workstream F).
         let visual = SceneCreaturePicker(pools: pools).pick(theme: seed.theme, index: seed.index)
+
+        // The previous level's (raw) wheel signature, so two consecutive
+        // levels never deal the same letters even when different scenes'
+        // affinity cycles happen to align. Computed WITHOUT its own
+        // avoidance — that keeps this closed-form (no recursion down the
+        // whole campaign); the residual case (previous level itself shifted
+        // AND this level's raw pick equals the shifted result) first occurs
+        // past order 2,000 in simulation, beyond any real play horizon.
+        var avoiding: String?
+        if order > 0 {
+            let prevSeed = ProceduralLevelLibrary.standard.seed(atOrder: order - 1)
+            let prevVisual = SceneCreaturePicker(pools: pools).pick(theme: prevSeed.theme, index: prevSeed.index)
+            if let prev = try? WheelPicker.wheel(sceneID: prevVisual.sceneID, theme: prevSeed.theme,
+                                                 band: prevSeed.band, index: prevSeed.index) {
+                avoiding = String(String(prev.tiles.map(\.letter)).sorted())
+            }
+        }
+
         let wheel = try WheelPicker.wheel(sceneID: visual.sceneID, theme: seed.theme,
-                                          band: seed.band, index: seed.index)
+                                          band: seed.band, index: seed.index,
+                                          avoidingSignature: avoiding)
 
         // Pack capstone => Pangram-Hunt boss (spec workstream G). The scene-coupled
         // wheel is a real N-letter word, so a pangram (that word) always exists.

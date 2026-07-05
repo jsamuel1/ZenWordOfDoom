@@ -42,4 +42,44 @@ final class SolvabilitySweepTests: XCTestCase {
             }
         }
     }
+
+    /// The same sweep against the REAL shipped content — `ThemePools.zenDoom`
+    /// scenes/creatures and the bundled anchor pools — so content-quality
+    /// regressions (word-poor wheels, boss anchors missing from the corpus,
+    /// letters repeating on consecutive levels) are caught at test time
+    /// rather than discovered by long-tail players. The fake-pool test above
+    /// stays as the fast structural check.
+    func test_realContentFirst120LevelsAreRichAndNonRepeating() async throws {
+        let lib = ProceduralLevelLibrary(packSize: 10)
+        let gen = ProceduralGenerator(wordProvider: DeterministicWordProvider(), pools: .zenDoom)
+        var previousSignature = ""
+        for order in 0..<120 {
+            let level = try await gen.level(for: lib.seed(atOrder: order))
+            let wheelWord = String(level.wheel.tiles.map(\.letter))
+            let signature = String(wheelWord.sorted())
+
+            // Anti-repeat: never the same letters two levels in a row (the
+            // old scene-lexicon wheels repeated at master band).
+            XCTAssertNotEqual(signature, previousSignature,
+                              "order \(order): same wheel letters as order \(order - 1)")
+            previousSignature = signature
+
+            // Every wheel anchor must be a real, common corpus word — it is
+            // the guaranteed pangram on boss levels.
+            XCTAssertTrue(GeneralWordList.shared.contains(wheelWord),
+                          "order \(order): anchor \(wheelWord) missing from corpus")
+
+            if case .pangramHunt(let target) = level.format {
+                let buildable = GeneralWordList.shared.buildableWords(from: level.wheel.multiset)
+                XCTAssertGreaterThanOrEqual(buildable.count, target,
+                                            "order \(order): boss target \(target) exceeds \(buildable.count) buildable words")
+                continue
+            }
+
+            // Known-good anchors guarantee an interesting pool, so the grid
+            // should never need to fall back below three slots.
+            XCTAssertGreaterThanOrEqual(level.slots.count, 3,
+                                        "order \(order): only \(level.slots.count) slots on \(wheelWord)")
+        }
+    }
 }

@@ -167,15 +167,28 @@ the same level:
 ```
 LevelSeed (theme, band, index)
   → scene + creature picked (SceneCreaturePicker, seeded)
-  → wheel picked: a real N-letter word from the theme lexicon, scene-coupled
-    (WheelPicker) — guarantees a pangram exists
-  → [pack capstone?] → Pangram-Hunt boss, no grid (LevelFormat.pangramHunt)
+  → wheel picked from the pre-selected KNOWN-GOOD anchor pools (AnchorPools,
+    generated offline by scripts/generate-anchor-pools.sh: every anchor is a
+    common corpus word whose letters build a per-length floor of common
+    words). The scene's slug words steer WHICH anchor via SceneAffinity —
+    the image inspires the letters — through a seeded per-scene cycle of the
+    top-24 matches, with the previous level's letters explicitly avoided so
+    consecutive levels never repeat a wheel (WheelPicker)
+  → [pack capstone?] → Pangram-Hunt boss, no grid (LevelFormat.pangramHunt) —
+    the anchor is a real, common N-letter word, so the pangram exists and is
+    recognizable
   → word pool requested from a ThemedWordProvider, buildable from the wheel
   → pool filtered to "interesting" words (on-theme or common) with a fallback
     to the full pool if that filter starves the grid
   → CrosswordLayoutEngine lays out an interlocking grid (seeded)
   → Level
 ```
+
+Scene metadata is derived, not curated: a slug's hyphen-separated words ARE
+its tags ("moss-garden" → MOSS, GARDEN; `SceneAffinity`), so adding a new
+illustration is just adding its slug + asset — no word lists or mapping
+tables. The daily puzzle's word→image pairing works the same way
+(`WordOfTheDayImages`: balanced affinity assignment, no per-word map).
 
 Failure is a typed `LevelGenError` (`noAnchorWord`, `emptyGrid`), not a
 crash — every seed in the shipped libraries is covered by

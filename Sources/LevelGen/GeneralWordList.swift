@@ -1,8 +1,10 @@
 import Foundation
 import GameCore
 
-/// The bundled ENABLE general word list (uppercase, 3–9 letter words). The
-/// source of every real word a wheel can build.
+/// The bundled general word corpus (uppercase, 3–9 letter words; ESDB/SCOWL-
+/// derived — regenerate via `scripts/generate-word-corpus.sh`). The source of
+/// every real word a wheel can build, and the membership authority the
+/// pre-selected anchor pools are validated against.
 public struct GeneralWordList: Sendable {
     public static let shared = GeneralWordList()
 
