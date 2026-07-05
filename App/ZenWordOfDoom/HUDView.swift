@@ -8,9 +8,6 @@ import LevelGen
 /// mic toggle lives in `GameContainerView`'s bottom control panel, not here.
 struct HUDView: View {
     let score: Int
-    /// True when the doom timer expired and the level's points are forfeit;
-    /// the score renders as an em dash instead of a number.
-    let scoreVoided: Bool
     let serenity: Int
     let hintCost: Int
     /// Whether this level format has anything for a hint to reveal (hides the
@@ -24,7 +21,7 @@ struct HUDView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            stat(title: "Score", value: scoreVoided ? "\u{2014}" : "\(score)", systemImage: "star.fill")
+            stat(title: "Score", value: "\(score)", systemImage: "star.fill")
             stat(title: "Serenity", value: "\(serenity)", systemImage: "leaf.fill")
 
             Spacer(minLength: 0)
@@ -72,6 +69,9 @@ struct HUDView: View {
 /// in that bar; zen levels simply omit this view.
 struct DoomTimerView: View {
     let timeRemaining: TimeInterval
+    /// Current doom bonus tier (4x/3x/2x, 1 after expiry). Shown as a badge
+    /// beside the countdown so the player knows what beating the clock buys.
+    let multiplier: Int
     let theme: Theme
 
     var body: some View {
@@ -96,19 +96,26 @@ struct DoomTimerView: View {
                 .font(.system(.subheadline, design: .rounded).weight(.bold))
                 .monospacedDigit()
                 .foregroundStyle(timerColor)
+            if multiplier > 1 {
+                Text("×\(multiplier)")
+                    .font(.system(.subheadline, design: .rounded).weight(.heavy))
+                    .foregroundStyle(timerColor)
+            }
         }
         .parchmentReadout(theme: theme)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Time remaining \(mm) minutes \(ss) seconds")
+        .accessibilityLabel(
+            "Time remaining \(mm) minutes \(ss) seconds"
+                + (multiplier > 1 ? ", scoring \(multiplier) times points" : "")
+        )
     }
 }
 
 #Preview {
     VStack {
-        DoomTimerView(timeRemaining: 92, theme: .zen)
+        DoomTimerView(timeRemaining: 92, multiplier: 3, theme: .zen)
         HUDView(
             score: 320,
-            scoreVoided: false,
             serenity: 25,
             hintCost: 5,
             hintsEnabled: true,
@@ -117,7 +124,6 @@ struct DoomTimerView: View {
         )
         HUDView(
             score: 0,
-            scoreVoided: true,
             serenity: 2,
             hintCost: 5,
             hintsEnabled: true,

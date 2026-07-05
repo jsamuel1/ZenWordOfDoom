@@ -109,12 +109,15 @@ struct GamePlayView: View {
                         // the Score/Serenity/hint bar, so the timer doesn't
                         // eat into that bar's horizontal space.
                         if let timeRemaining = model.timeRemaining {
-                            DoomTimerView(timeRemaining: timeRemaining, theme: levelService.theme(forID: level.id))
+                            DoomTimerView(
+                                timeRemaining: timeRemaining,
+                                multiplier: model.scoreMultiplier,
+                                theme: levelService.theme(forID: level.id)
+                            )
                         }
 
                         HUDView(
                             score: model.score,
-                            scoreVoided: model.doomExpired,
                             serenity: model.serenity,
                             hintCost: model.hintCost,
                             hintsEnabled: model.hintsAvailable,
@@ -462,7 +465,8 @@ private extension View {
 }
 
 /// Full-screen pause when the doom timer expires: dims the scene (gentler with
-/// Reduced Doom), announces the forfeit, and lets the player continue unscored.
+/// Reduced Doom), announces the lost bonus multiplier, and lets the player
+/// continue at base points.
 private struct DoomExpiredOverlay: View {
     let reducedDoom: Bool
     let onContinue: () -> Void
@@ -478,10 +482,10 @@ private struct DoomExpiredOverlay: View {
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
                     .accessibilityFocused($focused)
-                Text("The words remain. The points do not.")
+                Text("Words still score — the doom bonus is gone.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Button("Continue without points", action: onContinue)
+                Button("Continue", action: onContinue)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
             }

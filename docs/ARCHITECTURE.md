@@ -141,14 +141,19 @@ mix for boss levels) plus small additive nudges for bonus words and hints,
 capped at 0.95 until the clear snaps it to 1. This makes the reveal
 proportional across every grid size instead of needing per-word tuning.
 
-Doom mode (`GameMode.doom(timeLimit:)`) races a timer. On expiry
-(`GameViewModel.handleDoomExpiry` → `GameEngine.voidScore()`): the level's
-score is forfeit and frozen at zero, words still land and slots still fill
-(stir and completion are unaffected), there is **no retry** — the player
-dismisses a "continue without points" overlay and keeps playing the same
-level toward the clear. A doom-voided clear still records progress, streak,
-and bestiary, but is excluded from serenity rewards (`GameStore.recordClear`
-`voided:` parameter; see §5.2 for the current economy numbers).
+Doom mode (`GameMode.doom(timeLimit:)`) races a timer that is a **bonus
+window, not a forfeit**. Every point earned is scaled by
+`GameEngine.scoreMultiplier`, which the view model keeps in step with the
+countdown via `Scoring.doomMultiplier(timeRemaining:timeLimit:)`: more than
+2/3 of the limit remaining scores **4x**, more than 1/3 **3x**, any time
+left on the clock **2x**. On expiry (`GameViewModel.handleDoomExpiry`) the
+multiplier drops to **1x** — words still land, slots still fill, and points
+keep flowing at base value (stir and completion are unaffected). There is
+**no retry** — the player dismisses a "the doom bonus is gone" overlay and
+keeps playing the same level toward the clear. A doom-expired clear still
+records progress, streak, and bestiary, but is excluded from serenity
+rewards (`GameStore.recordClear` `voided:` parameter; see §5.2 for the
+current economy numbers).
 
 ---
 
@@ -311,7 +316,7 @@ exact seed values it produces. Do not "fix" it to the textbook constant.
 ## 6. Testing strategy
 
 - **`Tests/GameCoreTests`** — pure unit tests for the submission pipeline,
-  scoring, stir curve, doom voiding, first-letter hints, wheel display order,
+  scoring, stir curve, doom bonus multiplier, first-letter hints, wheel display order,
   the save-state/store model, cosmetics, and `FNV1a`.
 - **`Tests/LevelGenTests`** — the corpus/lexicons, wheel/scene/creature
   pickers, the crossword layout engine, `PackCatalog`, `Primes`,

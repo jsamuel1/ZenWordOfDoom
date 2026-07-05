@@ -37,8 +37,12 @@ final class GameViewModel: ObservableObject {
     /// message becomes a tappable path to the top-up sheet (the only in-play
     /// store surface; never a popup).
     @Published private(set) var wantsSerenityOffer = false
-    /// Doom timer ran out: the level's points are forfeit (engine score voided).
+    /// Doom timer ran out: words still score, but the bonus multiplier is gone
+    /// (and serenity payouts are forfeit — see `GameStore`'s voided handling).
     @Published private(set) var doomExpired = false
+    /// Current doom bonus multiplier (4x/3x/2x by time remaining, 1x after
+    /// expiry and in zen mode). Mirrors the engine for the timer readout.
+    @Published private(set) var scoreMultiplier = 1
     /// Drives the full-screen "continue without points" overlay.
     @Published private(set) var showDoomOverlay = false
 
@@ -72,9 +76,15 @@ final class GameViewModel: ObservableObject {
         self.mood = mood
         self.announcer = announcer
         let mode: GameMode = settings.doomMode
-            ? .doom(timeLimit: settings.reducedDoom ? 240 : 150)
+            ? .doom(timeLimit: settings.reducedDoom ? 360 : 240)
             : .zen
         self.engine = GameEngine(level: level, validator: validator, mode: mode)
+        // Words found before the countdown view appears still deserve the top
+        // tier — the clock hasn't started, so the full limit remains.
+        if case .doom(let limit) = mode {
+            engine.setScoreMultiplier(Scoring.doomMultiplier(timeRemaining: limit, timeLimit: limit))
+            scoreMultiplier = engine.scoreMultiplier
+        }
         // Casual assist: pre-reveal each slot's first letter when enabled.
         if settings.firstLetterHints {
             engine.revealFirstLetters()
@@ -327,7 +337,18 @@ final class GameViewModel: ObservableObject {
             if !engine.isComplete { handleDoomExpiry() }
         } else {
             timeRemaining = remaining
+            refreshMultiplier(remaining: remaining)
             announceUrgencyIfNeeded(remaining: remaining)
+        }
+    }
+
+    /// Keep the engine's doom bonus tier in step with the countdown.
+    private func refreshMultiplier(remaining: TimeInterval) {
+        guard case .doom(let limit) = engine.mode else { return }
+        engine.setScoreMultiplier(Scoring.doomMultiplier(timeRemaining: remaining, timeLimit: limit))
+        if scoreMultiplier != engine.scoreMultiplier {
+            scoreMultiplier = engine.scoreMultiplier
+            announcer.announce("Scoring \(scoreMultiplier) times points")
         }
     }
 
@@ -348,10 +369,12 @@ final class GameViewModel: ObservableObject {
         deadline = date
     }
 
-    /// The doom timer ran out: void the score and raise the overlay.
+    /// The doom timer ran out: drop the bonus multiplier to 1x (points keep
+    /// flowing at base value) and raise the overlay.
     func handleDoomExpiry() {
         guard isDoom, !doomExpired, !engine.isComplete else { return }
-        engine.voidScore()
+        engine.setScoreMultiplier(1)
+        scoreMultiplier = engine.scoreMultiplier
         doomExpired = true
         showDoomOverlay = true
         lastMessage = "The doom has claimed this hour"
@@ -360,7 +383,7 @@ final class GameViewModel: ObservableObject {
         updateAudioMood()
     }
 
-    /// Dismiss the expiry overlay and keep playing, pointless but unbowed.
+    /// Dismiss the expiry overlay and keep playing at base points, unbowed.
     func continueWithoutPoints() {
         showDoomOverlay = false
     }

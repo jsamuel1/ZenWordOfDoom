@@ -58,24 +58,32 @@ final class GameViewModelTests: XCTestCase {
         XCTAssertEqual(model.stir, 1.0)
     }
 
-    func testDoomExpiryVoidsAndStillCompletes() {
+    func testDoomExpiryDropsToBasePointsAndStillCompletes() {
         let (model, store) = makeModel(doom: true)
+        XCTAssertEqual(model.scoreMultiplier, 4)             // full clock = top tier
         model.handleDoomExpiry()
         XCTAssertTrue(model.doomExpired)
         XCTAssertTrue(model.showDoomOverlay)
+        XCTAssertEqual(model.scoreMultiplier, 1)             // bonus gone, not points
         model.continueWithoutPoints()
         XCTAssertFalse(model.showDoomOverlay)
         solve(model)
         XCTAssertTrue(model.isComplete)
-        XCTAssertEqual(model.score, 0)                       // points forfeit
-        XCTAssertEqual(model.clearSummary?.serenityEarned, 0)
+        XCTAssertGreaterThan(model.score, 0)                 // base points still land
+        XCTAssertEqual(model.clearSummary?.serenityEarned, 0) // serenity stays voided
         XCTAssertEqual(store.state.serenity, 0)
         XCTAssertTrue(store.isCleared(model.level.id))       // path still opens
     }
 
+    func testDoomWordsScoreFourTimesAtFullClock() {
+        let (model, _) = makeModel(doom: true)
+        model.submitSpoken("STONE")   // grid answer, found with the whole clock left
+        XCTAssertEqual(model.score, Scoring.wordScore(length: 5, isPangram: false) * 4)
+    }
+
     func testDoomExpiryIsZenNoop() {
         let (model, _) = makeModel(doom: false)
-        model.handleDoomExpiry()   // engine refuses the void outside doom
+        model.handleDoomExpiry()   // guarded: no doom clock outside doom mode
         XCTAssertFalse(model.doomExpired)
         solve(model)
         XCTAssertGreaterThan(model.score, 0)
