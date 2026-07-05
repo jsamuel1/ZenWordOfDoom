@@ -13,6 +13,7 @@ final class AVAudioSoundEngine: SoundEngine, @unchecked Sendable {
 
     private var started = false
     private var enabled = true
+    private var interruptionObserver: NSObjectProtocol?
 
     /// Heap-allocated lock so the audio thread and main thread share one stable
     /// address (the correct `os_unfair_lock` usage pattern).
@@ -30,11 +31,15 @@ final class AVAudioSoundEngine: SoundEngine, @unchecked Sendable {
     private var cuePhase = 0.0, cueFreq = 0.0, cueEnv = 0.0, cueDecay = 0.999, cueNoise = 0.0
     private var rngState: UInt64 = 0x2545F4914F6CDD1D
 
-    deinit { lock.deallocate() }
+    deinit {
+        lock.deallocate()
+        if let interruptionObserver { NotificationCenter.default.removeObserver(interruptionObserver) }
+    }
 
     // MARK: - SoundEngine
 
     func start() {
+        observeInterruptionsIfNeeded()
         guard !started else { applyEnabled(); return }
         configureSession()
         guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return }
@@ -92,6 +97,41 @@ final class AVAudioSoundEngine: SoundEngine, @unchecked Sendable {
         #endif
     }
 
+    /// A phone call, Siri, or another app taking the session away stops
+    /// `engine` out from under us (the interruption is not a Swift error we
+    /// can catch); without observing it the drone stays silent for the rest
+    /// of the level once the interruption ends. Reconnecting the graph isn't
+    /// needed — the interruption only stops the engine, it doesn't tear down
+    /// the attached node — so recovery is just reactivating the session and
+    /// restarting it. Registered once; every step is best-effort so a
+    /// misbehaving system notification can never crash the app.
+    private func observeInterruptionsIfNeeded() {
+        #if os(iOS)
+        guard interruptionObserver == nil else { return }
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            self?.handleInterruption(note)
+        }
+        #endif
+    }
+
+    #if os(iOS)
+    private func handleInterruption(_ note: Notification) {
+        guard started,
+              let info = note.userInfo,
+              let rawType = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: rawType) else { return }
+        guard type == .ended else { return }
+        let rawOptions = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+        guard AVAudioSession.InterruptionOptions(rawValue: rawOptions).contains(.shouldResume) else { return }
+        configureSession()
+        do { try engine.start() } catch { started = false }
+    }
+    #endif
+
     /// (frequency, per-sample decay, noise amount) for each cue.
     private static func voice(for cue: SoundCue) -> (freq: Double, decay: Double, noise: Double) {
         switch cue {
@@ -131,7 +171,11 @@ final class AVAudioSoundEngine: SoundEngine, @unchecked Sendable {
         let edge = p.edge
 
         for buffer in UnsafeMutableAudioBufferListPointer(abl) {
-            let out = buffer.mData!.assumingMemoryBound(to: Float.self)
+            // `mData` is only nil for a malformed/zero-length buffer; skip it
+            // rather than force-unwrapping on the real-time audio thread,
+            // where a crash cannot be caught or recovered from.
+            guard let mData = buffer.mData else { continue }
+            let out = mData.assumingMemoryBound(to: Float.self)
             for frame in 0..<Int(frameCount) {
                 var s = sin(dpA) + 0.6 * sin(dpB)
                 s += edge * (0.4 * sin(dpA * 2) + 0.3 * sin(dpD))

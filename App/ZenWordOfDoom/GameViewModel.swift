@@ -95,14 +95,18 @@ final class GameViewModel: ObservableObject {
     }
 
     /// Progress toward finishing the level, for the found-words tray.
-    /// Crossword: grid slots solved. Boss: words found toward the target.
+    /// Crossword: grid slots solved out of the grid's total. Boss: there's no
+    /// fixed word list to count against (the target is just the *minimum* to
+    /// clear, and every valid word keeps counting after that), so it's just
+    /// the running total found.
     var progressLabel: String {
         switch engine.level.format {
         case .crossword:
             return "\(solvedSlotIDs.count) / \(engine.level.slots.count) words"
-        case .pangramHunt(let target):
+        case .pangramHunt:
             let pangramMark = engine.pangramCount > 0 ? " ✦" : ""
-            return "\(bonusWords.count) / \(target) words\(pangramMark)"
+            let word = bonusWords.count == 1 ? "word" : "words"
+            return "\(bonusWords.count) \(word) found\(pangramMark)"
         }
     }
 
