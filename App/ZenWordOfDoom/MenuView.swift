@@ -97,45 +97,32 @@ struct MenuView: View {
                             }
                             .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
 
-                            Button {
-                                router.push(.levelSelect)
-                            } label: {
-                                Label("Select Level", systemImage: "square.grid.2x2.fill")
-                                    .frame(maxWidth: .infinity)
+                            // One shared parchment piece for the secondary
+                            // destinations — a single frame ring + mat around
+                            // all five rows, not five separately bordered
+                            // buttons.
+                            VStack(spacing: 0) {
+                                menuRow("Select Level", systemImage: "square.grid.2x2.fill") {
+                                    router.push(.levelSelect)
+                                }
+                                rowDivider
+                                menuRow("Bestiary", systemImage: "pawprint.fill") {
+                                    router.push(.bestiary)
+                                }
+                                rowDivider
+                                menuRow("Shrine", systemImage: "sparkles") {
+                                    router.push(.shrine)
+                                }
+                                rowDivider
+                                menuRow("Stats", systemImage: "chart.bar.fill") {
+                                    router.push(.stats)
+                                }
+                                rowDivider
+                                menuRow("Settings", systemImage: "gearshape.fill") {
+                                    router.push(.settings)
+                                }
                             }
-                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
-
-                            Button {
-                                router.push(.bestiary)
-                            } label: {
-                                Label("Bestiary", systemImage: "pawprint.fill")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
-
-                            Button {
-                                router.push(.shrine)
-                            } label: {
-                                Label("Shrine", systemImage: "sparkles")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
-
-                            Button {
-                                router.push(.stats)
-                            } label: {
-                                Label("Stats", systemImage: "chart.bar.fill")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
-
-                            Button {
-                                router.push(.settings)
-                            } label: {
-                                Label("Settings", systemImage: "gearshape.fill")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
+                            .parchmentPanel(theme: .zen)
                         }
                         .padding(.horizontal, 40)
 
@@ -174,6 +161,25 @@ struct MenuView: View {
         .sheet(isPresented: $showSerenitySheet) {
             SerenitySheetView()
         }
+    }
+
+    private func menuRow(
+        _ title: String, systemImage: String, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(ParchmentRowButtonStyle(theme: .zen))
+    }
+
+    /// Hairline between panel rows — low-opacity ink so it reads as scoring
+    /// on the parchment rather than a system divider.
+    private var rowDivider: some View {
+        Rectangle()
+            .fill(AccessibilityPalette.parchmentInk(for: .zen).opacity(0.15))
+            .frame(height: 1)
+            .accessibilityHidden(true)
     }
 
     private var dailyCard: some View {

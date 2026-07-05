@@ -45,6 +45,19 @@ enum ParchmentShape {
         }
     }
 
+    /// Where the opaque mat fill stops, measured in from the same edges as
+    /// `capInsets`. Half the ring thickness: the mat's edge tucks under the
+    /// stones' midline, so the ring's transparent pixels — outside the stone
+    /// silhouette and in the gaps between stones — show the page behind them
+    /// instead of a mat-colored rounded rectangle poking out past the rocks.
+    var matInsets: EdgeInsets {
+        let cap = capInsets
+        return EdgeInsets(
+            top: cap.top / 2, leading: cap.leading / 2,
+            bottom: cap.bottom / 2, trailing: cap.trailing / 2
+        )
+    }
+
     static func assetName(theme: Theme, shape: ParchmentShape) -> String {
         let themeName = theme == .doom ? "doom" : "zen"
         let shapeName: String
@@ -123,13 +136,12 @@ struct ParchmentButtonStyle: ButtonStyle {
             .padding(.vertical, shape == .icon ? 10 : 12)
             .frame(minWidth: shape == .icon ? 52 : 44, minHeight: shape == .icon ? 52 : 44)
             .background {
-                // Frame ring in FRONT of the mat (both the same size as this
-                // content box): the ring's transparent center lets the mat
-                // show through exactly where there's no rock art, and its
-                // opaque outer ring paints over the mat's own edge —
-                // together they read as a mat sitting inside a frame,
-                // without needing the mat and frame to be independently
-                // sized/inset from each other.
+                // Frame ring in FRONT of the mat: the ring's transparent
+                // center lets the mat show through exactly where there's no
+                // rock art, while the mat stops at `matInsets` — its edge
+                // tucked under the stones — so everything outside/between
+                // the stones stays see-through instead of showing a
+                // mat-colored rounded rectangle behind the ring.
                 Image(ParchmentShape.assetName(theme: theme, shape: shape))
                     .resizable(capInsets: insets, resizingMode: .stretch)
                     .accessibilityHidden(true)
@@ -137,12 +149,72 @@ struct ParchmentButtonStyle: ButtonStyle {
             .background {
                 ParchmentMatView(theme: theme)
                     .clipShape(RoundedRectangle(cornerRadius: shape == .icon ? 14 : 8, style: .continuous))
+                    .padding(shape.matInsets)
             }
             .brightness(configuration.isPressed ? -0.08 : 0)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)
             .saturation(isEnabled ? 1 : 0)
             .opacity(isEnabled ? 1 : 0.6)
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+/// Plain-row button style for buttons that sit INSIDE a `.parchmentPanel` —
+/// the panel supplies the (single, shared) frame ring and mat, so rows draw
+/// no chrome of their own beyond the themed ink color and press feedback.
+struct ParchmentRowButtonStyle: ButtonStyle {
+    let theme: Theme
+
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+            .brightness(configuration.isPressed ? -0.08 : 0)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)
+            .saturation(isEnabled ? 1 : 0)
+            .opacity(isEnabled ? 1 : 0.6)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+private struct ParchmentPanelModifier: ViewModifier {
+    let theme: Theme
+
+    func body(content: Content) -> some View {
+        let insets = ParchmentShape.wide.capInsets
+        content
+            // Push the content clear of the ring band so rows never overlap
+            // the stones; the transparent center stretches to fit whatever
+            // height the stacked rows need.
+            .padding(EdgeInsets(
+                top: insets.top + 4, leading: insets.leading + 4,
+                bottom: insets.bottom + 4, trailing: insets.trailing + 4
+            ))
+            .background {
+                Image(ParchmentShape.assetName(theme: theme, shape: .wide))
+                    .resizable(capInsets: insets, resizingMode: .stretch)
+                    .accessibilityHidden(true)
+            }
+            .background {
+                ParchmentMatView(theme: theme)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .padding(ParchmentShape.wide.matInsets)
+            }
+    }
+}
+
+extension View {
+    /// One shared parchment piece (frame ring + mat) around a whole group of
+    /// content — e.g. the main menu's stacked navigation rows — instead of
+    /// each child carrying its own `ParchmentButtonStyle` border. Pair with
+    /// `ParchmentRowButtonStyle` for the buttons inside.
+    func parchmentPanel(theme: Theme) -> some View {
+        modifier(ParchmentPanelModifier(theme: theme))
     }
 }
 
@@ -163,6 +235,7 @@ private struct ParchmentReadoutModifier: ViewModifier {
             .background {
                 ParchmentMatView(theme: theme)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .padding(ParchmentShape.strip.matInsets)
             }
     }
 }
@@ -197,6 +270,16 @@ extension View {
             Text("320").font(.subheadline.weight(.bold))
         }
         .parchmentReadout(theme: .zen)
+        VStack(spacing: 0) {
+            Button("Select Level") {}
+                .buttonStyle(ParchmentRowButtonStyle(theme: .zen))
+            Rectangle()
+                .fill(AccessibilityPalette.parchmentInk(for: .zen).opacity(0.15))
+                .frame(height: 1)
+            Button("Settings") {}
+                .buttonStyle(ParchmentRowButtonStyle(theme: .zen))
+        }
+        .parchmentPanel(theme: .zen)
     }
     .padding()
     .background(Color.gray.opacity(0.3))
