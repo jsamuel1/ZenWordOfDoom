@@ -133,9 +133,10 @@ struct ParchmentButtonStyle: ButtonStyle {
         let insets = shape.capInsets
         configuration.label
             .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
-            .padding(.horizontal, shape == .icon ? 10 : 18)
-            // .wide's vertical padding must clear its matInsets (12.75pt)
-            // with breathing room, or text crowds the stone ring.
+            // .wide's padding must clear its ring band (capInsets: 25pt
+            // leading/trailing, ~17pt top) with breathing room, or
+            // leading-aligned label text starts on top of the stones.
+            .padding(.horizontal, shape == .icon ? 10 : 26)
             .padding(.vertical, shape == .icon ? 10 : 18)
             .frame(minWidth: shape == .icon ? 52 : 44, minHeight: shape == .icon ? 52 : 44)
             .background {
