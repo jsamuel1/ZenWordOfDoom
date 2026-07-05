@@ -93,8 +93,10 @@ struct MenuView: View {
                             .padding(-12)
                         )
 
-                        Spacer()
-
+                        // No Spacer here: the daily card and the Play button
+                        // belong to one action cluster, so they keep a fixed
+                        // 32pt gap. Leftover height goes to the outer Spacers,
+                        // which center the cluster instead of stretching it.
                         VStack(spacing: 16) {
                             Button {
                                 // Drop straight into the next level to play; if every
