@@ -101,21 +101,39 @@ final class GameStore: ObservableObject {
         }
 
         // Serenity reward: the single Economy price list. Only a first-time,
-        // non-voided clear pays anything (see Economy.clearReward).
-        addSerenity(Economy.clearReward(firstClear: !wasCleared, usedHint: usedHint, voided: voided))
+        // non-voided clear pays anything (see Economy.clearReward). A pack
+        // capstone boss pays a flat bonus on top — deliberately NOT score-
+        // or doom-multiplied (the multiplier is points-only).
+        var reward = Economy.clearReward(firstClear: !wasCleared, usedHint: usedHint, voided: voided)
+        if isBossLevel(level), !wasCleared, !voided {
+            reward += Economy.bossClearReward
+        }
+        addSerenity(reward)
 
         save()
     }
 
+    /// A pack-capstone boss: a Pangram-Hunt whose id is a campaign level at
+    /// its pack's capstone order. Daily puzzles are also Pangram-Hunts but
+    /// are NOT bosses — they'd otherwise pay the boss bonus every day.
+    private func isBossLevel(_ level: Level) -> Bool {
+        guard case .pangramHunt = level.format,
+              let order = library.order(forID: level.id) else { return false }
+        return PackCatalog.standard.isCapstone(order: order, packSize: library.packSize)
+    }
+
     /// Record a single found word into lifetime stats (longest word, pangrams,
     /// totals). Called per submission; `recordClear` handles the clear tally.
-    /// Bonus words (found beyond the grid) pay a small serenity reward; grid
-    /// words pay nothing directly (their reward is folded into the clear).
-    /// A voided run (`voided: true`, doom expired) still counts the word toward
-    /// stats but pays no serenity — matching `recordClear`'s voided handling.
-    func recordWord(_ word: String, isBonus: Bool, isPangram: Bool, voided: Bool = false) {
+    /// Bonus words (found beyond the grid) pay a small serenity reward — but
+    /// only while `levelID` is still uncleared: replaying a cleared level and
+    /// resubmitting the same bonus words must not farm serenity (the only
+    /// unbounded faucet the economy ever had). Grid words pay nothing
+    /// directly (their reward is folded into the clear). A voided run
+    /// (`voided: true`, doom expired) still counts the word toward stats but
+    /// pays no serenity — matching `recordClear`'s voided handling.
+    func recordWord(_ word: String, levelID: String, isBonus: Bool, isPangram: Bool, voided: Bool = false) {
         state.stats.recordWord(word, isBonus: isBonus, isPangram: isPangram)
-        if isBonus, !voided {
+        if isBonus, !voided, !isCleared(levelID) {
             addSerenity(Economy.bonusWordReward)
         }
         save()

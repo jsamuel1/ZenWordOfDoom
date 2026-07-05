@@ -198,7 +198,7 @@ final class ScoringAndStatsTests: XCTestCase {
 
     func testEmptySaveStateDefaults() {
         let s = SaveState()
-        XCTAssertEqual(s.serenity, 0)
+        XCTAssertEqual(s.serenity, Economy.startingSerenity)
         XCTAssertTrue(s.progress.isEmpty)
         XCTAssertTrue(s.bestiary.isEmpty)
         XCTAssertEqual(s.stats, GameStats())

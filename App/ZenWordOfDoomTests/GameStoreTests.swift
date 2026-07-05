@@ -26,8 +26,9 @@ final class GameStoreTests: XCTestCase {
         XCTAssertEqual(p.bestScore, 100)          // never regresses
         XCTAssertEqual(p.bonusWordsFound, 2)
         XCTAssertTrue(p.noHint)                   // once clean, stays clean
-        // First clear (no hint) pays 8; the replay clear pays nothing.
-        XCTAssertEqual(store.state.serenity, 8)
+        // First clear (no hint) pays 8 on top of the new-player starting
+        // balance; the replay clear pays nothing.
+        XCTAssertEqual(store.state.serenity, Economy.startingSerenity + 8)
     }
 
     func testStreakAdvancesOnClearNotOnLoad() {
@@ -94,24 +95,72 @@ final class GameStoreTests: XCTestCase {
         let level = SampleLevel.make()
         store.recordClear(level: level, score: 0, bonusWords: 0,
                           usedHint: false, creatureRevealed: false, voided: true)
-        XCTAssertEqual(store.state.serenity, 0)                // no reward when voided
+        XCTAssertEqual(store.state.serenity, Economy.startingSerenity) // no reward when voided
         XCTAssertTrue(store.state.progress[level.id]!.cleared) // path still opens
         XCTAssertEqual(store.state.stats.currentStreak, 1)     // streak still advances
     }
 
     func testBonusWordPaysSerenityGridWordDoesNot() {
         let store = makeStore()
-        store.recordWord("ZEN", isBonus: false, isPangram: false)
-        XCTAssertEqual(store.state.serenity, 0)   // grid words pay nothing directly
-        store.recordWord("GARDEN", isBonus: true, isPangram: false)
-        XCTAssertEqual(store.state.serenity, 1)   // bonus words pay Economy.bonusWordReward
+        let base = Economy.startingSerenity
+        store.recordWord("ZEN", levelID: "zen-easy-0", isBonus: false, isPangram: false)
+        XCTAssertEqual(store.state.serenity, base)     // grid words pay nothing directly
+        store.recordWord("GARDEN", levelID: "zen-easy-0", isBonus: true, isPangram: false)
+        XCTAssertEqual(store.state.serenity, base + 1) // bonus words pay Economy.bonusWordReward
     }
 
     func testVoidedBonusWordPaysNoSerenityButStillCountsStats() {
         let store = makeStore()
-        store.recordWord("GARDEN", isBonus: true, isPangram: false, voided: true)
-        XCTAssertEqual(store.state.serenity, 0)                    // voided: no payout
-        XCTAssertEqual(store.state.stats.totalBonusWords, 1)       // stats still tracked
+        store.recordWord("GARDEN", levelID: "zen-easy-0", isBonus: true, isPangram: false, voided: true)
+        XCTAssertEqual(store.state.serenity, Economy.startingSerenity) // voided: no payout
+        XCTAssertEqual(store.state.stats.totalBonusWords, 1)           // stats still tracked
+    }
+
+    /// The farming fix: bonus words on an already-cleared level count toward
+    /// stats but pay nothing — replaying a level can't mint serenity.
+    func testBonusWordOnClearedLevelPaysNothing() {
+        let store = makeStore()
+        let level = SampleLevel.make()
+        store.recordClear(level: level, score: 10, bonusWords: 0,
+                          usedHint: false, creatureRevealed: false)
+        let afterClear = store.state.serenity
+        store.recordWord("GARDEN", levelID: level.id, isBonus: true, isPangram: false)
+        XCTAssertEqual(store.state.serenity, afterClear, "replayed bonus word must not pay")
+        XCTAssertEqual(store.state.stats.totalBonusWords, 1)
+    }
+
+    /// A pack-capstone boss pays a flat +50 on its first clear.
+    func testBossCapstoneClearPaysFlatBonus() {
+        let store = makeStore()
+        let base = SampleLevel.make()
+        let bossID = ProceduralLevelLibrary.standard.id(atOrder: 9) // pack 0 capstone
+        let boss = Level(id: bossID, wheel: base.wheel, slots: [],
+                         sceneID: base.sceneID, creatureID: base.creatureID,
+                         format: .pangramHunt(target: 4))
+        store.recordClear(level: boss, score: 100, bonusWords: 0,
+                          usedHint: false, creatureRevealed: false)
+        XCTAssertEqual(store.state.serenity,
+                       Economy.startingSerenity + 8 + Economy.bossClearReward)
+
+        // Repeat clears pay nothing — including the boss bonus.
+        store.recordClear(level: boss, score: 100, bonusWords: 0,
+                          usedHint: false, creatureRevealed: false)
+        XCTAssertEqual(store.state.serenity,
+                       Economy.startingSerenity + 8 + Economy.bossClearReward)
+    }
+
+    /// Dailies are Pangram-Hunts too, but they are NOT bosses — no +50, or
+    /// the bonus would pay out every single day.
+    func testDailyPangramHuntIsNotABoss() {
+        let store = makeStore()
+        let base = SampleLevel.make()
+        let daily = Level(id: "daily-2026-07-05", wheel: base.wheel, slots: [],
+                          sceneID: base.sceneID, creatureID: base.creatureID,
+                          format: .pangramHunt(target: 5))
+        store.recordClear(level: daily, score: 50, bonusWords: 0,
+                          usedHint: false, creatureRevealed: false)
+        XCTAssertEqual(store.state.serenity, Economy.startingSerenity + 8,
+                       "daily clear pays the normal reward only")
     }
 
     func testDoomDailyClearRecordsBestiaryEntry() throws {
@@ -142,6 +191,8 @@ final class GameStoreTests: XCTestCase {
 
     func testSpendSerenityGuards() {
         let store = makeStore()
+        // Drain the new-player starting balance to test the empty-wallet path.
+        XCTAssertTrue(store.spendSerenity(store.state.serenity))
         XCTAssertFalse(store.spendSerenity(5))
         store.addSerenity(5)
         XCTAssertTrue(store.spendSerenity(5))

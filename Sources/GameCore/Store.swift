@@ -7,13 +7,17 @@ public enum StoreItem: String, CaseIterable, Sendable {
     case serenityMedium = "wtf.sauhsoj.zenwordofdoom.serenity.medium"
     case serenityLarge = "wtf.sauhsoj.zenwordofdoom.serenity.large"
 
-    /// Serenity credited by a consumable, or nil for the non-consumable premium.
+    /// Serenity credited by a consumable, or nil for the non-consumable
+    /// premium. Value per dollar improves with size (45 @ $0.99, 100 @
+    /// $1.99, 220 @ $3.99) so no pack is ever strictly worse than a smaller
+    /// one. Keep in sync with `Products.storekit` descriptions AND the App
+    /// Store Connect product metadata.
     public var serenityAmount: Int? {
         switch self {
         case .premiumRemoveAds: return nil
-        case .serenitySmall:    return 10
-        case .serenityMedium:   return 25
-        case .serenityLarge:    return 50
+        case .serenitySmall:    return 45
+        case .serenityMedium:   return 100
+        case .serenityLarge:    return 220
         }
     }
 

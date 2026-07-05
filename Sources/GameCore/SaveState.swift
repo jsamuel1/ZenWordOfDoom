@@ -68,7 +68,7 @@ public struct SaveState: Codable, Equatable, Sendable {
 
     public init() {
         self.schemaVersion = Self.currentSchemaVersion
-        self.serenity = 0
+        self.serenity = Economy.startingSerenity
         self.stats = GameStats()
         self.progress = [:]
         self.bestiary = [:]

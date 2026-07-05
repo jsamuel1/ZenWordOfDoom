@@ -71,7 +71,7 @@ final class GameViewModelTests: XCTestCase {
         XCTAssertTrue(model.isComplete)
         XCTAssertGreaterThan(model.score, 0)                 // base points still land
         XCTAssertEqual(model.clearSummary?.serenityEarned, 0) // serenity stays voided
-        XCTAssertEqual(store.state.serenity, 0)
+        XCTAssertEqual(store.state.serenity, Economy.startingSerenity)
         XCTAssertTrue(store.isCleared(model.level.id))       // path still opens
     }
 

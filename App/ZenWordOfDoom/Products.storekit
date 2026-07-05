@@ -25,7 +25,7 @@
       "internalID" : "7A1B2C3E",
       "localizations" : [
         {
-          "description" : "10 serenity.",
+          "description" : "45 serenity.",
           "displayName" : "Small Serenity Pack",
           "locale" : "en_US"
         }
@@ -40,7 +40,7 @@
       "internalID" : "7A1B2C3F",
       "localizations" : [
         {
-          "description" : "25 serenity.",
+          "description" : "100 serenity.",
           "displayName" : "Medium Serenity Pack",
           "locale" : "en_US"
         }
@@ -55,7 +55,7 @@
       "internalID" : "7A1B2C40",
       "localizations" : [
         {
-          "description" : "50 serenity.",
+          "description" : "220 serenity.",
           "displayName" : "Large Serenity Pack",
           "locale" : "en_US"
         }

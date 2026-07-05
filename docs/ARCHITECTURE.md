@@ -313,17 +313,26 @@ passes a hard validation filter, and always have a working floor.**
 `GameCore.Economy` is the single price list; every serenity faucet and sink
 in the app reads from it — no other file hardcodes an amount:
 
-1. `GameStore.recordClear` — `Economy.clearReward(firstClear:usedHint:voided:)`.
+1. New profiles open with `Economy.startingSerenity` (**50**) so early
+   players can learn the hint mechanic before the currency gets scarce.
+2. `GameStore.recordClear` — `Economy.clearReward(firstClear:usedHint:voided:)`.
    Only a first-time, non-voided clear pays anything: **8** with no hint used,
    **5** if a hint was used. Repeat clears and doom-voided clears pay nothing.
-2. `GameStore.recordWord` — `Economy.bonusWordReward` (**1**) on every bonus
-   word (found beyond the grid); grid words pay nothing directly, since their
-   reward is folded into the clear payout above.
+   A pack-capstone boss's first clear pays `Economy.bossClearReward` (**+50**)
+   on top — flat, never score- or doom-timer-multiplied, and NOT paid by
+   dailies (also Pangram-Hunts) or the bonus would recur every day.
+3. `GameStore.recordWord` — `Economy.bonusWordReward` (**1**) per bonus word
+   (found beyond the grid), but only while that level is still uncleared —
+   replaying a cleared level and resubmitting its bonus words pays nothing
+   (this was the economy's one unbounded faucet). Grid words pay nothing
+   directly, since their reward is folded into the clear payout above.
 
 Hints cost a flat `Economy.hintCost` (**10**) serenity per reveal
-(`GameViewModel.hintCost`), refunded if nothing was left to reveal. These
-numbers are tuned against the serenity IAP sizes in `Store.swift` (10/25/50)
-so a purchase buys roughly 2-3 earned hints without becoming pay-to-win.
+(`GameViewModel.hintCost`) — every hint, always the same price — refunded if
+nothing was left to reveal. These numbers are tuned against the serenity IAP
+sizes in `Store.swift` (**45 / 100 / 220** at $0.99/$1.99/$3.99; value per
+dollar improves with size so no pack is dominated). Changing pack contents
+also requires updating `Products.storekit` and App Store Connect metadata.
 
 ### 5.3 Hashing
 
