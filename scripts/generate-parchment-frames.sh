@@ -1,17 +1,21 @@
 #!/bin/sh
-# Generates the 6 parchment/oriental-frame chrome textures (3 shapes x 2
-# themes) via the `agy` (Antigravity) CLI and installs each into
-# Assets.xcassets/Frames/, following the existing bundled-visuals convention
+# Generates the 6 picture-frame chrome textures (3 shapes x 2 themes) via the
+# `agy` (Antigravity) CLI and installs each into Assets.xcassets/Frames/,
+# following the existing bundled-visuals convention
 # (frame-<theme>-<shape>.imageset/frame-<theme>-<shape>.png + Contents.json).
-# Idempotent: re-running skips any texture that already has a bundled image.
-# Paced with a delay between calls since `agy` has usage limits.
+# Idempotent: re-running skips any texture that already has a bundled image
+# (delete the .imageset dir first to force regeneration). Paced with a delay
+# between calls since `agy` has usage limits.
 #
-# Texture design (see docs/superpowers/specs/2026-07-04-parchment-frame-chrome-design.md
-# section 4-5): each PNG has a transparent margin outside its torn silhouette,
-# a richly-detailed torn-edge/corner-ornament border, and a near-solid,
-# low-variance center panel toned to blend with the matching code-drawn scrim
-# (ParchmentChrome.swift / AccessibilityPalette.parchmentScrim(for:)) rather
-# than fighting it.
+# Texture design (see
+# docs/superpowers/specs/2026-07-05-parchment-frame-v2-picture-frame-design.md
+# section 4): each PNG is a THIN RING with a FULLY TRANSPARENT CENTER — the
+# ring is the only opaque art; the center is left empty so the code-drawn mat
+# fill (ParchmentChrome.swift / AccessibilityPalette's mat/ink constants)
+# shows through untouched. This is a deliberate split from v1's textures,
+# which tried to be both the border art and the full background fill via
+# capInsets stretching — that's exactly what caused v1's oversizing/scrim
+# bugs. Do not regenerate these as full-fill textures.
 set -eu
 
 cd "$(dirname "$0")/.."
@@ -21,12 +25,12 @@ MAX_RETRIES=3
 
 # name|size|prompt — one line per texture.
 TEXTURES='
-frame-zen-button|900x300|A wide rectangular aged parchment texture with softly torn deckled edges and a delicate oriental ink-line corner ornament in each corner, warm tea-stained cream color, the center two-thirds a smooth near-solid muted warm cream tone designed to blend under a matching semi-transparent cream overlay, isolated on a transparent background, no text, alpha transparency outside the torn paper silhouette, restrained and calm illustration style
-frame-zen-icon|320x320|A small square aged parchment medallion with torn deckled edges all around and a delicate oriental ink-line ornament framing the border, warm tea-stained cream color, the center a smooth near-solid muted warm cream tone designed to blend under a matching semi-transparent cream overlay, isolated on a transparent background, no text, alpha transparency outside the torn paper silhouette, restrained and calm illustration style
-frame-zen-strip|900x160|A thin horizontal banner strip of aged parchment with torn deckled edges on the short ends and a delicate oriental ink-line ornament at each end, warm tea-stained cream color, the center a smooth near-solid muted warm cream tone designed to blend under a matching semi-transparent cream overlay, isolated on a transparent background, no text, alpha transparency outside the torn paper silhouette, restrained and calm illustration style
-frame-doom-button|900x300|A wide rectangular scorched and charred aged parchment texture with jagged burnt torn edges and a heavy blackened oriental corner ornament in each corner, dark charred brown color, the center two-thirds a smooth near-solid muted charred-brown tone designed to blend under a matching semi-transparent dark overlay, isolated on a transparent background, no text, alpha transparency outside the torn paper silhouette, ominous stylized illustration
-frame-doom-icon|320x320|A small square scorched and charred aged parchment medallion with jagged burnt torn edges all around and a heavy blackened oriental ornament framing the border, dark charred brown color, the center a smooth near-solid muted charred-brown tone designed to blend under a matching semi-transparent dark overlay, isolated on a transparent background, no text, alpha transparency outside the torn paper silhouette, ominous stylized illustration
-frame-doom-strip|900x160|A thin horizontal banner strip of scorched and charred aged parchment with jagged burnt torn edges on the short ends and a heavy blackened oriental ornament at each end, dark charred brown color, the center a smooth near-solid muted charred-brown tone designed to blend under a matching semi-transparent dark overlay, isolated on a transparent background, no text, alpha transparency outside the torn paper silhouette, ominous stylized illustration
+frame-zen-button|900x300|A thin decorative rectangular picture-frame border made of smooth, rounded pale river stones and pebbles neatly arranged, in the style of a tranquil zen rock garden, pale grey and warm tan tones, only a thin border ring of stones around the outer edge (roughly the outer 15-20 percent of the image), the entire large center area completely empty and fully transparent with no fill at all, isolated on a transparent background, no text, alpha transparency in both the large empty center and outside the outer silhouette, calm minimalist illustration
+frame-zen-icon|320x320|A thin decorative square picture-frame border made of smooth, rounded pale river stones and pebbles neatly arranged, in the style of a tranquil zen rock garden, pale grey and warm tan tones, only a thin border ring of stones around the outer edge (roughly the outer 15-20 percent of the image), the entire large center area completely empty and fully transparent with no fill at all, isolated on a transparent background, no text, alpha transparency in both the large empty center and outside the outer silhouette, calm minimalist illustration
+frame-zen-strip|900x160|A thin decorative rectangular picture-frame border made of smooth, rounded pale river stones and pebbles neatly arranged, in the style of a tranquil zen rock garden, pale grey and warm tan tones, only a thin border ring of stones around the outer edge (roughly the outer 20-25 percent of the image, this is a short banner shape), the entire large center area completely empty and fully transparent with no fill at all, isolated on a transparent background, no text, alpha transparency in both the large empty center and outside the outer silhouette, calm minimalist illustration
+frame-doom-button|900x300|A thin decorative rectangular picture-frame border made of rough, crumbling volcanic basalt rock, COOL GREY stone tones (explicitly not brown, not tan, not charred-wood colored — grey basalt like cooled lava rock) with faint, subtle, low-intensity glowing orange lava-crack veins running through the grey stone (thin and understated, not bright or bold), only a thin border ring of rock around the outer edge (roughly the outer 15-20 percent of the image), the entire large center area completely empty and fully transparent with no fill at all, isolated on a transparent background, no text, alpha transparency in both the large empty center and outside the outer silhouette, subtle ominous stylized illustration
+frame-doom-icon|320x320|A thin decorative square picture-frame border made of rough, crumbling volcanic basalt rock, COOL GREY stone tones (explicitly not brown, not tan, not charred-wood colored — grey basalt like cooled lava rock) with faint, subtle, low-intensity glowing orange lava-crack veins running through the grey stone (thin and understated, not bright or bold), only a thin border ring of rock around the outer edge (roughly the outer 15-20 percent of the image), the entire large center area completely empty and fully transparent with no fill at all, isolated on a transparent background, no text, alpha transparency in both the large empty center and outside the outer silhouette, subtle ominous stylized illustration
+frame-doom-strip|900x160|A thin decorative rectangular picture-frame border made of rough, crumbling volcanic basalt rock, COOL GREY stone tones (explicitly not brown, not tan, not charred-wood colored — grey basalt like cooled lava rock) with faint, subtle, low-intensity glowing orange lava-crack veins running through the grey stone (thin and understated, not bright or bold), only a thin border ring of rock around the outer edge (roughly the outer 20-25 percent of the image, this is a short banner shape), the entire large center area completely empty and fully transparent with no fill at all, isolated on a transparent background, no text, alpha transparency in both the large empty center and outside the outer silhouette, subtle ominous stylized illustration
 '
 
 echo "$TEXTURES" | while IFS='|' read -r name size prompt; do
@@ -58,12 +62,21 @@ echo "$TEXTURES" | while IFS='|' read -r name size prompt; do
     exit 1
   fi
 
+  # Marked as @3x: these PNGs are generated at print-quality canvas sizes
+  # (e.g. 900x300) that are much larger than the ~50pt-tall button they
+  # actually render at. Without a scale marking, capInsets (specified in
+  # points against the image's own logical size) would need to describe a
+  # 900x300-point image — forcing capInset sums far bigger than any real
+  # button's height and reintroducing v1's oversizing bug. @3x makes the
+  # logical size 300x100pt, so capInsets in ParchmentShape.swift are the
+  # measured pixel thickness divided by 3.
   cat > "$imageset_dir/Contents.json" << EOF
 {
   "images" : [
     {
       "filename" : "$name.png",
-      "idiom" : "universal"
+      "idiom" : "universal",
+      "scale" : "3x"
     }
   ],
   "info" : {
@@ -77,4 +90,4 @@ EOF
   sleep "$DELAY_SECONDS"
 done
 
-echo "All 6 parchment-frame textures generated."
+echo "All 6 picture-frame textures generated."

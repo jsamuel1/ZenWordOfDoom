@@ -42,24 +42,35 @@ enum AccessibilityPalette {
     /// stronger boundary; not pinned by `WCAGContrastTests`.
     static let gridCellStrokeIncreased = Color(.sRGB, white: 0.15, opacity: 0.85)
 
-    // MARK: - Parchment chrome (frame textures + scrim, see ParchmentChrome.swift)
+    // MARK: - Parchment chrome v2: picture-frame ring + mat fill (see ParchmentChrome.swift)
+    //
+    // v1 used a translucent scrim composited over a full-fill texture. v2
+    // splits the frame (a thin decorative ring image) from the mat (a plain,
+    // opaque, code-drawn fill) — so these are real fill colors, not a scrim,
+    // and contrast is exact rather than alpha-composited-over-an-assumed-backdrop.
 
-    static let parchmentScrimZen = Color(.sRGB, red: 0.95, green: 0.90, blue: 0.78, opacity: 0.65)
-    static let parchmentInkZen = Color(.sRGB, red: 0.10, green: 0.06, blue: 0.03, opacity: 1)
-    static let parchmentScrimDoom = Color(.sRGB, red: 0.14, green: 0.10, blue: 0.08, opacity: 0.65)
-    static let parchmentInkDoom = Color(.sRGB, red: 1.0, green: 0.97, blue: 0.87, opacity: 1)
+    static let parchmentMatZen = Color(.sRGB, red: 0.937, green: 0.910, blue: 0.839, opacity: 1)
+    /// Slightly darker sand tone for the mat's subtle raked-line pattern —
+    /// not pinned by contrast tests (never sits under text on its own).
+    static let parchmentMatZenAccent = Color(.sRGB, red: 0.902, green: 0.867, blue: 0.776, opacity: 1)
+    static let parchmentInkZen = Color(.sRGB, red: 0.169, green: 0.129, blue: 0.090, opacity: 1)
 
-    /// Text/icon color to draw over parchment chrome for the given theme —
-    /// always paired with `parchmentScrim(for:)`, never the raw texture.
+    static let parchmentMatDoom = Color(.sRGB, red: 0.173, green: 0.176, blue: 0.184, opacity: 1)
+    /// Warm low-opacity glow overlaid near one edge of the doom mat — not
+    /// pinned by contrast tests (a translucent accent, not the base fill).
+    static let parchmentMatDoomGlow = Color(.sRGB, red: 1.0, green: 0.43, blue: 0.12, opacity: 0.16)
+    static let parchmentInkDoom = Color(.sRGB, red: 0.953, green: 0.902, blue: 0.784, opacity: 1)
+
+    /// Text/icon color to draw over the parchment mat for the given theme.
     static func parchmentInk(for theme: Theme) -> Color {
         theme == .doom ? parchmentInkDoom : parchmentInkZen
     }
 
-    /// Scrim color composited between the parchment texture and its content
-    /// (text/icons), so contrast stays WCAG-AA regardless of the generated
-    /// texture's exact pixels. See `ParchmentChrome.swift`.
-    static func parchmentScrim(for theme: Theme) -> Color {
-        theme == .doom ? parchmentScrimDoom : parchmentScrimZen
+    /// Base mat fill color for the given theme — the opaque backdrop text
+    /// and icons sit on, sized to the button/pill's real content (no
+    /// texture, no runtime compositing). See `ParchmentChrome.swift`.
+    static func parchmentMat(for theme: Theme) -> Color {
+        theme == .doom ? parchmentMatDoom : parchmentMatZen
     }
 
     // MARK: - WCAG math

@@ -1,45 +1,47 @@
 import SwiftUI
 import LevelGen
 
-/// The three parchment-frame texture shapes generated for this app's chrome
-/// (see `docs/superpowers/specs/2026-07-04-parchment-frame-chrome-design.md`).
+/// The three picture-frame texture shapes generated for this app's chrome
+/// (see `docs/superpowers/specs/2026-07-05-parchment-frame-v2-picture-frame-design.md`).
 /// `.wide` and `.icon` back `ParchmentButtonStyle`; `.strip` backs
 /// `.parchmentReadout(theme:)`. Textures live in `Assets.xcassets/Frames/`.
+///
+/// v2 design: each texture is a THIN RING with a fully transparent center —
+/// unlike v1, which tried to make one texture serve as both the decorative
+/// border AND the full background fill via `capInsets` stretching. That dual
+/// duty is what caused v1's whole run of bugs (oversized buttons overlapping
+/// neighbors, text washed out under a mis-layered scrim, a border that only
+/// rendered on one edge) — the capInset needed to protect the ornament and
+/// the capInset needed to keep the button small were in direct conflict.
+/// Splitting frame (thin ring, this file's `Image` background) from mat (a
+/// plain code-drawn fill, `ParchmentMatView` below) removes that conflict
+/// structurally: the ring's transparent center means its capInsets never
+/// need to be large, and the mat never needs `capInsets`/stretching at all.
 enum ParchmentShape {
     case wide
     case icon
     case strip
 
-    /// Fixed border margin (in the texture's own point space) that must not
-    /// stretch — the torn-edge/corner-ornament detail lives here. Only the
-    /// region inside these insets stretches when the view resizes.
+    /// Fixed border margin, in POINTS — the ring art lives here. Only the
+    /// (fully transparent) center stretches, so unlike v1 there's no visual
+    /// risk in that region even if it stretches oddly.
     ///
-    /// `Image.resizable(capInsets:)` enforces a HARD MINIMUM size equal to
-    /// the sum of the insets on each axis — below that, it refuses to shrink
-    /// further, no matter what size its container proposes. `.background()`
-    /// never lets a background's size affect the primary view it's attached
-    /// to, so when these values were much larger (70/110pt, implying a
-    /// 140x220pt floor), a single-line button whose real content was only
-    /// ~55pt tall still got a ~140pt-tall background rendered underneath —
-    /// visually overflowing into the next control while the VStack kept
-    /// spacing everything based on the button's true (small) height. Every
-    /// value here must stay comfortably under 44 (the accessibility minimum
-    /// touch target every shape already enforces via
-    /// `.frame(minWidth: 44, minHeight: 44)`), so the enforced floor can
-    /// never exceed a button's real minimum size.
-    /// Also asymmetric top-vs-bottom on purpose: the generated `.wide`/`.icon`
-    /// textures have a wider transparent margin below the torn edge than
-    /// above it (measured directly from the PNGs' alpha channel — e.g.
-    /// `frame-zen-button` has a ~6pt top margin but a ~19pt bottom margin
-    /// before hitting the actual paper). A symmetric inset sized for the top
-    /// left the bottom cap capturing mostly empty transparency instead of
-    /// the torn edge, rendering as a visible top border with no matching
-    /// bottom border.
+    /// These are the real ring thickness measured from each PNG's alpha
+    /// channel, divided by 3 (the textures are marked `scale: 3x` in their
+    /// Contents.json — see `generate-parchment-frames.sh` — because they're
+    /// generated at print-quality canvas sizes like 900x300 but rendered at
+    /// a ~50pt-tall button; without the 3x marking, capInsets would need to
+    /// describe a 900x300-POINT image, forcing sums far bigger than any real
+    /// button and reintroducing v1's oversizing bug). Doom's rings measured
+    /// thicker than Zen's for `.wide`/`.strip`; each value here is the safe
+    /// (larger, doom) side so neither theme's ring gets cropped into the
+    /// stretch region — the unused margin on Zen's side is still fully
+    /// transparent there, so it's invisible either way.
     var capInsets: EdgeInsets {
         switch self {
-        case .wide: EdgeInsets(top: 18, leading: 40, bottom: 24, trailing: 40)
+        case .wide: EdgeInsets(top: 17, leading: 25, bottom: 15, trailing: 25)
         case .icon: EdgeInsets(top: 18, leading: 18, bottom: 18, trailing: 18)
-        case .strip: EdgeInsets(top: 12, leading: 30, bottom: 12, trailing: 30)
+        case .strip: EdgeInsets(top: 13, leading: 13, bottom: 13, trailing: 13)
         }
     }
 
@@ -55,10 +57,55 @@ enum ParchmentShape {
     }
 }
 
-/// Custom `ButtonStyle` rendering a stretchable parchment/oriental-frame
-/// texture behind the button's label instead of the system `.bordered`/
-/// `.borderedProminent` chrome. See
-/// `docs/superpowers/specs/2026-07-04-parchment-frame-chrome-design.md`.
+/// The plain, opaque fill behind a button/readout's text — replaces v1's
+/// translucent scrim entirely. Themed with a cheap, subtle decorative
+/// pattern (matches the approved mockup): a raked-sand diagonal line pattern
+/// for Zen, a faint warm ember glow for Doom. Both layer on top of a fixed,
+/// WCAG-pinned base color (`AccessibilityPalette.parchmentMat(for:)`) — the
+/// pattern accents are never relied on for contrast, only the base fill is.
+private struct ParchmentMatView: View {
+    let theme: Theme
+
+    var body: some View {
+        ZStack {
+            AccessibilityPalette.parchmentMat(for: theme)
+            switch theme {
+            case .zen:
+                RakedLinesView()
+                    .stroke(AccessibilityPalette.parchmentMatZenAccent, lineWidth: 1)
+                    .opacity(0.6)
+            case .doom:
+                RadialGradient(
+                    colors: [AccessibilityPalette.parchmentMatDoomGlow, .clear],
+                    center: .bottomLeading,
+                    startRadius: 0,
+                    endRadius: 90
+                )
+            }
+        }
+    }
+}
+
+/// A handful of parallel diagonal lines, evoking a raked zen-garden sand
+/// pattern. Pure geometry (no image), cheap to draw, scales with the view.
+private struct RakedLinesView: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let spacing: CGFloat = 8
+        var x = -rect.height
+        while x < rect.width {
+            path.move(to: CGPoint(x: x, y: rect.height))
+            path.addLine(to: CGPoint(x: x + rect.height, y: 0))
+            x += spacing
+        }
+        return path
+    }
+}
+
+/// Custom `ButtonStyle` rendering a thin picture-frame ring behind the
+/// button's label instead of the system `.bordered`/`.borderedProminent`
+/// chrome. See
+/// `docs/superpowers/specs/2026-07-05-parchment-frame-v2-picture-frame-design.md`.
 struct ParchmentButtonStyle: ButtonStyle {
     let theme: Theme
     /// Only `.wide` or `.icon` — `.strip` backs `.parchmentReadout(theme:)`
@@ -72,38 +119,24 @@ struct ParchmentButtonStyle: ButtonStyle {
         let insets = shape.capInsets
         configuration.label
             .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
-            .padding(.horizontal, shape == .icon ? 8 : 16)
-            // Vertical padding is generous on purpose: the button's total
-            // height has to fit the capInsets' fixed top+bottom border AND a
-            // comfortable clear middle for the label — a tight ~44pt button
-            // left almost no clear middle at all once the border ate its
-            // ~42pt share, so text/icons spilled into the torn-edge art
-            // above and below instead of sitting inside the clean parchment.
-            .padding(.vertical, shape == .icon ? 8 : 30)
-            .frame(minWidth: shape == .icon ? 64 : 44, minHeight: shape == .icon ? 64 : 44)
+            .padding(.horizontal, shape == .icon ? 10 : 18)
+            .padding(.vertical, shape == .icon ? 10 : 12)
+            .frame(minWidth: shape == .icon ? 52 : 44, minHeight: shape == .icon ? 52 : 44)
             .background {
-                // Scrim and image are ZStack siblings INSIDE .background — both
-                // must render behind the label. An `.overlay` here instead
-                // would paint on top of everything including the text (overlay
-                // always draws in front of the view it modifies), washing out
-                // dark ink under the translucent scrim.
-                //
-                // The scrim spans the full clear-middle region (not just the
-                // text's own width) — a tighter, text-hugging scrim was tried
-                // but fighting it through Button/ButtonStyle's layout
-                // boundaries (several call sites put `.frame(maxWidth:
-                // .infinity)` on their own label) kept reintroducing the
-                // exact oversizing bugs this file's other comments describe.
-                // The lower opacity below does the "blend in, less jarring"
-                // job instead.
-                ZStack {
-                    Image(ParchmentShape.assetName(theme: theme, shape: shape))
-                        .resizable(capInsets: insets, resizingMode: .stretch)
-                        .accessibilityHidden(true)
-                    AccessibilityPalette.parchmentScrim(for: theme)
-                        .clipShape(RoundedRectangle(cornerRadius: shape == .icon ? 18 : 12, style: .continuous))
-                        .padding(insets)
-                }
+                // Frame ring in FRONT of the mat (both the same size as this
+                // content box): the ring's transparent center lets the mat
+                // show through exactly where there's no rock art, and its
+                // opaque outer ring paints over the mat's own edge —
+                // together they read as a mat sitting inside a frame,
+                // without needing the mat and frame to be independently
+                // sized/inset from each other.
+                Image(ParchmentShape.assetName(theme: theme, shape: shape))
+                    .resizable(capInsets: insets, resizingMode: .stretch)
+                    .accessibilityHidden(true)
+            }
+            .background {
+                ParchmentMatView(theme: theme)
+                    .clipShape(RoundedRectangle(cornerRadius: shape == .icon ? 14 : 8, style: .continuous))
             }
             .brightness(configuration.isPressed ? -0.08 : 0)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1)
@@ -121,16 +154,15 @@ private struct ParchmentReadoutModifier: ViewModifier {
         content
             .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.vertical, 7)
             .background {
-                ZStack {
-                    Image(ParchmentShape.assetName(theme: theme, shape: .strip))
-                        .resizable(capInsets: insets, resizingMode: .stretch)
-                        .accessibilityHidden(true)
-                    AccessibilityPalette.parchmentScrim(for: theme)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .padding(insets)
-                }
+                Image(ParchmentShape.assetName(theme: theme, shape: .strip))
+                    .resizable(capInsets: insets, resizingMode: .stretch)
+                    .accessibilityHidden(true)
+            }
+            .background {
+                ParchmentMatView(theme: theme)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
     }
 }

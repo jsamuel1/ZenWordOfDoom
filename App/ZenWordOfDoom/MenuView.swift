@@ -82,11 +82,7 @@ struct MenuView: View {
 
                         Spacer()
 
-                        // Tighter than the pre-parchment 16pt: buttons got
-                        // noticeably taller to give the parchment border and
-                        // label room to coexist, so spacing between them
-                        // shrinks to help the menu still fit reasonably.
-                        VStack(spacing: 8) {
+                        VStack(spacing: 16) {
                             Button {
                                 // Drop straight into the next level to play; if every
                                 // level is cleared there's nothing new, so show the list.
