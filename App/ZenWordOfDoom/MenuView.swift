@@ -37,36 +37,49 @@ struct MenuView: View {
                         // `.blur` + negative padding softens the scrim's
                         // edge instead of a hard-edged box.
                         VStack(spacing: 24) {
-                            VStack(spacing: 8) {
-                                Text("Zen Word")
-                                    .font(BrandFont.zen(size: 44))
-                                    .foregroundStyle(.white)
-                                Text("of Doom")
-                                    .font(BrandFont.doom(size: 44))
-                                    .foregroundStyle(.red.opacity(0.85))
-                            }
-                            .multilineTextAlignment(.center)
-                            .shadow(radius: 4)
+                            // Title and serenity readout sit tight together
+                            // as one masthead unit.
+                            VStack(spacing: 4) {
+                                // Negative spacing compensates for the brand
+                                // faces' huge built-in vertical metrics: at
+                                // 44pt Buda leaves ~15pt of empty air below
+                                // its baseline and Grenze Gotisch ~20pt above
+                                // its caps, so even spacing 0 reads as a
+                                // ~35pt gap. -26 nets a ~9pt visual gap; the
+                                // metric air scales up with Dynamic Type
+                                // while this constant doesn't, so the lines
+                                // can never overlap.
+                                VStack(spacing: -26) {
+                                    Text("Zen Word")
+                                        .font(BrandFont.zen(size: 44))
+                                        .foregroundStyle(.white)
+                                    Text("of Doom")
+                                        .font(BrandFont.doom(size: 44))
+                                        .foregroundStyle(.red.opacity(0.85))
+                                }
+                                .multilineTextAlignment(.center)
+                                .shadow(radius: 4)
 
-                            Button {
-                                showSerenitySheet = true
-                            } label: {
-                                Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.white.opacity(0.85))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    // Button-shape affordance (audit 6.3): this is
-                                    // a plain-styled tappable row, not inside a
-                                    // List, so it gets no platform row affordance
-                                    // for free.
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.primary.opacity(0.15), lineWidth: 1)
-                                    )
+                                Button {
+                                    showSerenitySheet = true
+                                } label: {
+                                    Label("Serenity \(store.state.serenity)", systemImage: "leaf.fill")
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(.white.opacity(0.85))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        // Button-shape affordance (audit 6.3):
+                                        // this is a plain-styled tappable row,
+                                        // not inside a List, so it gets no
+                                        // platform row affordance for free.
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Get more serenity")
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityHint("Get more serenity")
 
                             dailyCard
                         }
