@@ -1,11 +1,11 @@
 import SwiftUI
 import LevelGen
 
-/// The play-screen heads-up display: score, serenity, a hint button, and a mic
-/// toggle. Pure view driven by value inputs and closures; it holds no
-/// reference to the game view model. The doom timer is a separate
-/// `DoomTimerView`, shown above this bar rather than inside it — see that
-/// type's doc comment.
+/// The play-screen heads-up display: score, serenity, and a hint button.
+/// Pure view driven by value inputs and closures; it holds no reference to
+/// the game view model. The doom timer is a separate `DoomTimerView`, shown
+/// above this bar rather than inside it — see that type's doc comment. The
+/// mic toggle lives in `GameContainerView`'s bottom control panel, not here.
 struct HUDView: View {
     let score: Int
     /// True when the doom timer expired and the level's points are forfeit;
@@ -13,22 +13,12 @@ struct HUDView: View {
     let scoreVoided: Bool
     let serenity: Int
     let hintCost: Int
-    /// Whether the mic is currently listening (toggles the button appearance).
-    let isListening: Bool
-    /// Whether voice input is available/enabled at all (hides the mic when false).
-    let voiceEnabled: Bool
     /// Whether this level format has anything for a hint to reveal (hides the
     /// button when false — e.g. `.pangramHunt` levels have no grid slots).
     let hintsEnabled: Bool
     let theme: Theme
 
     let onHint: () -> Void
-    let onMicStart: () -> Void
-    let onMicStop: () -> Void
-
-    /// Reduce Motion (audit 5.3): the mic's pulse symbol effect is purely
-    /// decorative, so it's suppressed rather than replaced.
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var canAffordHint: Bool { serenity >= hintCost }
 
@@ -41,9 +31,6 @@ struct HUDView: View {
 
             if hintsEnabled {
                 hintButton
-            }
-            if voiceEnabled {
-                micButton
             }
         }
     }
@@ -77,28 +64,11 @@ struct HUDView: View {
         .accessibilityHint(canAffordHint ? "" : "Not enough serenity")
     }
 
-    private var micButton: some View {
-        // Deliberately chrome-free — a bare solid mic glyph, not a
-        // parchment-framed button like the hint next to it. The shadow keeps
-        // it visible over the level art; red carries the listening state for
-        // Reduce Motion users who don't get the pulse.
-        Button(action: { isListening ? onMicStop() : onMicStart() }) {
-            Image(systemName: "mic.fill")
-                .font(.title2)
-                .symbolEffect(.pulse, isActive: isListening && !reduceMotion)
-                .foregroundStyle(isListening ? Color.red : Color.white)
-                .shadow(color: .black.opacity(0.6), radius: 2)
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(isListening ? "Stop listening" : "Speak a word")
-    }
 }
 
 /// Standalone doom-timer readout. Shown between the navigation title and
 /// `HUDView` — rather than inside the HUD's own stat row — so a doom level's
-/// timer doesn't compete with Score/Serenity/hint/mic for horizontal space
+/// timer doesn't compete with Score/Serenity/hint for horizontal space
 /// in that bar; zen levels simply omit this view.
 struct DoomTimerView: View {
     let timeRemaining: TimeInterval
@@ -141,26 +111,18 @@ struct DoomTimerView: View {
             scoreVoided: false,
             serenity: 25,
             hintCost: 5,
-            isListening: false,
-            voiceEnabled: true,
             hintsEnabled: true,
             theme: .zen,
-            onHint: {},
-            onMicStart: {},
-            onMicStop: {}
+            onHint: {}
         )
         HUDView(
             score: 0,
             scoreVoided: true,
             serenity: 2,
             hintCost: 5,
-            isListening: true,
-            voiceEnabled: true,
             hintsEnabled: true,
             theme: .zen,
-            onHint: {},
-            onMicStart: {},
-            onMicStop: {}
+            onHint: {}
         )
     }
     .padding()

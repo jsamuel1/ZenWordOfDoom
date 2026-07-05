@@ -106,7 +106,7 @@ struct GamePlayView: View {
                 ScrollView {
                     VStack(spacing: 14) {
                         // Its own row above the HUD, between the nav title and
-                        // the Score/Serenity/hint/mic bar, so the timer doesn't
+                        // the Score/Serenity/hint bar, so the timer doesn't
                         // eat into that bar's horizontal space.
                         if let timeRemaining = model.timeRemaining {
                             DoomTimerView(timeRemaining: timeRemaining, theme: levelService.theme(forID: level.id))
@@ -117,16 +117,12 @@ struct GamePlayView: View {
                             scoreVoided: model.doomExpired,
                             serenity: model.serenity,
                             hintCost: model.hintCost,
-                            isListening: voice.isListening,
-                            voiceEnabled: settings.voiceEnabled,
                             hintsEnabled: model.hintsAvailable,
                             theme: levelService.theme(forID: level.id),
                             onHint: {
                                 Haptics.reveal()
                                 model.useHintRevealCell()
-                            },
-                            onMicStart: { startListening() },
-                            onMicStop: { stopListening() }
+                            }
                         )
 
                         // The tap gesture is only attached when the message is
@@ -343,13 +339,16 @@ struct GamePlayView: View {
         return "\(theme) · \(band)"
     }
 
+    /// Clear / Shuffle / Mic / Submit on ONE shared parchment piece (like the
+    /// menu's navigation panel) instead of separately framed buttons. The mic
+    /// lives here — not in the HUD — as a bare glyph like its neighbors.
     private var controls: some View {
         let theme = levelService.theme(forID: level.id)
-        return HStack {
+        return HStack(spacing: 0) {
             Button("Clear", role: .destructive) { model.clear() }
-                .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .wide))
+                .buttonStyle(ParchmentRowButtonStyle(theme: theme))
 
-            Spacer()
+            controlsDivider(theme)
 
             Button {
                 Haptics.tap()
@@ -357,19 +356,49 @@ struct GamePlayView: View {
             } label: {
                 Label("Shuffle", systemImage: "shuffle")
                     .labelStyle(.iconOnly)
+                    .font(.title3)
             }
-            .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .icon))
+            .buttonStyle(ParchmentRowButtonStyle(theme: theme))
             .accessibilityLabel("Shuffle letters")
 
-            Spacer()
+            if settings.voiceEnabled {
+                controlsDivider(theme)
+
+                Button {
+                    voice.isListening ? stopListening() : startListening()
+                } label: {
+                    Image(systemName: "mic.fill")
+                        .font(.title3)
+                        .symbolEffect(.pulse, isActive: voice.isListening && !reduceMotion)
+                        .foregroundStyle(
+                            voice.isListening
+                                ? Color.red
+                                : AccessibilityPalette.parchmentInk(for: theme)
+                        )
+                }
+                .buttonStyle(ParchmentRowButtonStyle(theme: theme))
+                .accessibilityLabel(voice.isListening ? "Stop listening" : "Speak a word")
+            }
+
+            controlsDivider(theme)
 
             Button("Submit") {
                 Haptics.tap()
                 model.submit()
             }
-            .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .wide))
+            .buttonStyle(ParchmentRowButtonStyle(theme: theme))
             .disabled(model.selection.count < GameEngine.minWordLength)
         }
+        .parchmentPanel(theme: theme)
+    }
+
+    /// Hairline between the shared control panel's segments — low-opacity ink
+    /// so it reads as scoring on the parchment (matches MenuView's rows).
+    private func controlsDivider(_ theme: Theme) -> some View {
+        Rectangle()
+            .fill(AccessibilityPalette.parchmentInk(for: theme).opacity(0.15))
+            .frame(width: 1, height: 28)
+            .accessibilityHidden(true)
     }
 
     private func showPackBannerIfNeeded() {
