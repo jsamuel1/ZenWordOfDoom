@@ -42,12 +42,13 @@ enum AccessibilityPalette {
     /// stronger boundary; not pinned by `WCAGContrastTests`.
     static let gridCellStrokeIncreased = Color(.sRGB, white: 0.15, opacity: 0.85)
 
-    // MARK: - Parchment chrome v2: picture-frame ring + mat fill (see ParchmentChrome.swift)
+    // MARK: - Parchment chrome mat + ink (see ParchmentChrome.swift)
     //
-    // v1 used a translucent scrim composited over a full-fill texture. v2
-    // splits the frame (a thin decorative ring image) from the mat (a plain,
-    // opaque, code-drawn fill) — so these are real fill colors, not a scrim,
-    // and contrast is exact rather than alpha-composited-over-an-assumed-backdrop.
+    // v1 used a translucent scrim composited over a full-fill texture; v2
+    // split a stone-ring texture from a code-drawn mat; v3 drops textures
+    // entirely (mat + thin two-tone accent outline). The mat/ink pairs are
+    // real fill colors, not a scrim, so contrast is exact rather than
+    // alpha-composited-over-an-assumed-backdrop.
 
     static let parchmentMatZen = Color(.sRGB, red: 0.937, green: 0.910, blue: 0.839, opacity: 1)
     /// Slightly darker sand tone for the mat's subtle raked-line pattern —
@@ -71,6 +72,31 @@ enum AccessibilityPalette {
     /// texture, no runtime compositing). See `ParchmentChrome.swift`.
     static func parchmentMat(for theme: Theme) -> Color {
         theme == .doom ? parchmentMatDoom : parchmentMatZen
+    }
+
+    // MARK: Parchment chrome v3: thin two-tone accent outline (no textures)
+    //
+    // Decorative border strokes only — never under text, so not pinned by
+    // WCAGContrastTests. Each theme gets an outer accent and a lighter
+    // companion inlay line.
+
+    /// Zen outer accent: deep moss green.
+    static let parchmentAccentZen = Color(.sRGB, red: 0.357, green: 0.478, blue: 0.373, opacity: 1)
+    /// Zen inner inlay: pale jade highlight.
+    static let parchmentAccentZenSoft = Color(.sRGB, red: 0.741, green: 0.812, blue: 0.729, opacity: 1)
+    /// Doom outer accent: deep ember.
+    static let parchmentAccentDoom = Color(.sRGB, red: 0.545, green: 0.239, blue: 0.129, opacity: 1)
+    /// Doom inner inlay: glowing amber.
+    static let parchmentAccentDoomSoft = Color(.sRGB, red: 0.937, green: 0.565, blue: 0.278, opacity: 1)
+
+    /// Outer border accent for the given theme.
+    static func parchmentAccent(for theme: Theme) -> Color {
+        theme == .doom ? parchmentAccentDoom : parchmentAccentZen
+    }
+
+    /// Inner (lighter) companion line for the two-tone outline.
+    static func parchmentAccentSoft(for theme: Theme) -> Color {
+        theme == .doom ? parchmentAccentDoomSoft : parchmentAccentZenSoft
     }
 
     // MARK: - WCAG math

@@ -113,9 +113,9 @@ struct MenuView: View {
                             .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
 
                             // One shared parchment piece for the secondary
-                            // destinations — a single frame ring + mat around
-                            // all five rows, not five separately bordered
-                            // buttons.
+                            // destinations — a single mat + accent outline
+                            // around all five rows, not five separately
+                            // bordered buttons.
                             VStack(spacing: 0) {
                                 menuRow("Select Level", systemImage: "square.grid.2x2.fill") {
                                     router.push(.levelSelect)

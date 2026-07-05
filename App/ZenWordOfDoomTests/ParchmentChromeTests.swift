@@ -3,22 +3,24 @@ import UIKit
 import LevelGen
 @testable import ZenWordOfDoom
 
+/// v3 chrome is entirely code-drawn (mat + thin two-tone accent outline) —
+/// no bundled textures to verify anymore. These tests pin the shape metrics
+/// and that the theme accents stay distinct.
 final class ParchmentChromeTests: XCTestCase {
-    func testAssetNameMapping() {
-        XCTAssertEqual(ParchmentShape.assetName(theme: .zen, shape: .wide), "frame-zen-button")
-        XCTAssertEqual(ParchmentShape.assetName(theme: .doom, shape: .wide), "frame-doom-button")
-        XCTAssertEqual(ParchmentShape.assetName(theme: .zen, shape: .icon), "frame-zen-icon")
-        XCTAssertEqual(ParchmentShape.assetName(theme: .doom, shape: .icon), "frame-doom-icon")
-        XCTAssertEqual(ParchmentShape.assetName(theme: .zen, shape: .strip), "frame-zen-strip")
-        XCTAssertEqual(ParchmentShape.assetName(theme: .doom, shape: .strip), "frame-doom-strip")
+    func testShapeCornerRadii() {
+        XCTAssertEqual(ParchmentShape.wide.cornerRadius, 12)
+        XCTAssertEqual(ParchmentShape.icon.cornerRadius, 14)
+        XCTAssertEqual(ParchmentShape.strip.cornerRadius, 10)
     }
 
-    func testAllFrameTexturesExistInBundle() {
+    func testThemeAccentsAreDistinctTwoTonePairs() {
+        XCTAssertNotEqual(AccessibilityPalette.parchmentAccent(for: .zen),
+                          AccessibilityPalette.parchmentAccent(for: .doom),
+                          "zen and doom must have different accent outlines")
         for theme in [Theme.zen, Theme.doom] {
-            for shape in [ParchmentShape.wide, .icon, .strip] {
-                let name = ParchmentShape.assetName(theme: theme, shape: shape)
-                XCTAssertNotNil(UIImage(named: name), "missing bundled asset \(name)")
-            }
+            XCTAssertNotEqual(AccessibilityPalette.parchmentAccent(for: theme),
+                              AccessibilityPalette.parchmentAccentSoft(for: theme),
+                              "\(theme): outer and inlay tones must differ (two-tone)")
         }
     }
 }
