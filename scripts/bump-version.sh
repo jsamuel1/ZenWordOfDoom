@@ -60,6 +60,7 @@ sed -E \
 echo "MARKETING_VERSION       ${current} -> ${new}"
 echo "CURRENT_PROJECT_VERSION ${build} -> ${newbuild}"
 echo
-echo "Next, to cut the release:"
+echo "Normally run FOR you by the Release workflow (see CLAUDE.md), which"
+echo "also commits, tags, and pushes. If running by hand instead:"
 echo "  git commit -am \"Release v${new}\""
-echo "  git tag v${new} && git push --follow-tags"
+echo "  git tag v${new} && git push origin main v${new}"

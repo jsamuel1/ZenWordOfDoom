@@ -10,26 +10,13 @@ Key docs: `docs/ARCHITECTURE.md`, `docs/SPEC.md`, `docs/CI.md`,
 
 ## Release procedure
 
-Releases are cut by merging the work to `main` directly — do NOT open a
-pull request for the release.
+Two steps: land the work on `main` by direct merge (do NOT open a pull
+request), then run the `Release` workflow. Do not hand-roll the version
+bump, release commit, or tag — the workflow is the single consistent
+action that does all three, so they can never drift apart.
 
-1. Finish and commit all work on your feature branch.
-2. Bump the version:
-
-   ```sh
-   scripts/bump-version.sh [patch|minor|major]   # defaults to patch
-   ```
-
-   This rewrites `MARKETING_VERSION` (user-facing X.Y.Z) and
-   `CURRENT_PROJECT_VERSION` (build number, +1 every release — TestFlight
-   rejects re-used build numbers) in `project.yml`.
-3. Commit the bump as the release commit:
-
-   ```sh
-   git commit -am "Release vX.Y.Z"
-   ```
-
-4. Merge to `main` (direct merge, not a PR) and push:
+1. Merge the release-worthy work to `main` (direct merge, not a PR) and
+   push:
 
    ```sh
    git fetch origin main
@@ -37,18 +24,33 @@ pull request for the release.
    git push origin main
    ```
 
-5. Tag the release commit on `main` and push the tag:
+2. Trigger the `Release` workflow (`.github/workflows/release.yml`) on
+   `main`, choosing the bump level (`patch` default / `minor` / `major`):
+
+   - GitHub UI: Actions → Release → Run workflow, or
+   - `gh workflow run release.yml -f bump=patch`, or
+   - GitHub MCP: `actions_run_trigger` with method `run_workflow`,
+     `workflow_id: release.yml`, `ref: main`, inputs `{"bump": "patch"}`.
+
+   The workflow runs `scripts/bump-version.sh` (rewrites
+   `MARKETING_VERSION`, the user-facing X.Y.Z, and
+   `CURRENT_PROJECT_VERSION`, the build number, +1 every release —
+   TestFlight rejects re-used build numbers, in `project.yml`), commits
+   `Release vX.Y.Z` to `main`, tags `vX.Y.Z`, and pushes both.
+
+3. Verify the tag landed:
 
    ```sh
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
+   git ls-remote origin 'refs/tags/v*' | tail -3
    ```
 
-Note for remote (Claude Code on the web) sessions: branch pushes work
-(including `main`, when the user has authorized it) but pushes to
-`refs/tags/*` are rejected with HTTP 403. For step 5, trigger the
-`Tag Release` workflow (`.github/workflows/tag-release.yml`) instead —
-via the GitHub MCP `actions_run_trigger` tool or
-`gh workflow run tag-release.yml` — passing `tag: vX.Y.Z` and `ref:` the
-full SHA of the `Release vX.Y.Z` commit on `main`. Verify afterwards with
-`git ls-remote origin refs/tags/vX.Y.Z`.
+Notes:
+
+- Remote (Claude Code on the web) sessions: branch pushes work (including
+  `main`, when the user has authorized it) but pushes to `refs/tags/*`
+  are rejected with HTTP 403 — the workflow is the only supported way to
+  tag from a remote session.
+- The workflow pushes with `GITHUB_TOKEN`, which never triggers other
+  GitHub Actions — `ci.yml` will not run on the release commit. External
+  integrations with their own GitHub app (e.g. Xcode Cloud) still receive
+  the push/tag and build the release from it.

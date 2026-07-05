@@ -1,0 +1,51 @@
+# The one release action: bumps the version via scripts/bump-version.sh,
+# commits "Release vX.Y.Z" to main, tags vX.Y.Z, and pushes both — so the
+# bump, release commit, and tag can never drift apart or be half-applied.
+# See CLAUDE.md "Release procedure".
+#
+# Pushes made with GITHUB_TOKEN do not trigger other GitHub Actions
+# workflows (so ci.yml will not run on the release commit), but external
+# integrations subscribed via their own GitHub app — e.g. Xcode Cloud —
+# still receive the push/tag events and pick up the release from there.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump level"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+
+concurrency: release
+
+jobs:
+  release:
+    # Releases are only ever cut from main; dispatching from another ref
+    # is a mistake, so refuse instead of tagging a side branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump version
+        run: scripts/bump-version.sh "${{ inputs.bump }}"
+      - name: Commit, tag, and push
+        run: |
+          version=$(grep -E '^[[:space:]]*MARKETING_VERSION:' project.yml | head -1 \
+            | sed -E 's/.*"([0-9]+\.[0-9]+\.[0-9]+)".*/\1/')
+          if git ls-remote --exit-code origin "refs/tags/v${version}" > /dev/null 2>&1; then
+            echo "error: tag v${version} already exists on origin" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release v${version}"
+          git tag "v${version}"
+          git push origin main "refs/tags/v${version}"
