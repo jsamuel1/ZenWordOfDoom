@@ -14,11 +14,18 @@ code comments.
 
 - `docs/ARCHITECTURE.md` — the technical reference **as shipped**: stack,
   module boundaries, engine rules (§3), generation pipeline (§4), app
-  layer + economy numbers (§5), testing (§6). The default home for any
-  extracted documentation of new behavior.
+  layer (§5), testing (§6). The default home for extracted documentation
+  of new *technical* behavior.
+- `docs/GAMEPLAY.md` — the player-facing rules **as shipped**: core loop,
+  formats, the 2-D difficulty ladder, doom multiplier, hints, daily,
+  progression. Update with any rules change.
+- `docs/ECONOMY.md` — the authoritative serenity economy: every faucet,
+  sink, price, cap, and the ~0.8 hints/level design target, plus the
+  change checklist. Update with any economy change.
 - `docs/SPEC.md` — the original design vision. Never rewrite its history;
   record deltas as `> **Shipped:** …` quoted amendments under the
-  relevant section, pointing at ARCHITECTURE for authoritative detail.
+  relevant section, pointing at GAMEPLAY/ECONOMY/ARCHITECTURE for
+  authoritative detail.
 - `docs/CI.md` — GitHub Actions + Xcode Cloud + XcodeGen flow. Update when
   workflows, runners, or the release pipeline change.
 - `docs/ACCESSIBILITY.md` — the WCAG 2.2 AA conformance summary and
@@ -38,20 +45,21 @@ commit/branch — a code change whose docs still describe the old behavior is
 an incomplete change.
 
 - **Gameplay rules** (scoring, doom timer/multiplier, hints, modes,
-  progression/difficulty ladder, level formats): update the matching
-  `ARCHITECTURE.md` section (§3 engine, §4 generation) AND add/refresh a
-  `> **Shipped:** …` amendment under the relevant `SPEC.md` section —
-  SPEC keeps the original vision text and records deltas in those quoted
-  notes; don't rewrite its history.
+  progression/difficulty ladder, level formats): update
+  `docs/GAMEPLAY.md`, the matching `ARCHITECTURE.md` section (§3 engine,
+  §4 generation), AND add/refresh a `> **Shipped:** …` amendment under
+  the relevant `SPEC.md` section — SPEC keeps the original vision text
+  and records deltas in those quoted notes; don't rewrite its history.
 - **Economy** (any serenity faucet, sink, price, cap, or starting value):
-  the single source of truth is `Sources/GameCore/Economy.swift` — change
-  numbers there only, with the doc comment explaining intent. Then update
-  `ARCHITECTURE.md` §5.2 (the authoritative numbers table), the SPEC §8
-  economy `Shipped:` note, and the pins in
-  `Tests/GameCoreTests/EconomyTests.swift` (including the pack-yield
-  range test — the design target is ~0.8 hints earned per level). If IAP
-  contents change, also update `Products.storekit` descriptions and
-  remind the user that App Store Connect metadata must be edited by hand.
+  the code source of truth is `Sources/GameCore/Economy.swift` — change
+  numbers there only, with the doc comment explaining intent. The
+  authoritative document is `docs/ECONOMY.md` (numbers tables + change
+  checklist); also refresh the SPEC §8 economy `Shipped:` note and the
+  pins in `Tests/GameCoreTests/EconomyTests.swift` (including the
+  pack-yield range test — the design target is ~0.8 hints earned per
+  level). If IAP contents change, also update `Products.storekit`
+  descriptions and remind the user that App Store Connect metadata must
+  be edited by hand.
 - **Art / content pipeline** (scenes, creatures, anchor pools, affinity,
   daily images): update `ARCHITECTURE.md` §4/§4.2. Conventions to
   preserve: an illustration's slug IS its metadata (hyphen-separated

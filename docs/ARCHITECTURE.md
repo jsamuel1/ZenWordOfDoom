@@ -308,38 +308,22 @@ passes a hard validation filter, and always have a working floor.**
   (never re-purchased). This is the serenity sink — the reason the currency
   is worth accumulating beyond hints.
 
-### 5.2 Serenity economy (as shipped)
+### 5.2 Serenity economy (implementation seams)
 
-`GameCore.Economy` is the single price list; every serenity faucet and sink
-in the app reads from it — no other file hardcodes an amount:
+The **authoritative numbers, faucet/sink tables, design target, and change
+checklist live in [`ECONOMY.md`](ECONOMY.md)** — one document, no
+duplicated tables to drift. What belongs here is where the economy hooks
+into code:
 
-The design target is earned income of roughly **0.8 hints per level** (~8
-serenity against the 10-serenity hint), averaged over a pack including its
-boss payday — pinned by `EconomyTests.testPackYieldIsNearDesignTarget`.
-
-1. New profiles open with `Economy.startingSerenity` (**50**) so early
-   players can learn the hint mechanic before the currency gets scarce.
-2. `GameStore.recordClear` — `Economy.clearReward(firstClear:usedHint:voided:)`.
-   Only a first-time, non-voided clear pays anything: **2** with no hint used,
-   **1** if a hint was used. Repeat clears and doom-voided clears pay nothing.
-   A pack-capstone boss's first clear pays `Economy.bossClearReward` (**+50**)
-   on top — flat, never score- or doom-timer-multiplied, and NOT paid by
-   dailies (also Pangram-Hunts) or the bonus would recur every day. The boss
-   is deliberately the pack's payday: half a pack's income lands there.
-3. `GameStore.recordWord` — `Economy.bonusWordReward` (**1**) per bonus word
-   (found beyond the grid), but only while that level is still uncleared and
-   only for the first `Economy.maxBonusRewardsPerLevel` (**2**) on that
-   level, persisted in `LevelProgress.serenityBonusPaid` — replays,
-   relaunches, and marathon bonus hunts can't farm past the design yield.
-   Grid words pay nothing directly, since their reward is folded into the
-   clear payout above.
-
-Hints cost a flat `Economy.hintCost` (**10**) serenity per reveal
-(`GameViewModel.hintCost`) — every hint, always the same price — refunded if
-nothing was left to reveal. These numbers are tuned against the serenity IAP
-sizes in `Store.swift` (**45 / 100 / 220** at $0.99/$1.99/$3.99; value per
-dollar improves with size so no pack is dominated). Changing pack contents
-also requires updating `Products.storekit` and App Store Connect metadata.
+- `GameCore.Economy` is the single price list; no other file hardcodes an
+  amount. `StoreItem.serenityAmount` (Store.swift) holds IAP contents.
+- `GameStore.recordClear` pays clear + boss rewards (boss = Pangram-Hunt
+  at a campaign capstone order; dailies deliberately excluded).
+- `GameStore.recordWord` pays capped bonus-word rewards; the per-level
+  meter persists in `LevelProgress.serenityBonusPaid`.
+- `GameViewModel.useHintRevealCell` is the only hint charge/refund path.
+- `EconomyTests` pins every constant and the pack-yield design-target
+  range; `StoreTests` pins IAP amounts and pack value dominance.
 
 ### 5.3 Hashing
 
