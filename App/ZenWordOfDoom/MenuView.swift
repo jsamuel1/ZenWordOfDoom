@@ -202,22 +202,27 @@ struct MenuView: View {
         return Button {
             router.push(.game(levelID: dailyID))
         } label: {
-            // No flanking icons — the full parchment width goes to the text
-            // so the title never wraps at standard type sizes.
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Today’s Doom Word")
-                    .font(.headline)
-                Text(cleared ? "Cleared — the garden rests" : "One puzzle. Every soul. Every day.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if streak > 0 {
-                    Label("\(streak) day streak", systemImage: "flame.fill")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.orange)
-                        .padding(.top, 2)
+            // A single trailing play glyph is the only ornament — flanking
+            // icons on both sides squeezed the title into wrapping.
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Play Today’s Doom Word")
+                        .font(.headline)
+                    Text(cleared ? "Cleared — the garden rests" : "One puzzle. Every soul. Every day.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if streak > 0 {
+                        Label("\(streak) day streak", systemImage: "flame.fill")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.orange)
+                            .padding(.top, 2)
+                    }
                 }
+                Spacer(minLength: 8)
+                Image(systemName: "play.circle.fill")
+                    .font(.title2)
+                    .accessibilityHidden(true)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
         .padding(.horizontal, 40)
