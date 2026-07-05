@@ -22,15 +22,15 @@ struct MenuView: View {
     var body: some View {
         ZStack {
             // GeometryReader gives the scroll content a minHeight equal to
-            // the viewport, so the Spacers resolve exactly as they did
-            // before the ScrollView existed at standard type sizes; at
-            // accessibility sizes the content exceeds the viewport and
-            // scrolls instead.
+            // the viewport: when the content is shorter, the frame centers
+            // it (default alignment); when taller (accessibility sizes) it
+            // scrolls. Deliberately NO Spacers for centering — a collapsed
+            // Spacer still costs a full VStack spacing slot at each end,
+            // which was exactly the dead space that pushed the menu into
+            // scrolling at larger (non-accessibility) type sizes.
             GeometryReader { proxy in
                 ScrollView {
-                    VStack(spacing: 32) {
-                        Spacer()
-
+                    VStack(spacing: 28) {
                         // Localized scrim (audit 3.4) — not full-screen — so
                         // the title/serenity/daily block holds contrast over
                         // whichever hero photo was picked for this launch.
@@ -93,10 +93,10 @@ struct MenuView: View {
                             .padding(-12)
                         )
 
-                        // No Spacer here: the daily card and the Play button
-                        // belong to one action cluster, so they keep a fixed
-                        // 32pt gap. Leftover height goes to the outer Spacers,
-                        // which center the cluster instead of stretching it.
+                        // The daily card and the Play button belong to one
+                        // action cluster with a fixed gap; leftover viewport
+                        // height centers the whole content via the outer
+                        // minHeight frame.
                         VStack(spacing: 16) {
                             Button {
                                 // Drop straight into the next level to play; if every
@@ -140,10 +140,9 @@ struct MenuView: View {
                             .parchmentPanel(theme: .zen)
                         }
                         .padding(.horizontal, 40)
-
-                        Spacer()
                     }
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, minHeight: proxy.size.height)
                 }
                 .scrollBounceBehavior(.basedOnSize)
