@@ -46,15 +46,16 @@ enum ParchmentShape {
     }
 
     /// Where the opaque mat fill stops, measured in from the same edges as
-    /// `capInsets`. Half the ring thickness: the mat's edge tucks under the
-    /// stones' midline, so the ring's transparent pixels — outside the stone
-    /// silhouette and in the gaps between stones — show the page behind them
-    /// instead of a mat-colored rounded rectangle poking out past the rocks.
+    /// `capInsets`. Three-quarters of the ring thickness: the mat's edge
+    /// tucks under only the stones' inner quarter, so the backdrop art shows
+    /// through the ring's transparent pixels — outside the stone silhouette
+    /// AND in the gaps between stones — instead of a mat-colored rounded
+    /// rectangle filling the ring band behind the rocks.
     var matInsets: EdgeInsets {
         let cap = capInsets
         return EdgeInsets(
-            top: cap.top / 2, leading: cap.leading / 2,
-            bottom: cap.bottom / 2, trailing: cap.trailing / 2
+            top: cap.top * 0.75, leading: cap.leading * 0.75,
+            bottom: cap.bottom * 0.75, trailing: cap.trailing * 0.75
         )
     }
 
@@ -226,7 +227,10 @@ private struct ParchmentReadoutModifier: ViewModifier {
         content
             .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
             .padding(.horizontal, 14)
-            .padding(.vertical, 7)
+            // Vertical padding must stay >= .strip's matInsets (9.75pt) so
+            // text never pokes past the mat's edge onto the transparent
+            // stone gaps, where contrast is unpinned.
+            .padding(.vertical, 10)
             .background {
                 Image(ParchmentShape.assetName(theme: theme, shape: .strip))
                     .resizable(capInsets: insets, resizingMode: .stretch)
