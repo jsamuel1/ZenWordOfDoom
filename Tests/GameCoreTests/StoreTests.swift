@@ -26,12 +26,22 @@ final class StoreTests: XCTestCase {
     // MARK: StoreItem
 
     func testSerenityAmountsMatchPricingSpec() {
-        XCTAssertEqual(StoreItem.serenitySmall.serenityAmount, 10)
-        XCTAssertEqual(StoreItem.serenityMedium.serenityAmount, 25)
-        XCTAssertEqual(StoreItem.serenityLarge.serenityAmount, 50)
+        XCTAssertEqual(StoreItem.serenitySmall.serenityAmount, 45)
+        XCTAssertEqual(StoreItem.serenityMedium.serenityAmount, 100)
+        XCTAssertEqual(StoreItem.serenityLarge.serenityAmount, 220)
         XCTAssertNil(StoreItem.premiumRemoveAds.serenityAmount)
         XCTAssertFalse(StoreItem.premiumRemoveAds.isConsumable)
         XCTAssertTrue(StoreItem.serenitySmall.isConsumable)
+    }
+
+    /// Value per dollar must improve with pack size ($0.99/$1.99/$3.99) so no
+    /// pack is ever strictly worse than buying multiples of a smaller one.
+    func testNoPackIsDominated() {
+        let small = Double(StoreItem.serenitySmall.serenityAmount!) / 0.99
+        let medium = Double(StoreItem.serenityMedium.serenityAmount!) / 1.99
+        let large = Double(StoreItem.serenityLarge.serenityAmount!) / 3.99
+        XCTAssertGreaterThan(medium, small)
+        XCTAssertGreaterThan(large, medium)
     }
 
     // MARK: SaveState backward compatibility
