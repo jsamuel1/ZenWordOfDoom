@@ -189,25 +189,22 @@ struct MenuView: View {
         return Button {
             router.push(.game(levelID: dailyID))
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: cleared ? "checkmark.seal.fill" : "sun.haze.fill")
-                    .foregroundStyle(cleared ? .green : .orange)
-                    .imageScale(.large)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Today's Doom")
-                        .font(.headline)
-                    Text(cleared ? "Cleared — the garden rests" : "One puzzle. Every soul. Every day.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
+            // No flanking icons — the full parchment width goes to the text
+            // so the title never wraps at standard type sizes.
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Today’s Doom Word")
+                    .font(.headline)
+                Text(cleared ? "Cleared — the garden rests" : "One puzzle. Every soul. Every day.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 if streak > 0 {
-                    Label("\(streak)", systemImage: "flame.fill")
-                        .font(.subheadline.weight(.bold))
+                    Label("\(streak) day streak", systemImage: "flame.fill")
+                        .font(.caption.weight(.bold))
                         .foregroundStyle(.orange)
-                        .accessibilityLabel("\(streak) day streak")
+                        .padding(.top, 2)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(ParchmentButtonStyle(theme: .zen, shape: .wide))
         .padding(.horizontal, 40)

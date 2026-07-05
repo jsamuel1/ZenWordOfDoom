@@ -134,7 +134,9 @@ struct ParchmentButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(AccessibilityPalette.parchmentInk(for: theme))
             .padding(.horizontal, shape == .icon ? 10 : 18)
-            .padding(.vertical, shape == .icon ? 10 : 12)
+            // .wide's vertical padding must clear its matInsets (12.75pt)
+            // with breathing room, or text crowds the stone ring.
+            .padding(.vertical, shape == .icon ? 10 : 18)
             .frame(minWidth: shape == .icon ? 52 : 44, minHeight: shape == .icon ? 52 : 44)
             .background {
                 // Frame ring in FRONT of the mat: the ring's transparent
