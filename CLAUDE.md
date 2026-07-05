@@ -5,8 +5,30 @@ SPM packages under `Sources/`). The Xcode project is generated — edit
 `project.yml`, never a checked-in `.xcodeproj` (run `xcodegen generate`
 locally; CI/Xcode Cloud regenerate it themselves).
 
-Key docs: `docs/ARCHITECTURE.md`, `docs/SPEC.md`, `docs/CI.md`,
-`docs/ACCESSIBILITY.md`.
+## The docs/ map (what lives where)
+
+Documentation has two layers: doc comments in code carry *local intent*;
+the extracted docs in `docs/` carry the *cross-cutting, as-shipped
+behavior*. Substantial behavior changes must land in `docs/`, not only in
+code comments.
+
+- `docs/ARCHITECTURE.md` — the technical reference **as shipped**: stack,
+  module boundaries, engine rules (§3), generation pipeline (§4), app
+  layer + economy numbers (§5), testing (§6). The default home for any
+  extracted documentation of new behavior.
+- `docs/SPEC.md` — the original design vision. Never rewrite its history;
+  record deltas as `> **Shipped:** …` quoted amendments under the
+  relevant section, pointing at ARCHITECTURE for authoritative detail.
+- `docs/CI.md` — GitHub Actions + Xcode Cloud + XcodeGen flow. Update when
+  workflows, runners, or the release pipeline change.
+- `docs/ACCESSIBILITY.md` — the WCAG 2.2 AA conformance summary and
+  pre-release checklist. Update when UI chrome, colors, hit regions, or
+  assist features change.
+- `docs/PRIVACY.md` — the player-facing privacy policy. Update when ads,
+  analytics, permissions, or any data flow changes.
+- `docs/ROADMAP.md` — milestone plan; tick/annotate milestones as they
+  land.
+- `docs/REVIEW.md` — dated review snapshots (see below).
 
 ## Documentation upkeep (do this in the SAME change, not later)
 
