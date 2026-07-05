@@ -195,7 +195,104 @@ integration, a dependency-free reactive synth, accessibility discipline,
 and clean CI/release automation are each individually uncommon; together
 they're a strong calling card.
 
-## 6. Recommendations, in order
+## 6. Appendix: word-list / solvability deep dive (data-verified)
+
+*Added 2026-07-05 after running the real corpus and a Python re-implementation
+of the exact generation pipeline (legacy FNV-1a basis + SplitMix64 +
+prime-count theme rule) over the first 2,000 campaign orders. Two claims in
+§1 are corrected below.*
+
+### Corrections to §1
+
+- **The 10-letter dailies are winnable.** The bundled `words.txt` is
+  length-capped to 3–9 letters, so 10-letter daily words are "missing" from
+  it by construction — but runtime validation is `UITextChecker`, which
+  accepts them, and `WordOfTheDaySolvabilityTests` already handles the >9
+  case explicitly. Every daily word of length 8/9 IS in ENABLE, and every
+  daily's buildable pool (65–582 words) clears its pangram target. The
+  10-tile wheels remain a **spec violation** (SPEC §3 says 5–9) and a
+  layout/UX question, not a solvability bug.
+- **VERDANCY is a landmine, not a live bug.** It is genuinely absent from
+  ENABLE with zero ENABLE anagrams — but simulating orders 0–1,999 shows it
+  is *never selected*: the expert band exists only for orders 30–39 (ten
+  levels, ever), and moss-garden is never the picked zen scene in that
+  window. It is unreachable dead data today; any change to pools, seeds, or
+  pack size could expose it.
+
+### The difficulty curve is a 40-level ramp, then flat forever
+
+Bands easy/medium/hard/expert each exist for exactly ten levels (orders
+0–9/10–19/20–29/30–39). **Everything from order 40 on is master.** The
+"progression" is really a fixed 40-level campaign plus an infinite master
+tail.
+
+### The master tail has 21 wheels, total
+
+Distinct anchors reachable per theme/band (real `scene-lexicon.json` +
+`seed-*.txt` fallback): zen 25/46/16/13/10 and doom 21/40/24/13/11 for
+lengths 5/6/7/8/9. Simulating the 120 master levels at orders 40–159:
+
+- **21 distinct wheels** (10 zen + 11 doom) cover all 120 levels.
+- RIVERSIDE ×14 and SUBMERGED ×14 are the most repeated.
+- **10 back-to-back identical wheels** (e.g. orders 42–43 both RIVERSIDE,
+  50–51 both SUBMERGED) — the same letters two levels in a row.
+- Bosses repeat normal levels' letters at close range (THORNIEST at 41 and
+  46, then again as the order-49 boss; WATERWAY at 37 and as the order-39
+  boss).
+
+Master pools themselves are healthy (43–338 buildable words each, top-24
+provider pool fully "interesting") — the tail problem is letter repetition,
+not pool weakness.
+
+### Four of the first 40 levels have weak pools (obscure required answers)
+
+Reproducing the provider ranking (lexicon → common → longer → alpha, top
+24) and the generator's interesting-word filter for the 36 non-boss levels
+in the fixed campaign:
+
+| Order | Wheel | Buildable | Interesting | Obscure filler that becomes required answers |
+| --- | --- | --- | --- | --- |
+| 2 | RIVER | 7 | 5 | RIVE, RIV |
+| 6 | MISTY | 12 | 4 | MYST, STIM, ISM, MIT, MST, SIM, STY, TIM |
+| 7 | QUIET | 8 | 4 | QUE, TUE, TUI, UTE |
+| 16 | SKULLS | **5** | 4 | USS |
+
+These are below the `minInterestingSlots = 3` fallback threshold's comfort
+zone — the layout will draw from the full pool and require words like RIV
+and MYST. Orders 2, 6, 7 are in a player's **first session**, where
+recognizability matters most. SKULLS (order 16) is the worst wheel in the
+game: five buildable words total on a 6-letter wheel.
+
+### Test-coverage gap, precisely
+
+- `SolvabilitySweepTests` sweeps orders 0–49 with **fake pools**
+  (`scenes: ["garden","pond"]`), so none of the real-content findings above
+  are in its net, and it checks `canBuild` only — never dictionary
+  membership of anchors.
+- `WordOfTheDaySolvabilityTests` is good (count target, >9 handled) but
+  only covers dailies, not capstone anchors.
+
+### Concrete fix list (supersedes recommendation 1's wording)
+
+1. **Guard test — anchor validity:** every `scene-lexicon.json` +
+   `seed-*.txt` word of length 5–9 must be present in `words.txt` (catches
+   VERDANCY-class landmines at build time; ENABLE membership is the best
+   CI-runnable proxy for `UITextChecker`).
+2. **Guard test — real-content sweep:** run the solvability sweep over
+   `ThemePools.zenDoom` + the real lexicons for orders 0–200, asserting
+   pool health (e.g. ≥ 8 interesting words per grid level) and no
+   back-to-back identical wheels.
+3. **Fix the four weak early wheels:** replace RIVER/MISTY/QUIET (easy) and
+   SKULLS (medium) in the scene lexicons with richer-pool alternatives, or
+   have the generator reject wheels whose interesting pool < ~10 and re-pick.
+4. **Break the master tail:** expand 9-letter scene lexicon entries (each
+   scene has 1–2 today; ~6+ each would give the tail ~40–80 wheels), and/or
+   add an anti-repeat rule (re-pick when the anchor equals either of the
+   previous two levels' anchors).
+5. **Decide the 10-letter dailies:** cap curation at 9 (matching SPEC §3
+   and the corpus), or amend the spec and verify the wheel UI at 10 tiles.
+
+## 7. Recommendations, in order
 
 1. **Correctness first (ship-blockers in the long tail):** validate every
    capstone/daily anchor against the runtime dictionary; add a
