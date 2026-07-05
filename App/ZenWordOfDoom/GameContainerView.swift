@@ -151,9 +151,16 @@ struct GamePlayView: View {
                             } else {
                                 Text(model.lastMessage)
                                     .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(.primary)
                             }
                         }
+                        // Capsule scrim: this line sits directly over the
+                        // level art, which can be any brightness — without a
+                        // backdrop it disappears (and .secondary is dimmer
+                        // still, so both branches use .primary now).
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .a11yCardBackground(cornerRadius: .infinity)
                         .animation(.default, value: model.lastMessage)
                         .accessibilityLiveRegion()
 

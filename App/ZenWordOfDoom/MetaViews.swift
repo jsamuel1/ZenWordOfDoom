@@ -10,10 +10,15 @@ struct FoundWordsTray: View {
 
     var body: some View {
         VStack(spacing: 6) {
+            // Capsule scrim + .primary: sits straight over the level art,
+            // where unbacked .secondary text is unreadable.
             Text(progress)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
                 .monospacedDigit()
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .a11yCardBackground(cornerRadius: .infinity)
 
             if !bonusWords.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {

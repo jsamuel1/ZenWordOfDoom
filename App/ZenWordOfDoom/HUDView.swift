@@ -78,12 +78,20 @@ struct HUDView: View {
     }
 
     private var micButton: some View {
+        // Deliberately chrome-free — a bare solid mic glyph, not a
+        // parchment-framed button like the hint next to it. The shadow keeps
+        // it visible over the level art; red carries the listening state for
+        // Reduce Motion users who don't get the pulse.
         Button(action: { isListening ? onMicStop() : onMicStart() }) {
-            Image(systemName: isListening ? "mic.fill" : "mic")
-                .font(.title3)
+            Image(systemName: "mic.fill")
+                .font(.title2)
                 .symbolEffect(.pulse, isActive: isListening && !reduceMotion)
+                .foregroundStyle(isListening ? Color.red : Color.white)
+                .shadow(color: .black.opacity(0.6), radius: 2)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(ParchmentButtonStyle(theme: theme, shape: .icon))
+        .buttonStyle(.plain)
         .accessibilityLabel(isListening ? "Stop listening" : "Speak a word")
     }
 }
