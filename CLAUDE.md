@@ -51,6 +51,8 @@ Notes:
   are rejected with HTTP 403 — the workflow is the only supported way to
   tag from a remote session.
 - The workflow pushes with `GITHUB_TOKEN`, which never triggers other
-  GitHub Actions — `ci.yml` will not run on the release commit. External
-  integrations with their own GitHub app (e.g. Xcode Cloud) still receive
-  the push/tag and build the release from it.
+  GitHub Actions — so its final step explicitly dispatches `ci.yml` on
+  the release commit (skipped if a CI run for that commit already exists;
+  `ci.yml`'s per-ref concurrency group also collapses any duplicate).
+  External integrations with their own GitHub app (e.g. Xcode Cloud)
+  receive the push/tag directly and build the release from it.

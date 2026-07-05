@@ -4,9 +4,10 @@
 # See CLAUDE.md "Release procedure".
 #
 # Pushes made with GITHUB_TOKEN do not trigger other GitHub Actions
-# workflows (so ci.yml will not run on the release commit), but external
-# integrations subscribed via their own GitHub app — e.g. Xcode Cloud —
-# still receive the push/tag events and pick up the release from there.
+# workflows, so the last step dispatches ci.yml on the release commit
+# explicitly (with a guard so it can't double-run). External integrations
+# subscribed via their own GitHub app — e.g. Xcode Cloud — receive the
+# push/tag events directly and pick up the release from there.
 name: Release
 
 on:
@@ -23,6 +24,8 @@ on:
 
 permissions:
   contents: write
+  # Needed to dispatch ci.yml on the release commit.
+  actions: write
 
 concurrency: release
 
@@ -49,3 +52,22 @@ jobs:
           git commit -am "Release v${version}"
           git tag "v${version}"
           git push origin main "refs/tags/v${version}"
+      - name: Run CI on the release commit
+        # GITHUB_TOKEN pushes never trigger on:push workflows, so kick
+        # ci.yml explicitly. Two layers keep this from double-running if
+        # the push ever DOES trigger CI (e.g. the push credential is
+        # switched to a PAT or deploy key someday): skip the dispatch when
+        # a CI run already exists for this exact commit, and ci.yml's own
+        # per-ref concurrency group (cancel-in-progress) collapses any
+        # duplicate that slips through the race window.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          existing=$(gh run list --workflow ci.yml --commit "$sha" --json databaseId --jq 'length')
+          if [ "${existing}" -gt 0 ]; then
+            echo "CI already has ${existing} run(s) for ${sha} — not dispatching another."
+          else
+            gh workflow run ci.yml --ref main
+            echo "Dispatched ci.yml on main (${sha})."
+          fi
