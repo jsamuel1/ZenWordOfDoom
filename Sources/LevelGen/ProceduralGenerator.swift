@@ -37,18 +37,22 @@ public struct ProceduralGenerator: Sendable {
         // whole campaign); the residual case (previous level itself shifted
         // AND this level's raw pick equals the shifted result) first occurs
         // past order 2,000 in simulation, beyond any real play horizon.
+        let tier = ProceduralLevelLibrary.standard.tier(atOrder: order)
         var avoiding: String?
         if order > 0 {
             let prevSeed = ProceduralLevelLibrary.standard.seed(atOrder: order - 1)
+            let prevTier = ProceduralLevelLibrary.standard.tier(atOrder: order - 1)
             let prevVisual = SceneCreaturePicker(pools: pools).pick(theme: prevSeed.theme, index: prevSeed.index)
             if let prev = try? WheelPicker.wheel(sceneID: prevVisual.sceneID, theme: prevSeed.theme,
-                                                 band: prevSeed.band, index: prevSeed.index) {
+                                                 band: prevSeed.band, index: prevSeed.index,
+                                                 tier: prevTier) {
                 avoiding = String(String(prev.tiles.map(\.letter)).sorted())
             }
         }
 
         let wheel = try WheelPicker.wheel(sceneID: visual.sceneID, theme: seed.theme,
                                           band: seed.band, index: seed.index,
+                                          tier: tier,
                                           avoidingSignature: avoiding)
 
         // Pack capstone => Pangram-Hunt boss (spec workstream G). The scene-coupled
@@ -63,7 +67,7 @@ public struct ProceduralGenerator: Sendable {
                 slots: [],
                 sceneID: visual.sceneID,
                 creatureID: signature.isEmpty ? visual.creatureID : signature,
-                format: .pangramHunt(target: PackCatalog.pangramTarget(for: seed.band))
+                format: .pangramHunt(target: PackCatalog.pangramTarget(for: seed.band, tier: tier))
             )
         }
 

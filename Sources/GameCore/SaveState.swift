@@ -34,6 +34,18 @@ public struct BestiaryEntry: Codable, Equatable, Sendable {
 
 /// The full persisted player profile.
 public struct SaveState: Codable, Equatable, Sendable {
+    /// Bump when a release invalidates part of an older profile (see
+    /// `GameStore`'s migration for what each bump resets). Distinct from the
+    /// additive-key tolerance below, which handles *new fields* silently;
+    /// this handles *meaning changes* to existing data explicitly.
+    ///
+    /// - v1 (implicit; saves without the key): through v0.4.x.
+    /// - v2: level content regenerated wholesale (known-good anchor pools +
+    ///   tiered difficulty ladder) — saved level progress no longer describes
+    ///   the puzzles it points at, so migration clears `progress` only.
+    public static let currentSchemaVersion = 2
+
+    public var schemaVersion: Int
     public var serenity: Int
     public var stats: GameStats
     public var progress: [String: LevelProgress]
@@ -55,6 +67,7 @@ public struct SaveState: Codable, Equatable, Sendable {
     public var processedTransactionIDs: [UInt64]
 
     public init() {
+        self.schemaVersion = Self.currentSchemaVersion
         self.serenity = 0
         self.stats = GameStats()
         self.progress = [:]
@@ -82,6 +95,7 @@ public struct SaveState: Codable, Equatable, Sendable {
     // MARK: Codable — tolerant of older saves
 
     private enum CodingKeys: String, CodingKey {
+        case schemaVersion
         case serenity, stats, progress, bestiary
         case premiumUnlocked, ownedCosmetics, equippedPalette, equippedPoemSet
         case processedTransactionIDs
@@ -89,9 +103,12 @@ public struct SaveState: Codable, Equatable, Sendable {
 
     /// Every field decodes with a default so profiles written by any earlier
     /// version (which lack the newer keys) load intact instead of falling back
-    /// to a fresh save.
+    /// to a fresh save. A save without `schemaVersion` is v1 (pre-v0.5) —
+    /// deliberately decoded as 1, NOT the current version, so `GameStore`
+    /// can tell it needs migration.
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         self.serenity = try c.decodeIfPresent(Int.self, forKey: .serenity) ?? 0
         self.stats = try c.decodeIfPresent(GameStats.self, forKey: .stats) ?? GameStats()
         self.progress = try c.decodeIfPresent([String: LevelProgress].self, forKey: .progress) ?? [:]

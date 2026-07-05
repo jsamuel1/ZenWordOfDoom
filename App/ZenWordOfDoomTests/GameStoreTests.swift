@@ -47,6 +47,48 @@ final class GameStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.state, store.state)
     }
 
+    /// Schema v1 → v2: level content was regenerated wholesale, so migration
+    /// clears per-level progress — and ONLY that. Purchases, currency,
+    /// cosmetics, bestiary, and lifetime stats all survive.
+    func testSchemaV1SaveMigratesByClearingProgressOnly() throws {
+        // A pre-v2 save: no schemaVersion key, with progress and earnings.
+        let legacy = """
+        {"serenity": 33,
+         "premiumUnlocked": true,
+         "ownedCosmetics": ["palette-ember"],
+         "equippedPalette": "palette-ember",
+         "processedTransactionIDs": [7],
+         "progress": {"zen-master-41": {"levelID": "zen-master-41", "cleared": true,
+                      "bestScore": 500, "bonusWordsFound": 3, "noHint": true}},
+         "bestiary": {"gloom-eye": {"creatureID": "gloom-eye",
+                      "firstRevealedLevelID": "zen-master-41"}}}
+        """
+        try legacy.data(using: .utf8)!.write(to: url)
+
+        let store = makeStore()
+        XCTAssertEqual(store.state.schemaVersion, SaveState.currentSchemaVersion)
+        XCTAssertTrue(store.state.progress.isEmpty, "old level progress must reset")
+        XCTAssertEqual(store.state.serenity, 33)
+        XCTAssertTrue(store.state.premiumUnlocked)
+        XCTAssertEqual(store.state.ownedCosmetics, ["palette-ember"])
+        XCTAssertEqual(store.state.equippedPalette, "palette-ember")
+        XCTAssertEqual(store.state.processedTransactionIDs, [7])
+        XCTAssertEqual(store.state.bestiary["gloom-eye"]?.creatureID, "gloom-eye")
+
+        // The migration persists immediately: a second load is already v2
+        // and does not re-migrate.
+        let reloaded = GameStore(fileURL: url)
+        XCTAssertEqual(reloaded.state, store.state)
+    }
+
+    func testCurrentSchemaSaveIsNotTouchedByMigration() {
+        let store = makeStore()
+        store.recordClear(level: SampleLevel.make(), score: 10, bonusWords: 0,
+                          usedHint: false, creatureRevealed: false)
+        let reloaded = GameStore(fileURL: url)
+        XCTAssertFalse(reloaded.state.progress.isEmpty, "v2 progress must survive reload")
+    }
+
     func testVoidedClearAwardsNoSerenityButStillProgresses() {
         let store = makeStore()
         let level = SampleLevel.make()

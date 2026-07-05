@@ -65,4 +65,23 @@ final class ProceduralLevelLibraryTests: XCTestCase {
         XCTAssertEqual(ProceduralLevelLibrary.standard.id(atOrder: 0),
                        ProceduralLevelLibrary().id(atOrder: 0))
     }
+
+    // MARK: 2-D difficulty ladder (size cycles per pack; tier per size cycle)
+
+    func testBandsCycleAcrossPacks() {
+        XCTAssertEqual(lib.seed(atOrder: 0).band, .easy)     // pack 0
+        XCTAssertEqual(lib.seed(atOrder: 45).band, .master)  // pack 4
+        XCTAssertEqual(lib.seed(atOrder: 50).band, .easy)    // pack 5: sizes restart
+        XCTAssertEqual(lib.seed(atOrder: 95).band, .master)  // pack 9
+        XCTAssertEqual(lib.seed(atOrder: 155).band, .easy)   // pack 15: tail keeps cycling
+    }
+
+    func testTierEscalatesPerSizeCycleAndCapsAtHard() {
+        XCTAssertEqual(lib.tier(atOrder: 0), .easy)     // packs 0-4
+        XCTAssertEqual(lib.tier(atOrder: 49), .easy)
+        XCTAssertEqual(lib.tier(atOrder: 50), .medium)  // packs 5-9
+        XCTAssertEqual(lib.tier(atOrder: 99), .medium)
+        XCTAssertEqual(lib.tier(atOrder: 100), .hard)   // packs 10-14
+        XCTAssertEqual(lib.tier(atOrder: 1000), .hard)  // infinite tail stays hard
+    }
 }

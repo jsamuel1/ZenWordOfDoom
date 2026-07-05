@@ -47,13 +47,15 @@ final class SolvabilitySweepTests: XCTestCase {
     /// scenes/creatures and the bundled anchor pools — so content-quality
     /// regressions (word-poor wheels, boss anchors missing from the corpus,
     /// letters repeating on consecutive levels) are caught at test time
-    /// rather than discovered by long-tail players. The fake-pool test above
-    /// stays as the fast structural check.
-    func test_realContentFirst120LevelsAreRichAndNonRepeating() async throws {
+    /// rather than discovered by long-tail players. 160 orders covers all
+    /// three richness tiers (easy/medium/hard eras end at order 150) plus
+    /// the start of the infinite hard tail. The fake-pool test above stays
+    /// as the fast structural check.
+    func test_realContentFirst160LevelsAreRichAndNonRepeating() async throws {
         let lib = ProceduralLevelLibrary(packSize: 10)
         let gen = ProceduralGenerator(wordProvider: DeterministicWordProvider(), pools: .zenDoom)
         var previousSignature = ""
-        for order in 0..<120 {
+        for order in 0..<160 {
             let level = try await gen.level(for: lib.seed(atOrder: order))
             let wheelWord = String(level.wheel.tiles.map(\.letter))
             let signature = String(wheelWord.sorted())

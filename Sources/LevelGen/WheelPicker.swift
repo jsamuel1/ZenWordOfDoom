@@ -52,14 +52,19 @@ public enum WheelPicker {
     /// can only recur once the cycle wraps. Falls back to the theme-lexicon
     /// anchor path if the bundled pools are missing.
     ///
+    /// `tier` selects which richness pool the anchor comes from (easy = many
+    /// findable words, hard = barely more than the grid demands), the second
+    /// difficulty axis alongside the band's wheel size.
+    ///
     /// `avoidingSignature` (a sorted-letters signature) skips past a cycle
     /// entry with those exact letters — the generator passes the previous
     /// level's signature so DIFFERENT scenes whose cycles happen to align
     /// can't serve the same letters two levels in a row either.
     public static func wheel(sceneID: String, theme: Theme, band: DifficultyBand, index: Int,
+                             tier: DifficultyTier = .easy,
                              avoidingSignature: String? = nil) throws -> Wheel {
         let n = wheelLength(for: band)
-        let pool = AnchorPools.shared.anchors(ofLength: n)
+        let pool = AnchorPools.shared.anchors(ofLength: n, tier: tier)
         guard !pool.isEmpty else { return try wheel(theme: theme, band: band, index: index) }
 
         let ranked = pool
@@ -71,7 +76,7 @@ public enum WheelPicker {
         // Explicit Fisher–Yates with SeededRandom (never stdlib shuffle —
         // its algorithm isn't pinned across Swift versions; see WordOfTheDay).
         var cycle = Array(ranked)
-        var rng = SeededRandom(seed: FNV1a.hash(theme.rawValue + sceneID + "\(n)"))
+        var rng = SeededRandom(seed: FNV1a.hash(theme.rawValue + sceneID + "\(n)" + tier.rawValue))
         var i = cycle.count - 1
         while i >= 1 {
             let j = Int(rng.next() % UInt64(i + 1))

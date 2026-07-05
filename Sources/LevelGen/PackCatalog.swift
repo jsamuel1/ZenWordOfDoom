@@ -69,4 +69,18 @@ public struct PackCatalog: Sendable {
         case .master: return 8
         }
     }
+
+    /// Tiered boss target: the base band target plus a bump per richness
+    /// tier — the same hunt against a leaner pool, asking for slightly more.
+    /// Stays comfortably below every tier's common-buildable floor (see
+    /// `scripts/generate-anchor-pools.sh`).
+    public static func pangramTarget(for band: DifficultyBand, tier: DifficultyTier) -> Int {
+        let bump: Int
+        switch tier {
+        case .easy:   bump = 0
+        case .medium: bump = 1
+        case .hard:   bump = 2
+        }
+        return pangramTarget(for: band) + bump
+    }
 }

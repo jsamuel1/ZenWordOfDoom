@@ -169,11 +169,13 @@ LevelSeed (theme, band, index)
   → scene + creature picked (SceneCreaturePicker, seeded)
   → wheel picked from the pre-selected KNOWN-GOOD anchor pools (AnchorPools,
     generated offline by scripts/generate-anchor-pools.sh: every anchor is a
-    common corpus word whose letters build a per-length floor of common
-    words). The scene's slug words steer WHICH anchor via SceneAffinity —
-    the image inspires the letters — through a seeded per-scene cycle of the
-    top-24 matches, with the previous level's letters explicitly avoided so
-    consecutive levels never repeat a wheel (WheelPicker)
+    common corpus word passing sanity gates, tiered by how many common words
+    its letters build — easy = rich pool, hard = barely more than the grid
+    demands). The order's DifficultyTier selects the pool; the scene's slug
+    words steer WHICH anchor via SceneAffinity — the image inspires the
+    letters — through a seeded per-scene cycle of the top-24 matches, with
+    the previous level's letters explicitly avoided so consecutive levels
+    never repeat a wheel (WheelPicker)
   → [pack capstone?] → Pangram-Hunt boss, no grid (LevelFormat.pangramHunt) —
     the anchor is a real, common N-letter word, so the pangram exists and is
     recognizable
@@ -198,9 +200,14 @@ retry screen rather than a `precondition` trap.
 ### 4.1 Ordering, packs, and the daily puzzle
 
 - **`ProceduralLevelLibrary`** maps a play order to a stable `LevelSeed`.
-  Band escalates every `packSize` (10) levels; theme starts `.zen` and
-  permanently flips each time a prime-numbered level (1-indexed) is crossed,
-  so a pack can contain a mix of themes.
+  Difficulty is a 2-D ladder: each pack walks one wheel size, sizes cycle
+  5→9 across packs (`band = pack % 5`), and every full size cycle escalates
+  the richness **tier** (`tier(atOrder:)`: easy → medium → hard anchor
+  pools; see `DifficultyTier`) — a ~150-level ramp, after which the
+  infinite tail keeps cycling sizes at hard tier. Boss word-count targets
+  bump with tier (`PackCatalog.pangramTarget(for:tier:)`). Theme starts
+  `.zen` and permanently flips each time a prime-numbered level (1-indexed)
+  is crossed, so a pack can contain a mix of themes.
 - **`PackCatalog`** overlays named packs on that order and marks each pack's
   last level as a capstone (a `pangramHunt` boss revealing a signature
   creature).
@@ -257,7 +264,10 @@ passes a hard validation filter, and always have a working floor.**
   **Codable JSON to a file in Application Support** (or an injectable URL for
   tests). Every mutation persists immediately; `Codable` decoding defaults
   every field so older saves missing newer keys (e.g. pre-monetization
-  saves) load intact.
+  saves) load intact. Meaning changes to existing data go through an
+  explicit `SaveState.schemaVersion` migration instead (v1 → v2 clears
+  per-level progress — the level content was regenerated wholesale — while
+  serenity, premium, transactions, cosmetics, bestiary, and stats survive).
 - **`GameViewModel`** — bridges the pure `GameEngine` to SwiftUI: owns tap/
   swipe/voice input, the hint flow (seeded deterministic reveal order via
   `FNV1a` + reveal count), the doom timer, and completion (recording the

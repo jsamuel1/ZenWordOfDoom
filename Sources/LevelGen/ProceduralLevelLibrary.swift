@@ -9,20 +9,35 @@ public struct ProceduralLevelLibrary: Sendable {
 
     private static let bandOrder: [DifficultyBand] = [.easy, .medium, .hard, .expert, .master]
 
-    /// Order N maps to a stable `LevelSeed`. Band escalates every `packSize`
-    /// levels (unchanged). Theme starts at `.zen` and permanently swaps
-    /// (zen<->doom) each time a prime-numbered level (1-indexed, as shown to
-    /// the player) is crossed — an even count of primes seen so far means
-    /// zen, odd means doom. This replaces simple pack-based alternation so a
-    /// pack of levels can now contain a mix of themes.
+    /// Order N maps to a stable `LevelSeed`. Difficulty is a 2-D ladder:
+    /// each pack walks one wheel size, sizes cycle 5→9 across packs, and
+    /// every full size cycle (5 packs) escalates the richness tier
+    /// (easy → medium → hard word pools; see `DifficultyTier`). That gives a
+    /// ~150-level ramp — packs 1-5 walk sizes at easy tier, 6-10 re-walk
+    /// them at medium, 11-15 at hard — and the infinite tail keeps cycling
+    /// sizes at hard tier instead of flat-lining on one wheel size.
+    /// (Pre-schema-v2 saves keyed progress to the old always-master tail;
+    /// the save migration resets level progress, see `GameStore`.)
+    ///
+    /// Theme starts at `.zen` and permanently swaps (zen<->doom) each time a
+    /// prime-numbered level (1-indexed, as shown to the player) is crossed —
+    /// an even count of primes seen so far means zen, odd means doom, so a
+    /// pack of levels can contain a mix of themes.
     public func seed(atOrder order: Int) -> LevelSeed {
         let pack = order / packSize
-        let bandIdx = min(pack, Self.bandOrder.count - 1)
-        let band = Self.bandOrder[bandIdx]
+        let band = Self.bandOrder[pack % Self.bandOrder.count]
         let levelNumber = order + 1
         let theme: Theme = Primes.count(upTo: levelNumber).isMultiple(of: 2) ? .zen : .doom
         // Global order is the per-level index, keeping every id unique.
         return LevelSeed(theme: theme, band: band, index: order)
+    }
+
+    /// The richness tier for an order: escalates once per full size cycle
+    /// (`bandOrder.count` packs) and stays `.hard` forever after.
+    public func tier(atOrder order: Int) -> DifficultyTier {
+        let era = (order / packSize) / Self.bandOrder.count
+        let tiers = DifficultyTier.allCases
+        return tiers[min(era, tiers.count - 1)]
     }
 
     public func seed(forID id: String) -> LevelSeed? {

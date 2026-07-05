@@ -29,10 +29,27 @@ final class GameStore: ObservableObject {
 
         if let data = try? Data(contentsOf: self.fileURL),
            let decoded = try? JSONDecoder().decode(SaveState.self, from: data) {
-            self.state = decoded
+            self.state = Self.migrated(decoded)
+            if decoded.schemaVersion < SaveState.currentSchemaVersion { save() }
         } else {
             self.state = SaveState()
         }
+    }
+
+    /// Explicit schema migration (see `SaveState.currentSchemaVersion`).
+    /// v1 → v2: the level content was regenerated wholesale (known-good
+    /// anchor pools + tiered difficulty ladder), so old per-level progress
+    /// describes puzzles that no longer exist — clear it and let everyone
+    /// restart the campaign. Everything a player *bought or earned outside
+    /// levels* survives: serenity, premium, processed transactions,
+    /// cosmetics (owned + equipped), the bestiary, streaks, and lifetime
+    /// stats.
+    private static func migrated(_ decoded: SaveState) -> SaveState {
+        guard decoded.schemaVersion < SaveState.currentSchemaVersion else { return decoded }
+        var state = decoded
+        state.progress = [:]
+        state.schemaVersion = SaveState.currentSchemaVersion
+        return state
     }
 
     /// Persist the current state to disk. Failures are swallowed — a missing

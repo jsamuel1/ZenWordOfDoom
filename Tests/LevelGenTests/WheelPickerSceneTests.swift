@@ -46,4 +46,18 @@ final class WheelPickerSceneTests: XCTestCase {
         XCTAssertEqual(signatures.count, WheelPicker.affinityCandidates,
                        "one full cycle should visit every candidate exactly once")
     }
+
+    func testTiersDrawDisjointWheels() throws {
+        // Tier bins are disjoint richness ranges, so the same (scene, band,
+        // index) at easy vs hard tier must deal different letters.
+        for index in 0..<8 {
+            let easy = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .medium,
+                                             index: index, tier: .easy)
+            let hard = try WheelPicker.wheel(sceneID: "still-pond", theme: .zen, band: .medium,
+                                             index: index, tier: .hard)
+            XCTAssertNotEqual(String(easy.tiles.map(\.letter)).sorted(),
+                              String(hard.tiles.map(\.letter)).sorted(),
+                              "index \(index): easy and hard tier dealt the same wheel")
+        }
+    }
 }
