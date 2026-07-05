@@ -257,6 +257,12 @@ per-hint cost) rather than a purchasable hint tier.
 - **Level packs** themed by Zen scene (Garden, Pond, Grove, Peak…), each with a
   signature creature.
 - Difficulty ramps wheel size within and across packs (5 → 9).
+
+  > **Shipped (2-D ladder):** each pack walks one wheel size, sizes cycle
+  > 5→9 across packs, and every full size cycle escalates the anchor-pool
+  > richness tier (easy → medium → hard: fewer findable words on the same
+  > wheel size) — a ~150-level ramp, with the infinite tail cycling sizes
+  > at hard tier. See `ARCHITECTURE.md` §4/§4.1.
 - **Linear unlock** — levels play in pack order; a level unlocks only once the
   preceding level is cleared. The home screen's **Play** drops the player
   straight into their next uncleared level, while **Select Level** opens the
@@ -265,11 +271,16 @@ per-hint cost) rather than a purchasable hint tier.
 - **Serenity** (soft currency) earned from words, bonus words, and clears;
   spent on hints and cosmetic scene unlocks.
 
-  > **Shipped (Economy consolidation):** +1 per bonus word; a first-time,
-  > non-voided clear pays +5 (or +8 with the no-hint bonus); repeat clears
-  > and doom-voided clears pay nothing; hints cost a flat 10. One price
-  > list (`GameCore.Economy`) is the single source for all of these — see
-  > `ARCHITECTURE.md` §5.2 for the authoritative numbers.
+  > **Shipped (Economy v2, ~0.8 hints earned per level):** new profiles
+  > start with 50; a first-time, non-voided clear pays +1 (or +2 with the
+  > no-hint bonus); +1 per bonus word, capped at 2 paid per level and only
+  > before that level's first clear (no replay farming); a pack-capstone
+  > boss's first clear pays a flat +50 (never score/timer-multiplied;
+  > dailies don't qualify); repeat and doom-expired clears pay nothing;
+  > hints cost a flat 10 — every hint, same price. Serenity IAPs are
+  > 45/100/220. One price list (`GameCore.Economy`) is the single source —
+  > see `ARCHITECTURE.md` §5.2 for the authoritative numbers and the
+  > pack-yield test that pins the target.
 - **Daily puzzle** — one fixed-seed level per day. **Implemented:** the same
   puzzle globally, for every player, on a given calendar day (seed derived
   from the date-keyed id); the streak advances on any clear, campaign or
@@ -281,12 +292,15 @@ per-hint cost) rather than a purchasable hint tier.
 ### 8.1 Game modes
 1. **Zen mode (default):** no timer, no fail state, full assists allowed.
 2. **Doom mode (optional):** a timer; the creature reveals faster. **As
-   implemented,** expiry does not fail or restart the level: the level's
-   points are voided (forfeit, frozen at zero) and the player continues
-   playing the same level toward the clear — no retry, and a voided clear
-   earns no serenity (see §8's economy note) though it still records
-   progress, the streak, and the bestiary. This is a change from the
-   originally specified "soft fail / retry" behavior above.
+   implemented,** the clock is a bonus window, not a forfeit: words score
+   4x with more than 2/3 of the limit remaining, 3x above 1/3, 2x with any
+   time left, and plain 1x after expiry — points never stop, only the
+   multiplier does. Expiry does not fail or restart the level: the player
+   continues the same level toward the clear (no retry), and an expired
+   clear earns no serenity (see §8's economy note) though it still records
+   progress, the streak, and the bestiary. This supersedes both the
+   originally specified "soft fail / retry" and the interim "points
+   voided" behavior.
 
 ---
 
