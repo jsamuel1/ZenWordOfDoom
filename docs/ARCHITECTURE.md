@@ -313,19 +313,26 @@ passes a hard validation filter, and always have a working floor.**
 `GameCore.Economy` is the single price list; every serenity faucet and sink
 in the app reads from it — no other file hardcodes an amount:
 
+The design target is earned income of roughly **0.8 hints per level** (~8
+serenity against the 10-serenity hint), averaged over a pack including its
+boss payday — pinned by `EconomyTests.testPackYieldIsNearDesignTarget`.
+
 1. New profiles open with `Economy.startingSerenity` (**50**) so early
    players can learn the hint mechanic before the currency gets scarce.
 2. `GameStore.recordClear` — `Economy.clearReward(firstClear:usedHint:voided:)`.
-   Only a first-time, non-voided clear pays anything: **8** with no hint used,
-   **5** if a hint was used. Repeat clears and doom-voided clears pay nothing.
+   Only a first-time, non-voided clear pays anything: **2** with no hint used,
+   **1** if a hint was used. Repeat clears and doom-voided clears pay nothing.
    A pack-capstone boss's first clear pays `Economy.bossClearReward` (**+50**)
    on top — flat, never score- or doom-timer-multiplied, and NOT paid by
-   dailies (also Pangram-Hunts) or the bonus would recur every day.
+   dailies (also Pangram-Hunts) or the bonus would recur every day. The boss
+   is deliberately the pack's payday: half a pack's income lands there.
 3. `GameStore.recordWord` — `Economy.bonusWordReward` (**1**) per bonus word
-   (found beyond the grid), but only while that level is still uncleared —
-   replaying a cleared level and resubmitting its bonus words pays nothing
-   (this was the economy's one unbounded faucet). Grid words pay nothing
-   directly, since their reward is folded into the clear payout above.
+   (found beyond the grid), but only while that level is still uncleared and
+   only for the first `Economy.maxBonusRewardsPerLevel` (**2**) on that
+   level, persisted in `LevelProgress.serenityBonusPaid` — replays,
+   relaunches, and marathon bonus hunts can't farm past the design yield.
+   Grid words pay nothing directly, since their reward is folded into the
+   clear payout above.
 
 Hints cost a flat `Economy.hintCost` (**10**) serenity per reveal
 (`GameViewModel.hintCost`) — every hint, always the same price — refunded if

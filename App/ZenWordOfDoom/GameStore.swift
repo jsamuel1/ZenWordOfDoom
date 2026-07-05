@@ -125,16 +125,23 @@ final class GameStore: ObservableObject {
     /// Record a single found word into lifetime stats (longest word, pangrams,
     /// totals). Called per submission; `recordClear` handles the clear tally.
     /// Bonus words (found beyond the grid) pay a small serenity reward — but
-    /// only while `levelID` is still uncleared: replaying a cleared level and
-    /// resubmitting the same bonus words must not farm serenity (the only
-    /// unbounded faucet the economy ever had). Grid words pay nothing
-    /// directly (their reward is folded into the clear). A voided run
-    /// (`voided: true`, doom expired) still counts the word toward stats but
-    /// pays no serenity — matching `recordClear`'s voided handling.
+    /// only while `levelID` is still uncleared AND only for the first
+    /// `Economy.maxBonusRewardsPerLevel` on that level (persisted in
+    /// `LevelProgress.serenityBonusPaid`): replaying, relaunching, or long
+    /// bonus hunts must not farm serenity past the per-level design yield.
+    /// Grid words pay nothing directly (their reward is folded into the
+    /// clear). A voided run (`voided: true`, doom expired) still counts the
+    /// word toward stats but pays no serenity — matching `recordClear`'s
+    /// voided handling.
     func recordWord(_ word: String, levelID: String, isBonus: Bool, isPangram: Bool, voided: Bool = false) {
         state.stats.recordWord(word, isBonus: isBonus, isPangram: isPangram)
         if isBonus, !voided, !isCleared(levelID) {
-            addSerenity(Economy.bonusWordReward)
+            var progress = state.progress[levelID] ?? LevelProgress(levelID: levelID)
+            if progress.serenityBonusPaid < Economy.maxBonusRewardsPerLevel {
+                progress.serenityBonusPaid += 1
+                state.progress[levelID] = progress
+                addSerenity(Economy.bonusWordReward)
+            }
         }
         save()
     }

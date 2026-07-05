@@ -26,9 +26,9 @@ final class GameStoreTests: XCTestCase {
         XCTAssertEqual(p.bestScore, 100)          // never regresses
         XCTAssertEqual(p.bonusWordsFound, 2)
         XCTAssertTrue(p.noHint)                   // once clean, stays clean
-        // First clear (no hint) pays 8 on top of the new-player starting
+        // First clear (no hint) pays 2 on top of the new-player starting
         // balance; the replay clear pays nothing.
-        XCTAssertEqual(store.state.serenity, Economy.startingSerenity + 8)
+        XCTAssertEqual(store.state.serenity, Economy.startingSerenity + 2)
     }
 
     func testStreakAdvancesOnClearNotOnLoad() {
@@ -109,6 +109,28 @@ final class GameStoreTests: XCTestCase {
         XCTAssertEqual(store.state.serenity, base + 1) // bonus words pay Economy.bonusWordReward
     }
 
+    /// Only the first `maxBonusRewardsPerLevel` bonus words pay on a level —
+    /// the meter persists in LevelProgress, so a relaunch can't reset it.
+    func testBonusWordPayoutsAreCappedPerLevel() {
+        let store = makeStore()
+        let base = Economy.startingSerenity
+        for (i, word) in ["GARDEN", "STONE", "RIVER", "LOTUS"].enumerated() {
+            store.recordWord(word, levelID: "zen-easy-1", isBonus: true, isPangram: false)
+            XCTAssertEqual(store.state.serenity,
+                           base + min(i + 1, Economy.maxBonusRewardsPerLevel),
+                           "word \(i + 1) exceeded the per-level bonus cap")
+        }
+        // A different level has its own meter.
+        store.recordWord("KOI", levelID: "zen-easy-2", isBonus: true, isPangram: false)
+        XCTAssertEqual(store.state.serenity, base + Economy.maxBonusRewardsPerLevel + 1)
+
+        // The persisted meter survives a reload.
+        let reloaded = GameStore(fileURL: url)
+        reloaded.recordWord("CRANE", levelID: "zen-easy-1", isBonus: true, isPangram: false)
+        XCTAssertEqual(reloaded.state.serenity, base + Economy.maxBonusRewardsPerLevel + 1,
+                       "reload must not reset the per-level bonus meter")
+    }
+
     func testVoidedBonusWordPaysNoSerenityButStillCountsStats() {
         let store = makeStore()
         store.recordWord("GARDEN", levelID: "zen-easy-0", isBonus: true, isPangram: false, voided: true)
@@ -140,13 +162,13 @@ final class GameStoreTests: XCTestCase {
         store.recordClear(level: boss, score: 100, bonusWords: 0,
                           usedHint: false, creatureRevealed: false)
         XCTAssertEqual(store.state.serenity,
-                       Economy.startingSerenity + 8 + Economy.bossClearReward)
+                       Economy.startingSerenity + 2 + Economy.bossClearReward)
 
         // Repeat clears pay nothing — including the boss bonus.
         store.recordClear(level: boss, score: 100, bonusWords: 0,
                           usedHint: false, creatureRevealed: false)
         XCTAssertEqual(store.state.serenity,
-                       Economy.startingSerenity + 8 + Economy.bossClearReward)
+                       Economy.startingSerenity + 2 + Economy.bossClearReward)
     }
 
     /// Dailies are Pangram-Hunts too, but they are NOT bosses — no +50, or
@@ -159,7 +181,7 @@ final class GameStoreTests: XCTestCase {
                           format: .pangramHunt(target: 5))
         store.recordClear(level: daily, score: 50, bonusWords: 0,
                           usedHint: false, creatureRevealed: false)
-        XCTAssertEqual(store.state.serenity, Economy.startingSerenity + 8,
+        XCTAssertEqual(store.state.serenity, Economy.startingSerenity + 2,
                        "daily clear pays the normal reward only")
     }
 

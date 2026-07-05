@@ -7,17 +7,41 @@ public struct LevelProgress: Codable, Equatable, Sendable {
     public var bestScore: Int
     public var bonusWordsFound: Int
     public var noHint: Bool
+    /// How many bonus words have already paid serenity on this level —
+    /// capped at `Economy.maxBonusRewardsPerLevel`, persisted so relaunching
+    /// mid-level can't reset the meter.
+    public var serenityBonusPaid: Int
 
     public init(levelID: String,
                 cleared: Bool = false,
                 bestScore: Int = 0,
                 bonusWordsFound: Int = 0,
-                noHint: Bool = false) {
+                noHint: Bool = false,
+                serenityBonusPaid: Int = 0) {
         self.levelID = levelID
         self.cleared = cleared
         self.bestScore = bestScore
         self.bonusWordsFound = bonusWordsFound
         self.noHint = noHint
+        self.serenityBonusPaid = serenityBonusPaid
+    }
+
+    // MARK: Codable — tolerant of older saves (same contract as SaveState:
+    // every field defaults, so entries written before a key existed decode
+    // intact instead of failing the whole profile).
+
+    private enum CodingKeys: String, CodingKey {
+        case levelID, cleared, bestScore, bonusWordsFound, noHint, serenityBonusPaid
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.levelID = try c.decodeIfPresent(String.self, forKey: .levelID) ?? ""
+        self.cleared = try c.decodeIfPresent(Bool.self, forKey: .cleared) ?? false
+        self.bestScore = try c.decodeIfPresent(Int.self, forKey: .bestScore) ?? 0
+        self.bonusWordsFound = try c.decodeIfPresent(Int.self, forKey: .bonusWordsFound) ?? 0
+        self.noHint = try c.decodeIfPresent(Bool.self, forKey: .noHint) ?? false
+        self.serenityBonusPaid = try c.decodeIfPresent(Int.self, forKey: .serenityBonusPaid) ?? 0
     }
 }
 
