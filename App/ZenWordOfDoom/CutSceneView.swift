@@ -2,8 +2,9 @@ import SwiftUI
 import GameCore
 import LevelGen
 
-/// A between-levels "breath". A gently moving, asset-free procedural zen scene
-/// carries a twisted haiku displayed calmly and readably. After
+/// A between-levels "breath". The cleared level's scene art fills the screen
+/// (falling back to a gently moving procedural zen scene when no art exists)
+/// with a twisted haiku floating in front, displayed calmly and readably. After
 /// `cutScene.popoutDelay` seconds a Doom creature silhouette telegraphs, pops
 /// out of the scene, holds briefly, then recedes. The whole thing is skippable
 /// (tap anywhere / Continue button) which calls `onContinue`.
@@ -55,13 +56,20 @@ struct CutSceneView: View {
         reducedDoom ? 0.35 : 1.0
     }
 
+    /// Whether this slug has real scene art to show. When it does, the level
+    /// image is the backdrop (full strength, poem floating in front) and the
+    /// procedural canvas only contributes the doom accents; when it doesn't,
+    /// the canvas paints the whole procedural scene as before.
+    private var hasRealArt: Bool {
+        BundledVisuals.assetName(kind: .scene, id: cutScene.scene) != nil
+    }
+
     var body: some View {
         ZStack {
             GeneratedImageView(request: VisualRequest(id: cutScene.scene, theme: theme, kind: .scene),
                                maxPixel: 768) {
                 Color.clear
             }
-            .opacity(0.5)
             .ignoresSafeArea()
 
             scene
@@ -99,7 +107,50 @@ struct CutSceneView: View {
 
     private func draw(in context: inout GraphicsContext, size: CGSize, time: TimeInterval) {
         let d = min(doom, doomCap)
+        let horizonY = size.height * 0.62
 
+        if hasRealArt {
+            // Real level art is the backdrop — no painted sky/ground over it,
+            // just a bruised-dusk cast so the pop-out still darkens the world.
+            if d > 0.02 {
+                context.fill(
+                    Path(CGRect(origin: .zero, size: size)),
+                    with: .color(Color(red: 0.18, green: 0.06, blue: 0.08).opacity(0.4 * d))
+                )
+            }
+        } else {
+            drawProceduralScene(in: &context, size: size, time: time, horizonY: horizonY, doom: d)
+        }
+
+        // Hidden creature silhouette: fades / rises from the ground as doom peaks.
+        if d > 0.02 {
+            drawCreature(in: &context, size: size, horizonY: horizonY, doom: d, time: time)
+        }
+
+        // A vignette that darkens with doom.
+        if d > 0.05 {
+            let vignette = Gradient(colors: [Color.clear, Color.black.opacity(0.5 * d)])
+            context.fill(
+                Path(CGRect(origin: .zero, size: size)),
+                with: .radialGradient(
+                    vignette,
+                    center: CGPoint(x: size.width / 2, y: size.height / 2),
+                    startRadius: size.width * 0.25,
+                    endRadius: size.width * 0.75
+                )
+            )
+        }
+    }
+
+    /// The fully painted procedural zen scene (sky, ground, ripples, disc) —
+    /// only drawn when there's no real level art to stand behind the poem.
+    private func drawProceduralScene(
+        in context: inout GraphicsContext,
+        size: CGSize,
+        time: TimeInterval,
+        horizonY: CGFloat,
+        doom d: Double
+    ) {
         // Sky / ground gradient: calm cool tones shifting toward a bruised dusk
         // as doom rises.
         let calmTop = Color(red: 0.62, green: 0.74, blue: 0.78)
@@ -120,7 +171,6 @@ struct CutSceneView: View {
         )
 
         // A low "horizon" band of ground / raked sand.
-        let horizonY = size.height * 0.62
         var ground = Path()
         ground.addRect(CGRect(x: 0, y: horizonY, width: size.width, height: size.height - horizonY))
         let groundColor = mix(Color(red: 0.80, green: 0.76, blue: 0.66), Color(red: 0.10, green: 0.07, blue: 0.09), d)
@@ -153,25 +203,6 @@ struct CutSceneView: View {
             x: discCenter.x - 36, y: discCenter.y - 36, width: 72, height: 72
         )
         context.fill(Path(ellipseIn: discRect), with: .color(discColor))
-
-        // Hidden creature silhouette: fades / rises from the ground as doom peaks.
-        if d > 0.02 {
-            drawCreature(in: &context, size: size, horizonY: horizonY, doom: d, time: time)
-        }
-
-        // A vignette that darkens with doom.
-        if d > 0.05 {
-            let vignette = Gradient(colors: [Color.clear, Color.black.opacity(0.5 * d)])
-            context.fill(
-                Path(CGRect(origin: .zero, size: size)),
-                with: .radialGradient(
-                    vignette,
-                    center: CGPoint(x: size.width / 2, y: size.height / 2),
-                    startRadius: size.width * 0.25,
-                    endRadius: size.width * 0.75
-                )
-            )
-        }
     }
 
     /// A simple procedural silhouette: a hunched body with two glowing eyes that
@@ -243,7 +274,7 @@ struct CutSceneView: View {
         .padding(.horizontal, 26)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.black.opacity(0.28))
+                .fill(.black.opacity(0.4))
         )
         .shadow(radius: 8, y: 4)
         .accessibilityElement(children: .combine)

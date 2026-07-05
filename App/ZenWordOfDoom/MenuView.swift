@@ -207,7 +207,10 @@ struct MenuView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Play Today’s Doom Word")
-                        .font(.headline)
+                        // One notch below .headline so the title holds a
+                        // single line inside the parchment at common widths
+                        // and type sizes.
+                        .font(.subheadline.weight(.semibold))
                     Text(cleared ? "Cleared — the garden rests" : "One puzzle. Every soul. Every day.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
