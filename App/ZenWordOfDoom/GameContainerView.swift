@@ -98,10 +98,11 @@ struct GamePlayView: View {
 
     var body: some View {
         ZStack {
-            // GeometryReader gives the scroll content a minHeight equal to the
-            // viewport, so the Spacer inside the VStack resolves exactly as it
-            // did pre-ScrollView at standard type sizes; at accessibility
-            // sizes the content exceeds the viewport and scrolls instead.
+            // GeometryReader gives the scroll content a minHeight equal to
+            // the viewport: the greedy bottom-aligned input cluster absorbs
+            // any slack (grid up top, wheel at the bottom) at standard type
+            // sizes; at accessibility sizes the content exceeds the viewport
+            // and scrolls instead.
             GeometryReader { proxy in
                 ScrollView {
                     VStack(spacing: 14) {
@@ -175,35 +176,42 @@ struct GamePlayView: View {
                             .frame(maxHeight: gridMaxHeight(viewport: proxy.size.height, rows: gridRowCount))
                         }
 
-                        Spacer(minLength: 0)
+                        // The input cluster hugs the bottom via its own
+                        // greedy frame — deliberately NOT a Spacer, which
+                        // would cost a full VStack spacing slot at each of
+                        // its edges even when collapsed (the dead space that
+                        // made tight layouts scroll; same fix as MenuView).
+                        VStack(spacing: 14) {
+                            FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords, theme: levelService.theme(forID: level.id))
 
-                        FoundWordsTray(progress: model.progressLabel, bonusWords: model.bonusWords, theme: levelService.theme(forID: level.id))
+                            WordRibbonView(word: model.currentWord, theme: levelService.theme(forID: level.id))
 
-                        WordRibbonView(word: model.currentWord, theme: levelService.theme(forID: level.id))
+                            WheelView(
+                                tiles: model.level.wheel.tiles,
+                                displayOrder: model.displayOrder,
+                                selection: model.selection,
+                                onTap: { id in
+                                    Haptics.tap()
+                                    model.tap(tileID: id)
+                                },
+                                onSwipeBegin: { id in
+                                    Haptics.tap()
+                                    wheelDragging = true
+                                    model.swipeBegin(tileID: id)
+                                },
+                                onSwipeExtend: { id in model.swipeExtend(tileID: id) },
+                                onSwipeEnd: {
+                                    wheelDragging = false
+                                    model.swipeEnd()
+                                }
+                            )
 
-                        WheelView(
-                            tiles: model.level.wheel.tiles,
-                            displayOrder: model.displayOrder,
-                            selection: model.selection,
-                            onTap: { id in
-                                Haptics.tap()
-                                model.tap(tileID: id)
-                            },
-                            onSwipeBegin: { id in
-                                Haptics.tap()
-                                wheelDragging = true
-                                model.swipeBegin(tileID: id)
-                            },
-                            onSwipeExtend: { id in model.swipeExtend(tileID: id) },
-                            onSwipeEnd: {
-                                wheelDragging = false
-                                model.swipeEnd()
-                            }
-                        )
-
-                        controls
+                            controls
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                     }
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, minHeight: proxy.size.height)
                     .opacity(model.isComplete ? 0 : 1)
                     .animation(.easeOut(duration: 0.5), value: model.isComplete)
@@ -310,12 +318,18 @@ struct GamePlayView: View {
     }
 
     /// Height available to the grid: the viewport minus the rest of the
-    /// chrome (HUD + message + tray + ribbon + 240pt wheel + controls +
-    /// spacing ≈ 610pt at standard Dynamic Type), capped at the design's
-    /// 380pt. Pre-ScrollView, the fixed-height proposal squeezed the grid
-    /// to this leftover automatically; inside a ScrollView the height
-    /// proposal is unbounded, so without this cap the grid takes its full
-    /// ideal and pushes the content past the viewport at default sizes.
+    /// chrome, capped at the design's 380pt. Pre-ScrollView, the
+    /// fixed-height proposal squeezed the grid to this leftover
+    /// automatically; inside a ScrollView the height proposal is unbounded,
+    /// so without this cap the grid takes its full ideal and pushes the
+    /// content past the viewport at default sizes.
+    ///
+    /// The reserve is the v3-chrome budget at standard Dynamic Type: HUD 48
+    /// + message 32 + tray 26 + ribbon 44 + 240pt wheel + controls 66 + six
+    /// 14pt gaps + 16pt vertical padding ≈ 556, rounded up to 570 for
+    /// margin — plus the doom timer row (+48) only when one is showing,
+    /// which the old flat constant ignored (doom levels overflowed and
+    /// scrolled at standard sizes).
     ///
     /// The floor scales with `rows` (24pt/row — a legible cell height at
     /// GridView's 0.8 minimumScaleFactor) rather than a flat constant: a
@@ -324,8 +338,9 @@ struct GamePlayView: View {
     /// unreadable cells. 100pt is the absolute floor for 1-2 row levels so
     /// the grid never collapses to nothing.
     private func gridMaxHeight(viewport: CGFloat, rows: Int) -> CGFloat {
+        let reserved: CGFloat = model.timeRemaining != nil ? 618 : 570
         let rowFloor = max(CGFloat(rows) * 24, 100)
-        return min(380, max(rowFloor, viewport - 610))
+        return min(380, max(rowFloor, viewport - reserved))
     }
 
     /// Row count of the current level's crossword grid, for `gridMaxHeight`'s
